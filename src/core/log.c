@@ -25,6 +25,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/glue.h"
+#include "../../include/tendril/tendril.h"
 #include "../internal.h"
 
 int tendril_log_threshold = TENDRIL_LOG_INFO;
@@ -47,7 +53,7 @@ static void out_char(struct out *o, char c) {
 }
 
 static void out_pad(struct out *o, char c, int count) {
-    while (count-- > 0) {
+    for (size_t i = count > 0 ? (size_t)count : 0; i-- > 0; ) {
         out_char(o, c);
     }
 }
@@ -78,28 +84,28 @@ static void out_number(
     char sign = 0;
     if (negative) {
         sign = '-';
-    } else if (flags & FLAG_PLUS) {
+    } else if ((flags & FLAG_PLUS) != 0) {
         sign = '+';
-    } else if (flags & FLAG_SPACE) {
+    } else if ((flags & FLAG_SPACE) != 0) {
         sign = ' ';
     }
 
     const char *prefix = "";
-    if ((flags & FLAG_ALT) && base == 16 && n != 0) {
+    if ((flags & FLAG_ALT) != 0 && base == 16 && n != 0) {
         prefix = upper ? "0X" : "0x";
     }
     int prefix_len = (int)tendril_strlen(prefix);
     int zeros = precision > n ? precision - n : 0;
-    int total = n + zeros + prefix_len + (sign ? 1 : 0);
+    int total = n + zeros + prefix_len + (sign != '\0' ? 1 : 0);
 
-    if (!(flags & FLAG_LEFT)) {
-        if (flags & FLAG_ZERO) {
+    if ((flags & FLAG_LEFT) == 0) {
+        if ((flags & FLAG_ZERO) != 0) {
             zeros += width - total;
         } else {
             out_pad(o, ' ', width - total);
         }
     }
-    if (sign) {
+    if (sign != '\0') {
         out_char(o, sign);
     }
     for (size_t i = 0; prefix[i] != '\0'; i++) {
@@ -109,7 +115,7 @@ static void out_number(
     while (n > 0) {
         out_char(o, tmp[--n]);
     }
-    if (flags & FLAG_LEFT) {
+    if ((flags & FLAG_LEFT) != 0) {
         out_pad(o, ' ', width - total);
     }
 }
@@ -298,11 +304,11 @@ int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args_in) 
                 break;
             }
             case 'c': {
-                if (!(flags & FLAG_LEFT)) {
+                if ((flags & FLAG_LEFT) == 0) {
                     out_pad(&o, ' ', width - 1);
                 }
                 out_char(&o, (char)va_arg(args, int));
-                if (flags & FLAG_LEFT) {
+                if ((flags & FLAG_LEFT) != 0) {
                     out_pad(&o, ' ', width - 1);
                 }
                 break;
@@ -316,13 +322,13 @@ int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args_in) 
                 while (s[n] != '\0' && (precision < 0 || n < (size_t)precision)) {
                     n++;
                 }
-                if (!(flags & FLAG_LEFT)) {
+                if ((flags & FLAG_LEFT) == 0) {
                     out_pad(&o, ' ', width - (int)n);
                 }
                 for (size_t i = 0; i < n; i++) {
                     out_char(&o, s[i]);
                 }
-                if (flags & FLAG_LEFT) {
+                if ((flags & FLAG_LEFT) != 0) {
                     out_pad(&o, ' ', width - (int)n);
                 }
                 break;

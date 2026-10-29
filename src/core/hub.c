@@ -123,13 +123,21 @@
  * SUCH DAMAGE.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/spec.h"
+#include "../../include/tendril/tendril.h"
 #include "../internal.h"
 
 #define HUB_CTRL_TIMEOUT_MS 5000
 #define STATUS_RETRY_MS 100
 #define STATUS_ERRORS_WARN 10
 /* BEGIN FreeBSD sys/dev/usb/usb.h */
-/* FreeBSD's USB_EXTRA_POWER_UP_TIME, from its sys/dev/usb/usb.h (BSD-2-Clause). */
+/*
+ * FreeBSD's USB_EXTRA_POWER_UP_TIME, from its sys/dev/usb/usb.h
+ * (BSD-2-Clause).
+ */
 #define EXTRA_POWER_UP_MS 20
 /* END FreeBSD sys/dev/usb/usb.h */
 
@@ -164,11 +172,14 @@ static void port_xfer_done(struct tendril_transfer *xfer) {
             port->st.change = change;
             if (port->superspeed) {
                 port->st.speed = TENDRIL_SPEED_SUPER;
-                /* SuperSpeed hubs keep port power at bit 9, where USB 2.0 has low speed. */
+                /*
+                 * SuperSpeed hubs keep port power at bit 9, where USB 2.0 has
+                 * low speed.
+                 */
                 port->st.status &= (uint16_t)~(TENDRIL_PORT_STAT_LOW_SPEED | TENDRIL_PORT_STAT_HIGH_SPEED);
-            } else if (status & TENDRIL_PORT_STAT_LOW_SPEED) {
+            } else if ((status & TENDRIL_PORT_STAT_LOW_SPEED) != 0) {
                 port->st.speed = TENDRIL_SPEED_LOW;
-            } else if (status & TENDRIL_PORT_STAT_HIGH_SPEED) {
+            } else if ((status & TENDRIL_PORT_STAT_HIGH_SPEED) != 0) {
                 port->st.speed = TENDRIL_SPEED_HIGH;
             } else {
                 port->st.speed = TENDRIL_SPEED_FULL;
@@ -180,7 +191,7 @@ static void port_xfer_done(struct tendril_transfer *xfer) {
 }
 
 static void port_request(
-    struct tendril_port *port, uint8_t request_type, uint8_t request, unsigned int feature, uint16_t length
+    struct tendril_port *port, uint8_t request_type, uint8_t request, int feature, size_t length
 ) {
     struct tendril_hub *hub = port->hub;
     struct tendril_transfer *xfer = &port->xfer;
@@ -189,9 +200,12 @@ static void port_request(
     xfer->setup.request_type = request_type;
     xfer->setup.request = request;
     xfer->setup.value = tendril_le16((uint16_t)PORT_FEATURE_SELECTOR(feature));
-    /* USB 3.2 revision 1.1 10.16.2.10: some features take a parameter in the upper byte. */
+    /*
+     * USB 3.2 revision 1.1 10.16.2.10: some features take a parameter in the
+     * upper byte.
+     */
     xfer->setup.index = tendril_le16((uint16_t)(port->number | PORT_FEATURE_PARAM(feature) << 8));
-    xfer->setup.length = tendril_le16(length);
+    xfer->setup.length = tendril_le16((uint16_t)length);
     xfer->buffer = length != 0 ? port->buf : NULL;
     xfer->length = length;
     xfer->timeout_ms = HUB_CTRL_TIMEOUT_MS;
@@ -210,17 +224,15 @@ static void ext_get_status(struct tendril_port *port) {
     port_request(port, TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_OTHER, TENDRIL_HUB_REQ_GET_STATUS, 0, 4);
 }
 
-static void ext_set_feature(struct tendril_port *port, unsigned int feature) {
+static void ext_set_feature(struct tendril_port *port, int feature) {
     port_request(
-        port, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_OTHER, TENDRIL_HUB_REQ_SET_FEATURE,
-        feature, 0
+        port, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_OTHER, TENDRIL_HUB_REQ_SET_FEATURE, feature, 0
     );
 }
 
-static void ext_clear_feature(struct tendril_port *port, unsigned int feature) {
+static void ext_clear_feature(struct tendril_port *port, int feature) {
     port_request(
-        port, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_OTHER, TENDRIL_HUB_REQ_CLEAR_FEATURE,
-        feature, 0
+        port, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_OTHER, TENDRIL_HUB_REQ_CLEAR_FEATURE, feature, 0
     );
 }
 
@@ -253,12 +265,12 @@ static void hub_status_read(struct tendril_transfer *xfer) {
     }
     uint16_t status = (uint16_t)(hub->ctrl_buf[0] | hub->ctrl_buf[1] << 8);
     uint16_t change = (uint16_t)(hub->ctrl_buf[2] | hub->ctrl_buf[3] << 8);
-    unsigned int feature;
-    if (change & 0x0001) {
+    int feature;
+    if ((change & 0x0001) != 0) {
         feature = TENDRIL_HUB_C_LOCAL_POWER;
-    } else if (change & 0x0002) {
+    } else if ((change & 0x0002) != 0) {
         hub_name(hub, name, sizeof(name));
-        if (status & 0x0002) {
+        if ((status & 0x0002) != 0) {
             LOG_WARN("%s: over-current", name);
         }
         feature = TENDRIL_HUB_C_OVER_CURRENT;
@@ -266,7 +278,7 @@ static void hub_status_read(struct tendril_transfer *xfer) {
         hub->ctrl_busy = false;
         return;
     }
-    if (change & ~(feature == TENDRIL_HUB_C_LOCAL_POWER ? (uint32_t)0x0001 : (uint32_t)0x0002) & 0x0003) {
+    if ((change & ~(feature == TENDRIL_HUB_C_LOCAL_POWER ? (uint32_t)0x0001 : (uint32_t)0x0002) & 0x0003) != 0) {
         hub->hub_change_pending = true;
     }
     tendril_transfer_init(&hub->ctrl, &hub->dev->ep0);
@@ -327,12 +339,12 @@ static void hub_status_done(struct tendril_transfer *xfer) {
     switch (xfer->status) {
         case TENDRIL_OK: {
             hub->status_errors = 0;
-            if (xfer->actual > 0 && (hub->status_buf[0] & 1)) {
+            if (xfer->actual > 0 && (hub->status_buf[0] & 1) != 0) {
                 tendril_hub_check_status(hub);
             }
             hc_lock(hc);
             for (size_t p = 1; p <= hub->num_ports && p / 8 < xfer->actual; p++) {
-                if (hub->status_buf[p / 8] & ((uint32_t)1 << (p % 8))) {
+                if ((hub->status_buf[p / 8] & ((uint32_t)1 << (p % 8))) != 0) {
                     tendril_port_kick(&hub->ports[p - 1]);
                 }
             }
@@ -412,7 +424,7 @@ static void hub_ctrl_done(struct tendril_transfer *xfer) {
 }
 
 static void hub_ctrl(
-    struct tendril_hub *hub, uint8_t request_type, uint8_t request, uint16_t value, uint16_t index, uint16_t length,
+    struct tendril_hub *hub, uint8_t request_type, uint8_t request, uint16_t value, uint16_t index, size_t length,
     const char *what
 ) {
     struct tendril_transfer *xfer = &hub->ctrl;
@@ -421,7 +433,7 @@ static void hub_ctrl(
     xfer->setup.request = request;
     xfer->setup.value = tendril_le16(value);
     xfer->setup.index = tendril_le16(index);
-    xfer->setup.length = tendril_le16(length);
+    xfer->setup.length = tendril_le16((uint16_t)length);
     xfer->buffer = length != 0 ? hub->ctrl_buf : NULL;
     xfer->length = length;
     xfer->timeout_ms = HUB_CTRL_TIMEOUT_MS;
@@ -451,7 +463,9 @@ static bool parse_hub_descriptor(struct tendril_hub *hub, size_t actual) {
     }
     hub->num_ports = d[2];
     /* BEGIN FreeBSD sys/dev/usb/usb_hub.c */
-    /* FreeBSD's uhub_attach() refuses more ports than a bus has addresses for. */
+    /*
+     * FreeBSD's uhub_attach() refuses more ports than a bus has addresses for.
+     */
     if (!hub->superspeed && hub->num_ports > 127) {
         return false;
     }
@@ -521,7 +535,7 @@ static void hub_init_step(struct tendril_hub *hub) {
                 hub->init_step = HUB_SET_DEPTH;
                 hub_ctrl(
                     hub, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_DEVICE, TENDRIL_HUB_REQ_SET_HUB_DEPTH,
-                    dev->depth, 0, 0, "SET_HUB_DEPTH"
+                    (uint16_t)dev->depth, 0, 0, "SET_HUB_DEPTH"
                 );
                 return;
             }
@@ -640,7 +654,10 @@ void tendril_hub_start(struct tendril_device *dev) {
     hub->dev = dev;
     hub->ops = &ext_hub_ops;
     hub->superspeed = tendril_device_is_ss(dev);
-    /* USB 2.0 7.2.1 and USB 3.2 revision 1.1 11.4: what a port gives a high-power device, or one unit load. */
+    /*
+     * USB 2.0 7.2.1 and USB 3.2 revision 1.1 11.4: what a port gives a
+     * high-power device, or one unit load.
+     */
     hub->port_power = dev->self_powered ? 500 : 100;
     hub->port_power_ss = dev->self_powered ? 900 : 150;
     tendril_async_init(&hub->init_async, hub_init_async);
@@ -650,7 +667,7 @@ void tendril_hub_start(struct tendril_device *dev) {
 
     hub->init_step = HUB_GET_DESCRIPTOR;
     uint8_t type = hub->superspeed ? TENDRIL_DT_SS_HUB : TENDRIL_DT_HUB;
-    uint16_t len = hub->superspeed ? 12 : 71;
+    size_t len = hub->superspeed ? 12 : 71;
     hub_ctrl(
         hub, TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_DEVICE, TENDRIL_HUB_REQ_GET_DESCRIPTOR,
         (uint16_t)(type << 8), 0, len, "reading the hub descriptor"
@@ -753,7 +770,7 @@ static void queue_tt(struct tendril_device *dev, uint8_t request, uint16_t value
 void tendril_hub_clear_tt(struct tendril_device *dev, struct tendril_endpoint *ep) {
     /* USB 2.0 Table 11-18. */
     uint32_t value = (uint32_t)(ep->address & TENDRIL_ENDPOINT_NUMBER_MASK) | (uint32_t)(dev->address & 0x7f) << 4
-        | (uint32_t)(ep->type & 3) << 11 | ((ep->address & TENDRIL_ENDPOINT_DIR_MASK) ? (uint32_t)1 << 15 : 0);
+        | (uint32_t)(ep->type & 3) << 11 | ((ep->address & TENDRIL_ENDPOINT_DIR_MASK) != 0 ? (uint32_t)1 << 15 : 0);
     queue_tt(dev, TENDRIL_HUB_REQ_CLEAR_TT_BUFFER, (uint16_t)value);
 }
 
@@ -814,7 +831,10 @@ void tendril_hub_resume(struct tendril_hub *hub) {
     }
     hub->status_errors = 0;
     hub_status_submit(hub);
-    /* Changes during the suspend, a child's remote wakeup among them, went unreported. */
+    /*
+     * Changes during the suspend, a child's remote wakeup among them, went
+     * unreported.
+     */
     hc_lock(hc);
     for (size_t i = 0; i < hub->num_ports; i++) {
         tendril_port_kick(&hub->ports[i]);

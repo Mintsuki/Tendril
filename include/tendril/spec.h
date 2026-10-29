@@ -25,8 +25,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_SPEC_H
-#define TENDRIL_SPEC_H
+#ifndef TENDRIL_TENDRIL_SPEC_H
+#define TENDRIL_TENDRIL_SPEC_H
 
 #include <stdint.h>
 
@@ -35,9 +35,9 @@ extern "C" {
 #endif
 
 /*
- * Definitions from the USB 2.0 and USB 3.2 (revision 1.1) specifications. Multi-byte fields
- * of the structures are little-endian, as on the wire; use tendril_le16() and
- * tendril_le32() to read them.
+ * Definitions from the USB 2.0 and USB 3.2 (revision 1.1) specifications.
+ * Multi-byte fields of the structures are little-endian, as on the wire; use
+ * tendril_le16() and tendril_le32() to read them.
  */
 
 #if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -128,7 +128,10 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_FEATURE_U2_ENABLE 49
 #define TENDRIL_FEATURE_LTM_ENABLE 50
 
-/* SET_FEATURE(FUNCTION_SUSPEND) options, wIndex bits 15:8 (USB 3.2 revision 1.1, Table 9-9) */
+/*
+ * SET_FEATURE(FUNCTION_SUSPEND) options, wIndex bits 15:8 (USB 3.2 revision
+ * 1.1, Table 9-9)
+ */
 #define TENDRIL_FUNCTION_SUSPEND_LOW_POWER 0x01
 #define TENDRIL_FUNCTION_SUSPEND_REMOTE_WAKE 0x02
 

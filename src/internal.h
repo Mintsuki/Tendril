@@ -32,8 +32,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include <tendril/tendril.h>
+#include "../include/tendril/glue.h"
+#include "../include/tendril/spec.h"
+#include "../include/tendril/tendril.h"
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define CONTAINER_OF(ptr, type, member) ((type *)(void *)((char *)(ptr) - offsetof(type, member)))
@@ -192,7 +193,7 @@ struct tendril_port {
     uint64_t debounce_start;
     uint64_t debounce_first;
     uint64_t reset_start;
-    unsigned int attempts;
+    size_t attempts;
     int enum_status;
     bool busy;
     bool kick;
@@ -205,28 +206,38 @@ struct tendril_port {
     uint64_t pm_start;
     /* The resume under way was signalled by the device. */
     bool woke;
-    /* Reconnects after the hub disabled the port on its own, since the last connection. */
-    unsigned int restarts;
-    /* SET_CONFIGURATION failed during enumeration since the last connection. */
+    /*
+     * Reconnects after the hub disabled the port on its own, since the last
+     * connection.
+     */
+    size_t restarts;
+    /*
+     * SET_CONFIGURATION failed during enumeration since the last connection.
+     */
     bool config_failed;
     /* External hubs only. */
     struct tendril_transfer xfer;
     uint8_t buf[4];
-    /* A TT request waiting for this port: CLEAR_TT_BUFFER with tt_value, RESET_TT, or 0. */
+    /*
+     * A TT request waiting for this port: CLEAR_TT_BUFFER with tt_value,
+     * RESET_TT, or 0.
+     */
     uint8_t tt_request;
     uint16_t tt_value;
 };
 
-/* A hub port feature with the parameter USB 3 hubs take in wIndex bits 15:8. */
-#define PORT_FEATURE(feature, param) ((unsigned int)(feature) | ((unsigned int)(param) << 8))
-#define PORT_FEATURE_SELECTOR(f) ((f) & (uint32_t)0xff)
-#define PORT_FEATURE_PARAM(f) (((f) >> 8) & (uint32_t)0xff)
+/*
+ * A hub port feature with the parameter USB 3 hubs take in wIndex bits 15:8.
+ */
+#define PORT_FEATURE(feature, param) ((int)(feature) | ((int)(param) << 8))
+#define PORT_FEATURE_SELECTOR(f) ((f) & 0xff)
+#define PORT_FEATURE_PARAM(f) (((f) >> 8) & 0xff)
 
 struct tendril_hub_ops {
     /* Each completes by queueing port->async with the status in st. */
     void (*get_status)(struct tendril_port *port);
-    void (*set_feature)(struct tendril_port *port, unsigned int feature);
-    void (*clear_feature)(struct tendril_port *port, unsigned int feature);
+    void (*set_feature)(struct tendril_port *port, int feature);
+    void (*clear_feature)(struct tendril_port *port, int feature);
 };
 
 struct tendril_hub {
@@ -237,8 +248,11 @@ struct tendril_hub {
     struct tendril_port *ports;
     bool superspeed;
     bool multi_tt;
-    /* Periodic split transaction bytes its TT carries in each microframe, for the controller's scheduling. */
-    uint32_t uframe_usage[8];
+    /*
+     * Periodic split transaction bytes its TT carries in each microframe, for
+     * the controller's scheduling.
+     */
+    size_t uframe_usage[8];
     /* Power each port can give a device, in mA, at USB 2.0 and SuperSpeed. */
     uint16_t port_power;
     uint16_t port_power_ss;
@@ -249,7 +263,7 @@ struct tendril_hub {
     struct tendril_transfer status_xfer;
     uint8_t status_buf[32];
     struct tendril_timer status_timer;
-    unsigned int status_errors;
+    size_t status_errors;
     struct tendril_transfer ctrl;
     uint8_t ctrl_buf[80];
     struct tendril_async init_async;
@@ -267,7 +281,10 @@ struct tendril_hub {
 void tendril_port_kick(struct tendril_port *port);
 void tendril_port_init(struct tendril_port *port, struct tendril_hub *hub, size_t number);
 void tendril_port_stop(struct tendril_port *port);
-/* Suspends or resumes the port's device, completing `async` with the lock held. */
+/*
+ * Suspends or resumes the port's device, completing `async` with the lock
+ * held.
+ */
 void tendril_port_pm(struct tendril_port *port, int request, struct tendril_async *async);
 bool tendril_port_idle(struct tendril_port *port);
 int tendril_roothub_init(struct tendril_hc *hc, size_t num_ports);
@@ -275,10 +292,16 @@ void tendril_hub_start(struct tendril_device *dev);
 void tendril_hub_stop(struct tendril_hub *hub);
 void tendril_hub_free(struct tendril_hub *hub);
 void tendril_hub_check_status(struct tendril_hub *hub);
-/* Stops a hub's own activity for a suspend; false if a port is busy or a child awake. */
+/*
+ * Stops a hub's own activity for a suspend; false if a port is busy or a child
+ * awake.
+ */
 bool tendril_hub_suspend(struct tendril_hub *hub);
 void tendril_hub_resume(struct tendril_hub *hub);
-/* After a failed transfer to a LS/FS device, frees the TT buffer it may have left busy. */
+/*
+ * After a failed transfer to a LS/FS device, frees the TT buffer it may have
+ * left busy.
+ */
 void tendril_hub_clear_tt(struct tendril_device *dev, struct tendril_endpoint *ep);
 /* Before a LS/FS device behind a TT is enumerated again. */
 void tendril_hub_reset_tt(struct tendril_device *dev);
@@ -292,17 +315,19 @@ struct tendril_endpoint {
     const struct tendril_ss_ep_companion_descriptor *companion;
     const struct tendril_ssp_iso_ep_companion_descriptor *ssp_companion;
     uint8_t address;
-    uint8_t type;
-    uint16_t max_packet;
-    /* Packets per service interval: HS high bandwidth or SS bursts times mult. */
+    int type;
+    size_t max_packet;
+    /*
+     * Packets per service interval: HS high bandwidth or SS bursts times mult.
+     */
     uint8_t mult;
     uint8_t max_burst;
     /* Service interval in microframes, and as a log2 of microframes. */
     uint32_t interval;
     uint8_t interval_log2;
-    uint32_t max_esit_payload;
-    unsigned int max_streams;
-    unsigned int streams;
+    size_t max_esit_payload;
+    size_t max_streams;
+    size_t streams;
     struct tendril_list transfers;
     void *hcd;
     bool open;
@@ -334,18 +359,24 @@ struct tendril_device {
     struct tendril_device *parent;
     struct tendril_port *port;
     struct tendril_list node;
-    unsigned int refs;
+    size_t refs;
     int state;
     bool gone;
     int speed;
     uint8_t address;
-    /* Allocated before SET_ADDRESS; endpoint 0 keeps address 0 until it succeeds. */
+    /*
+     * Allocated before SET_ADDRESS; endpoint 0 keeps address 0 until it
+     * succeeds.
+     */
     uint8_t new_address;
-    uint8_t depth;
+    size_t depth;
     uint8_t root_port;
     /* xHCI route string. */
     uint32_t route;
-    /* The high-speed hub whose transaction translator serves this LS/FS device. */
+    /*
+     * The high-speed hub whose transaction translator serves this LS/FS
+     * device.
+     */
     struct tendril_device *tt_hub;
     uint8_t tt_port;
     uint32_t quirks;
@@ -362,7 +393,10 @@ struct tendril_device {
     char *product;
     char *serial;
     int active_config;
-    /* Configuration index 0 was chosen with others left to try, which msc.c checks for an auto-install CD-ROM. */
+    /*
+     * Configuration index 0 was chosen with others left to try, which msc.c
+     * checks for an auto-install CD-ROM.
+     */
     bool cdrom_check;
     size_t num_interfaces;
     struct tendril_interface *interfaces;
@@ -372,17 +406,26 @@ struct tendril_device {
     struct tendril_interface *probing;
     void *hcd;
     /* Outstanding transfers, for teardown. */
-    unsigned int pending;
+    size_t pending;
     bool teardown_wait;
     bool op_busy;
     bool announced;
     bool config_busy;
-    /* While a configuration change runs, the only transfer the device takes is its own. */
+    /*
+     * While a configuration change runs, the only transfer the device takes is
+     * its own.
+     */
     struct tendril_transfer *config_xfer;
-    /* Power management: the link is suspended, or an operation is changing that. */
+    /*
+     * Power management: the link is suspended, or an operation is changing
+     * that.
+     */
     bool suspended;
     bool pm_busy;
-    /* Remote wakeup was armed, or USB 3 functions were suspended, for the current suspend. */
+    /*
+     * Remote wakeup was armed, or USB 3 functions were suspended, for the
+     * current suspend.
+     */
     bool pm_wake;
     bool pm_functions;
     /* The resume under way was signalled by the device. */
@@ -404,7 +447,9 @@ struct tendril_device {
 struct tendril_hcd_ops {
     const char *name;
     int (*start)(struct tendril_hc *hc);
-    /* Halts the controller and completes everything outstanding with an error. */
+    /*
+     * Halts the controller and completes everything outstanding with an error.
+     */
     void (*stop)(struct tendril_hc *hc);
     /* Frees the controller state, once every device is gone. */
     void (*destroy)(struct tendril_hc *hc);
@@ -414,9 +459,9 @@ struct tendril_hcd_ops {
     uint32_t (*frame_number)(struct tendril_hc *hc);
 
     /* Root hub, called with the lock held, completing immediately. */
-    void (*port_status)(struct tendril_hc *hc, size_t port, struct tendril_port_status *st);
-    int (*port_set_feature)(struct tendril_hc *hc, size_t port, unsigned int feature);
-    int (*port_clear_feature)(struct tendril_hc *hc, size_t port, unsigned int feature);
+    void (*port_status)(struct tendril_hc *hc, uint8_t port, struct tendril_port_status *st);
+    int (*port_set_feature)(struct tendril_hc *hc, uint8_t port, int feature);
+    int (*port_clear_feature)(struct tendril_hc *hc, uint8_t port, int feature);
 
     /*
      * Device and endpoint management. Asynchronous operations complete with
@@ -429,21 +474,29 @@ struct tendril_hcd_ops {
     int (*ep0_update)(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async);
     /* Hub fields changed, after the hub descriptor was read. */
     int (*hub_update)(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async);
-    /* Drop then add endpoints, together, as for a configuration or alternate setting change. */
+    /*
+     * Drop then add endpoints, together, as for a configuration or alternate
+     * setting change.
+     */
     int (*configure)(
         struct tendril_hc *hc, struct tendril_device *dev, struct tendril_endpoint **drop, size_t num_drop,
         struct tendril_endpoint **add, size_t num_add, struct tendril_async *async
     );
     int (*endpoint_reset)(struct tendril_hc *hc, struct tendril_endpoint *ep, struct tendril_async *async);
     int (*alloc_streams)(
-        struct tendril_hc *hc, struct tendril_endpoint **eps, size_t count, unsigned int streams,
-        struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_endpoint **eps, size_t count, size_t streams, struct tendril_async *async
     );
     void (*device_free)(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async);
-    /* Prepares an idle device's endpoints for its link suspending; NULL if nothing is needed. */
+    /*
+     * Prepares an idle device's endpoints for its link suspending; NULL if
+     * nothing is needed.
+     */
     int (*device_suspend)(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async);
 
-    /* System sleep, with every port suspended or idle; resume() answers TENDRIL_ERR_IO if state was lost. */
+    /*
+     * System sleep, with every port suspended or idle; resume() answers
+     * TENDRIL_ERR_IO if state was lost.
+     */
     int (*suspend)(struct tendril_hc *hc);
     int (*resume)(struct tendril_hc *hc);
 
@@ -464,7 +517,10 @@ struct tendril_hc {
     uint16_t pci_vendor;
     uint16_t pci_device;
     uint8_t pci_revision;
-    /* Controller structures and data buffers must sit below 4 GiB, respectively. */
+    /*
+     * Controller structures and data buffers must sit below 4 GiB,
+     * respectively.
+     */
     bool dma32;
     bool data32;
     bool dead;
@@ -477,7 +533,9 @@ struct tendril_hc {
     struct tendril_list work;
     struct tendril_list timers;
     struct tendril_list enum_queue;
-    /* Holder of the enumeration slot: a port resetting, then its new device. */
+    /*
+     * Holder of the enumeration slot: a port resetting, then its new device.
+     */
     struct tendril_port *enum_port;
     struct tendril_device *enum_dev;
     struct tendril_dma_pool bounce_pool;
@@ -512,7 +570,7 @@ static inline void tendril_async_init(struct tendril_async *async, void (*fn)(st
 void tendril_async_complete(struct tendril_hc *hc, struct tendril_async *async, int status);
 
 /* Root hub port change notification from controller drivers, lock held. */
-void tendril_roothub_changed(struct tendril_hc *hc, size_t port);
+void tendril_roothub_changed(struct tendril_hc *hc, uint8_t port);
 
 /* Transfer completion from controller drivers, lock held. */
 void tendril_transfer_complete(struct tendril_hc *hc, struct tendril_transfer *xfer, int status, size_t actual);
@@ -547,13 +605,13 @@ void tendril_device_woke(struct tendril_device *dev);
 /* Asynchronous control transfer on endpoint 0 completing into `async`. */
 int tendril_control_async(
     struct tendril_device *dev, struct tendril_transfer *xfer, uint8_t request_type, uint8_t request, uint16_t value,
-    uint16_t index, void *data, uint16_t length, struct tendril_async *async
+    uint16_t index, void *data, size_t length, struct tendril_async *async
 );
 
 /*
  * The initialisation request of mass storage devices with FreeBSD's
- * UQ_MSC_SHUTTLE_INIT quirk, written clean-room in src/class/msc_shuttle.c:
- * a control transfer through `xfer` completing into `async`, using `buf`, of
+ * UQ_MSC_SHUTTLE_INIT quirk, written clean-room in src/class/msc_shuttle.c: a
+ * control transfer through `xfer` completing into `async`, using `buf`, of
  * `size` bytes, for its data.
  */
 int tendril_msc_shuttle_init(
@@ -564,7 +622,7 @@ int tendril_msc_shuttle_init(
 /* Descriptors */
 
 const uint8_t *tendril_desc_next(const uint8_t *p, const uint8_t *end);
-const uint8_t *tendril_desc_find(const uint8_t *p, const uint8_t *end, uint8_t type);
+const uint8_t *tendril_desc_find(const uint8_t *p, const uint8_t *end, int type);
 bool tendril_config_valid(const uint8_t *config, size_t size);
 
 /* Drivers and quirks */
@@ -576,7 +634,10 @@ void tendril_unbind_interfaces(struct tendril_device *dev);
 void tendril_notify_added(struct tendril_device *dev);
 void tendril_notify_removed(struct tendril_device *dev);
 void tendril_notify_woke(struct tendril_device *dev);
-/* Calls the drivers' suspend() hooks; false if one refused or is missing, with those already called resumed. */
+/*
+ * Calls the drivers' suspend() hooks; false if one refused or is missing, with
+ * those already called resumed.
+ */
 bool tendril_suspend_interfaces(struct tendril_device *dev, int *status);
 void tendril_resume_interfaces(struct tendril_device *dev);
 /* A quirk table row; product 0xffff matches every product of the vendor. */
@@ -602,9 +663,9 @@ extern const struct tendril_hcd_ops tendril_ehci_ops;
 extern const struct tendril_hcd_ops tendril_xhci_ops;
 
 /*
- * Chipset fixes for PCI EHCI controllers, made through the configuration
- * space of the controller whose glue context is `ctx` after the BIOS handoff,
- * before the reset; written clean-room in src/hcd/ehci_chipset.c.
+ * Chipset fixes for PCI EHCI controllers, made through the configuration space
+ * of the controller whose glue context is `ctx` after the BIOS handoff, before
+ * the reset; written clean-room in src/hcd/ehci_chipset.c.
  */
 void tendril_ehci_chipset_fixes(void *ctx);
 
@@ -643,7 +704,7 @@ bool tendril_hc_wait16(struct tendril_hc *hc, uint32_t off, uint16_t mask, uint1
 /* The index of the highest set bit of a non-zero value. */
 static inline uint32_t ilog2(uint32_t v) {
     uint32_t n = 0;
-    while (v >>= 1) {
+    while ((v >>= 1) != 0) {
         n++;
     }
     return n;
@@ -652,7 +713,7 @@ static inline uint32_t ilog2(uint32_t v) {
 /* The index of the lowest set bit of a non-zero value. */
 static inline size_t lowest_bit(size_t v) {
     size_t n = 0;
-    while (!(v & 1)) {
+    while ((v & 1) == 0) {
         v >>= 1;
         n++;
     }

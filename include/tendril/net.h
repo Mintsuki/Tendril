@@ -25,14 +25,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_NET_H
-#define TENDRIL_NET_H
+#ifndef TENDRIL_TENDRIL_NET_H
+#define TENDRIL_TENDRIL_NET_H
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include <tendril/tendril.h>
+#include "tendril.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,13 +57,19 @@ struct tendril_net_callbacks {
     void (*attach)(struct tendril_net *net);
     /* The adapter is gone; its sends and operations have all completed. */
     void (*detach)(struct tendril_net *net);
-    /* The link came up, went down, or changed speed; rates are in bits per second, 0 if unknown. */
+    /*
+     * The link came up, went down, or changed speed; rates are in bits per
+     * second, 0 if unknown.
+     */
     void (*link)(struct tendril_net *net, bool up, uint32_t rx_bps, uint32_t tx_bps);
     /* A received frame, valid only during the call. */
     void (*receive)(struct tendril_net *net, const uint8_t *frame, size_t len);
 };
 
-/* Registers the network class driver; call before the first controller is added. */
+/*
+ * Registers the network class driver; call before the first controller is
+ * added.
+ */
 void tendril_net_register(const struct tendril_net_callbacks *callbacks);
 
 /*
@@ -83,8 +88,8 @@ int tendril_net_send(
 #define TENDRIL_NET_FILTER_MULTICAST ((uint32_t)1 << 4)
 
 /*
- * Picks the frames the adapter passes on; adapters may pass on more than
- * asked for. TENDRIL_ERR_UNSUPPORTED if the adapter has no packet filter.
+ * Picks the frames the adapter passes on; adapters may pass on more than asked
+ * for. TENDRIL_ERR_UNSUPPORTED if the adapter has no packet filter.
  */
 int tendril_net_set_filter(struct tendril_net *net, uint16_t filter, void (*done)(void *ctx, int status), void *ctx);
 
@@ -107,7 +112,10 @@ uint8_t tendril_net_interface(struct tendril_net *net);
 const uint8_t *tendril_net_mac(struct tendril_net *net);
 /* The longest frame the adapter takes. */
 size_t tendril_net_max_frame(struct tendril_net *net);
-/* How many addresses tendril_net_set_multicast() takes, 0 if it is unsupported. */
+/*
+ * How many addresses tendril_net_set_multicast() takes, 0 if it is
+ * unsupported.
+ */
 size_t tendril_net_multicast_filters(struct tendril_net *net);
 bool tendril_net_link_up(struct tendril_net *net);
 void tendril_net_set_user(struct tendril_net *net, void *user);

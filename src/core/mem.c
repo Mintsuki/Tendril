@@ -25,6 +25,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/glue.h"
 #include "../internal.h"
 
 #define CHUNK_SIZE 4096

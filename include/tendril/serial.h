@@ -25,20 +25,22 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_SERIAL_H
-#define TENDRIL_SERIAL_H
+#ifndef TENDRIL_TENDRIL_SERIAL_H
+#define TENDRIL_TENDRIL_SERIAL_H
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include <tendril/tendril.h>
+#include "tendril.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Serial ports: CDC ACM, and FTDI, Prolific PL2303, WCH CH34x, and Silicon Labs CP210x adapters. */
+/*
+ * Serial ports: CDC ACM, and FTDI, Prolific PL2303, WCH CH34x, and Silicon
+ * Labs CP210x adapters.
+ */
 
 struct tendril_serial;
 
@@ -62,7 +64,10 @@ struct tendril_serial;
 #define TENDRIL_SERIAL_CTS ((uint32_t)1 << 7)
 
 struct tendril_serial_callbacks {
-    /* A port is ready: 115200 baud, 8 data bits, no parity, 1 stop bit, DTR and RTS on. */
+    /*
+     * A port is ready: 115200 baud, 8 data bits, no parity, 1 stop bit, DTR
+     * and RTS on.
+     */
     void (*attach)(struct tendril_serial *port);
     /* The port is gone; its writes and operations have all completed. */
     void (*detach)(struct tendril_serial *port);
@@ -71,7 +76,10 @@ struct tendril_serial_callbacks {
     void (*status)(struct tendril_serial *port, uint32_t status);
 };
 
-/* Registers the serial class driver; call before the first controller is added. */
+/*
+ * Registers the serial class driver; call before the first controller is
+ * added.
+ */
 void tendril_serial_register(const struct tendril_serial_callbacks *callbacks);
 
 #define TENDRIL_SERIAL_PARITY_NONE 0
@@ -95,8 +103,9 @@ struct tendril_serial_config {
 };
 
 /*
- * Line settings, modem control lines, and break. Each completes through `done`;
- * those still queued fail with TENDRIL_ERR_NO_DEVICE if the port goes away.
+ * Line settings, modem control lines, and break. Each completes through
+ * `done`; those still queued fail with TENDRIL_ERR_NO_DEVICE if the port goes
+ * away.
  */
 int tendril_serial_configure(
     struct tendril_serial *port, const struct tendril_serial_config *config, void (*done)(void *ctx, int status),
@@ -107,7 +116,10 @@ int tendril_serial_set_lines(
 );
 int tendril_serial_set_break(struct tendril_serial *port, bool on, void (*done)(void *ctx, int status), void *ctx);
 
-/* Queues `len` bytes, which must stay valid until `done`; writes go out in order. */
+/*
+ * Queues `len` bytes, which must stay valid until `done`; writes go out in
+ * order.
+ */
 int tendril_serial_write(
     struct tendril_serial *port, const void *data, size_t len, void (*done)(void *ctx, int status), void *ctx
 );

@@ -247,13 +247,19 @@
  * SUCH DAMAGE.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/glue.h"
+#include "../../include/tendril/spec.h"
+#include "../../include/tendril/tendril.h"
 #include "../internal.h"
 
 #define CTRL_TIMEOUT_MS 5000
 /* BEGIN FreeBSD sys/dev/usb/usb.h */
 /*
- * FreeBSD's USB_SET_ADDRESS_SETTLE, from its sys/dev/usb/usb.h
- * (BSD-2-Clause); USB 2.0 9.2.6.3 only asks for 2 ms.
+ * FreeBSD's USB_SET_ADDRESS_SETTLE, from its sys/dev/usb/usb.h (BSD-2-Clause);
+ * USB 2.0 9.2.6.3 only asks for 2 ms.
  */
 #define SET_ADDRESS_SETTLE_MS 10
 /* END FreeBSD sys/dev/usb/usb.h */
@@ -323,11 +329,11 @@ static uint16_t default_ep0_mps(int speed) {
  * The packet size FreeBSD's sys/dev/usb/usb_transfer.c (BSD-2-Clause,
  * usbd_transfer_setup_sub() and usbd_get_std_packet_size()) settles on for an
  * endpoint: a bulk or control size rounds down to one the speed allows, an
- * interrupt or isochronous one is capped at the speed's largest, and 0 reads as
- * the largest. Isochronous endpoints keep a 0, unlike there, as it marks the
- * zero-bandwidth settings of USB 2.0 5.6.3, which take no transfers here.
+ * interrupt or isochronous one is capped at the speed's largest, and 0 reads
+ * as the largest. Isochronous endpoints keep a 0, unlike there, as it marks
+ * the zero-bandwidth settings of USB 2.0 5.6.3, which take no transfers here.
  */
-static uint16_t std_packet_size(uint8_t type, int speed, uint16_t mps) {
+static size_t std_packet_size(int type, int speed, size_t mps) {
     bool ss = speed >= TENDRIL_SPEED_SUPER;
     switch (type) {
         case TENDRIL_ENDPOINT_XFER_INT: {
@@ -354,8 +360,8 @@ static uint16_t std_packet_size(uint8_t type, int speed, uint16_t mps) {
 }
 /* END FreeBSD sys/dev/usb/usb_transfer.c */
 
-static void set_ep0_mps(struct tendril_device *dev, uint16_t mps) {
-    dev->ep0_desc.max_packet_size = tendril_le16(mps);
+static void set_ep0_mps(struct tendril_device *dev, size_t mps) {
+    dev->ep0_desc.max_packet_size = tendril_le16((uint16_t)mps);
     dev->ep0.max_packet = mps;
 }
 
@@ -509,7 +515,7 @@ void tendril_endpoint_setup(
             if (ep->type == TENDRIL_ENDPOINT_XFER_BULK) {
                 unsigned int n = ep->companion->attributes & 0x1f;
                 ep->max_streams = n == 0 ? 0 : (uint32_t)1 << MIN(n, 16);
-            } else if (ep->type == TENDRIL_ENDPOINT_XFER_ISOC && !(ep->companion->attributes & 0x80)) {
+            } else if (ep->type == TENDRIL_ENDPOINT_XFER_ISOC && (ep->companion->attributes & 0x80) == 0) {
                 ep->mult = (uint8_t)((ep->companion->attributes & 0x3) + 1);
             }
         }
@@ -547,7 +553,9 @@ void tendril_endpoint_setup(
     }
     if (dev->speed <= TENDRIL_SPEED_FULL) {
         if (ep->type == TENDRIL_ENDPOINT_XFER_INT) {
-            /* xHCI 1.2, 6.2.3.6: round bInterval * 8 down to a power of two. */
+            /*
+             * xHCI 1.2, 6.2.3.6: round bInterval * 8 down to a power of two.
+             */
             ep->interval_log2 = (uint8_t)ilog2((uint32_t)binterval * 8);
         } else {
             ep->interval_log2 = (uint8_t)(MIN(binterval, 16) - 1 + 3);
@@ -571,14 +579,17 @@ static void control_async_done(struct tendril_transfer *xfer) {
 
 static int control_async_ms(
     struct tendril_device *dev, struct tendril_transfer *xfer, uint8_t request_type, uint8_t request, uint16_t value,
-    uint16_t index, void *data, uint16_t length, struct tendril_async *async, uint32_t timeout_ms
+    uint16_t index, void *data, size_t length, struct tendril_async *async, uint32_t timeout_ms
 ) {
+    if (length > UINT16_MAX) {
+        return TENDRIL_ERR_INVALID;
+    }
     tendril_transfer_init(xfer, &dev->ep0);
     xfer->setup.request_type = request_type;
     xfer->setup.request = request;
     xfer->setup.value = tendril_le16(value);
     xfer->setup.index = tendril_le16(index);
-    xfer->setup.length = tendril_le16(length);
+    xfer->setup.length = tendril_le16((uint16_t)length);
     xfer->buffer = data;
     xfer->length = length;
     xfer->timeout_ms = timeout_ms;
@@ -589,7 +600,7 @@ static int control_async_ms(
 
 int tendril_control_async(
     struct tendril_device *dev, struct tendril_transfer *xfer, uint8_t request_type, uint8_t request, uint16_t value,
-    uint16_t index, void *data, uint16_t length, struct tendril_async *async
+    uint16_t index, void *data, size_t length, struct tendril_async *async
 ) {
     return control_async_ms(dev, xfer, request_type, request, value, index, data, length, async, CTRL_TIMEOUT_MS);
 }
@@ -612,8 +623,8 @@ static bool ensure_buf(struct tendril_device *dev, size_t size) {
 
 static void dev_name(struct tendril_device *dev, char *buf, size_t size) {
     tendril_snprintf(
-        buf, size, "device %u (%04x:%04x)", dev->address,
-        tendril_le16(dev->desc.vendor_id), tendril_le16(dev->desc.product_id)
+        buf, size, "device %u (%04x:%04x)", dev->address, tendril_le16(dev->desc.vendor_id),
+        tendril_le16(dev->desc.product_id)
     );
 }
 
@@ -631,7 +642,7 @@ static void enum_fail(struct tendril_device *dev, int status, const char *what) 
 }
 
 static void get_descriptor(
-    struct tendril_device *dev, int step, uint8_t type, uint8_t index, uint16_t langid, uint16_t length
+    struct tendril_device *dev, int step, uint8_t type, uint8_t index, uint16_t langid, size_t length
 ) {
     dev->step = step;
     dev->op_busy = true;
@@ -640,9 +651,8 @@ static void get_descriptor(
         return;
     }
     int st = tendril_control_async(
-        dev, &dev->xfer, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-        TENDRIL_REQ_GET_DESCRIPTOR, (uint16_t)(type << 8 | index), langid,
-        dev->buf, length, &dev->async
+        dev, &dev->xfer, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE, TENDRIL_REQ_GET_DESCRIPTOR,
+        (uint16_t)(type << 8 | index), langid, dev->buf, length, &dev->async
     );
     if (st != TENDRIL_OK) {
         dev->op_busy = false;
@@ -692,10 +702,7 @@ static void choose_and_configure(struct tendril_device *dev);
 void tendril_device_enumerate(struct tendril_device *dev) {
     char name[48];
     dev_name(dev, name, sizeof(name));
-    LOG_DEBUG(
-        "new %s device on root port %u, depth %u", tendril_speed_str(dev->speed),
-        dev->root_port, dev->depth
-    );
+    LOG_DEBUG("new %s device on root port %u, depth %zu", tendril_speed_str(dev->speed), dev->root_port, dev->depth);
     hc_op(dev, STEP_INIT, dev->hc->ops->device_init, "device setup");
 }
 
@@ -749,7 +756,7 @@ static void after_configs(struct tendril_device *dev) {
         get_descriptor(dev, STEP_BOS_HEAD, TENDRIL_DT_BOS, 0, 0, sizeof(struct tendril_bos_descriptor));
         return;
     }
-    if (dev->quirks & TENDRIL_DEV_QUIRK_NO_STRINGS) {
+    if ((dev->quirks & TENDRIL_DEV_QUIRK_NO_STRINGS) != 0) {
         choose_and_configure(dev);
         return;
     }
@@ -757,7 +764,7 @@ static void after_configs(struct tendril_device *dev) {
 }
 
 static void after_bos(struct tendril_device *dev) {
-    if (dev->quirks & TENDRIL_DEV_QUIRK_NO_STRINGS) {
+    if ((dev->quirks & TENDRIL_DEV_QUIRK_NO_STRINGS) != 0) {
         choose_and_configure(dev);
         return;
     }
@@ -803,7 +810,10 @@ static char *decode_string(const uint8_t *buf, size_t actual, bool swap) {
     }
     size_t len = MIN((size_t)buf[0], actual);
     size_t units = (len - 2) / 2;
-    /* At most 126 units of up to 3 bytes each, a surrogate pair taking two for 4. */
+    /*
+     * At most 126 units of up to 3 bytes each, a surrogate pair taking two for
+     * 4.
+     */
     char tmp[3 * 126 + 1];
     size_t o = 0;
 
@@ -873,7 +883,7 @@ static int choose_config(struct tendril_device *dev, bool *by_quirk) {
     };
     *by_quirk = false;
     for (size_t i = 0; i < ARRAY_SIZE(index_quirks); i++) {
-        if ((dev->quirks & index_quirks[i]) && i < dev->num_configs && dev->configs[i] != NULL) {
+        if ((dev->quirks & index_quirks[i]) != 0 && i < dev->num_configs && dev->configs[i] != NULL) {
             *by_quirk = true;
             return (int)i;
         }
@@ -925,7 +935,9 @@ static struct tendril_interface *find_interface(struct tendril_device *dev, uint
     return NULL;
 }
 
-/* Builds interface objects for configuration `index`, with no endpoints yet. */
+/*
+ * Builds interface objects for configuration `index`, with no endpoints yet.
+ */
 static int build_interfaces(struct tendril_device *dev, size_t index) {
     const uint8_t *config = dev->configs[index];
     const uint8_t *end = config + dev->config_sizes[index];
@@ -939,7 +951,7 @@ static int build_interfaces(struct tendril_device *dev, size_t index) {
             continue;
         }
         uint8_t n = ((const struct tendril_interface_descriptor *)(const void *)p)->interface_number;
-        if (!(seen[n / 8] & ((uint32_t)1 << (n % 8)))) {
+        if ((seen[n / 8] & ((uint32_t)1 << (n % 8))) == 0) {
             seen[n / 8] |= (uint8_t)((uint32_t)1 << (n % 8));
             count++;
         }
@@ -1028,9 +1040,9 @@ static const uint8_t *next_endpoint(const uint8_t *q, const uint8_t *end, uint32
         if (q[0] < sizeof(struct tendril_endpoint_descriptor) || (q[2] & TENDRIL_ENDPOINT_NUMBER_MASK) == 0) {
             continue;
         }
-        unsigned int index = (q[2] & TENDRIL_ENDPOINT_NUMBER_MASK) | (q[2] & TENDRIL_ENDPOINT_DIR_MASK ? 16 : 0);
+        size_t index = (q[2] & TENDRIL_ENDPOINT_NUMBER_MASK) | ((q[2] & TENDRIL_ENDPOINT_DIR_MASK) != 0 ? 16 : 0);
         uint32_t bit = (uint32_t)1 << index;
-        if (!(*seen & bit)) {
+        if ((*seen & bit) == 0) {
             *seen |= bit;
             return q;
         }
@@ -1071,9 +1083,9 @@ int tendril_interface_build_endpoints(
 #define MAX_DEVICE_ENDPOINTS 31
 
 /*
- * Whether the controller should set an endpoint up next to those in `list`
- * and those open on interfaces other than `skip`: not when it takes no
- * transfers, having a packet size of 0, nor when another has its address.
+ * Whether the controller should set an endpoint up next to those in `list` and
+ * those open on interfaces other than `skip`: not when it takes no transfers,
+ * having a packet size of 0, nor when another has its address.
  */
 static bool endpoint_addable(
     struct tendril_device *dev, struct tendril_interface *skip, struct tendril_endpoint *ep,
@@ -1098,7 +1110,10 @@ static bool endpoint_addable(
     return true;
 }
 
-/* Collects the endpoints of the current alternate settings to set up into `list`. */
+/*
+ * Collects the endpoints of the current alternate settings to set up into
+ * `list`.
+ */
 static size_t collect_endpoints(struct tendril_device *dev, struct tendril_endpoint **list) {
     size_t n = 0;
     for (size_t i = 0; i < dev->num_interfaces; i++) {
@@ -1112,7 +1127,10 @@ static size_t collect_endpoints(struct tendril_device *dev, struct tendril_endpo
     return n;
 }
 
-/* Collects the endpoints set up on the controller into `list`, from `intf` only unless NULL. */
+/*
+ * Collects the endpoints set up on the controller into `list`, from `intf`
+ * only unless NULL.
+ */
 static size_t collect_open_endpoints(
     struct tendril_device *dev, struct tendril_interface *only, struct tendril_endpoint **list
 ) {
@@ -1128,7 +1146,9 @@ static size_t collect_open_endpoints(
     return n;
 }
 
-/* Enumeration ends with the device in use, configured or, failing that, not. */
+/*
+ * Enumeration ends with the device in use, configured or, failing that, not.
+ */
 static void enum_finish(struct tendril_device *dev) {
     dev->step = STEP_RUNNING;
     tendril_enum_done(dev->port, dev, TENDRIL_OK);
@@ -1170,10 +1190,8 @@ static void choose_and_configure(struct tendril_device *dev) {
 
     dev_name(dev, name, sizeof(name));
     LOG_INFO(
-        "%s: %s %s%s%s%s", name, tendril_speed_str(dev->speed),
-        dev->manufacturer != NULL ? dev->manufacturer : "",
-        dev->manufacturer != NULL ? " " : "",
-        dev->product != NULL ? dev->product : "",
+        "%s: %s %s%s%s%s", name, tendril_speed_str(dev->speed), dev->manufacturer != NULL ? dev->manufacturer : "",
+        dev->manufacturer != NULL ? " " : "", dev->product != NULL ? dev->product : "",
         dev->product == NULL && dev->manufacturer == NULL ? "(no strings)" : ""
     );
 
@@ -1181,19 +1199,24 @@ static void choose_and_configure(struct tendril_device *dev) {
     int index = choose_config(dev, &by_quirk);
     /* BEGIN FreeBSD sys/dev/usb/usb_device.c */
     if (index < 0) {
-        /* FreeBSD's usb_alloc_device keeps a device without configurations too, unconfigured. */
+        /*
+         * FreeBSD's usb_alloc_device keeps a device without configurations
+         * too, unconfigured.
+         */
         LOG_WARN("%s: no usable configuration; left unconfigured", name);
         enum_finish(dev);
         return;
     }
-    /* Where FreeBSD's sys/dev/usb/usb_device.c (BSD-2-Clause, usb_alloc_device) looks for one. */
+    /*
+     * Where FreeBSD's sys/dev/usb/usb_device.c (BSD-2-Clause,
+     * usb_alloc_device) looks for one.
+     */
     dev->cdrom_check = !by_quirk && index == 0 && dev->num_configs > 1;
     const struct tendril_config_descriptor *cd = (const void *)dev->configs[index];
     if (!power_ok(dev, (size_t)index)) {
         /* FreeBSD keeps such a device too, unconfigured. */
         LOG_WARN(
-            "%s: configuration %u needs more power than the port has; left unconfigured", name,
-            cd->configuration_value
+            "%s: configuration %u needs more power than the port has; left unconfigured", name, cd->configuration_value
         );
         enum_finish(dev);
         return;
@@ -1220,15 +1243,15 @@ static void choose_and_configure(struct tendril_device *dev) {
      * says which it uses in GET_STATUS (USB 2.0 9.4.5), which only matters for
      * a hub.
      */
-    dev->self_powered = !(dev->quirks & TENDRIL_DEV_QUIRK_BUS_POWERED)
+    dev->self_powered = (dev->quirks & TENDRIL_DEV_QUIRK_BUS_POWERED) == 0
         && (cd->attributes & TENDRIL_CONFIG_ATTR_SELF_POWERED) != 0;
-    if (dev->self_powered && (cd->attributes & TENDRIL_CONFIG_ATTR_BUS_POWERED) && is_hub(dev)) {
+    if (dev->self_powered && (cd->attributes & TENDRIL_CONFIG_ATTR_BUS_POWERED) != 0 && is_hub(dev)) {
         dev->self_powered = false;
         dev->step = STEP_SELF_POWER;
         dev->op_busy = true;
         st = tendril_control_async(
-            dev, &dev->xfer, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-            TENDRIL_REQ_GET_STATUS, 0, 0, dev->buf, 2, &dev->async
+            dev, &dev->xfer, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE, TENDRIL_REQ_GET_STATUS, 0,
+            0, dev->buf, 2, &dev->async
         );
         if (st != TENDRIL_OK) {
             dev->op_busy = false;
@@ -1247,9 +1270,8 @@ static void set_configuration(struct tendril_device *dev) {
     dev->step = STEP_SET_CONFIG;
     dev->op_busy = true;
     int st = tendril_control_async(
-        dev, &dev->xfer, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-        TENDRIL_REQ_SET_CONFIGURATION, cd->configuration_value, 0, NULL, 0,
-        &dev->async
+        dev, &dev->xfer, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE, TENDRIL_REQ_SET_CONFIGURATION,
+        cd->configuration_value, 0, NULL, 0, &dev->async
     );
     if (st != TENDRIL_OK) {
         dev->op_busy = false;
@@ -1278,7 +1300,7 @@ static bool dymo_eject(struct tendril_device *dev) {
     struct tendril_endpoint *ep = NULL;
     for (size_t e = 0; e < intf->num_endpoints && ep == NULL; e++) {
         struct tendril_endpoint *cand = &intf->endpoints[e];
-        if (cand->open && !(cand->address & TENDRIL_ENDPOINT_DIR_MASK)
+        if (cand->open && (cand->address & TENDRIL_ENDPOINT_DIR_MASK) == 0
          && (cand->type == TENDRIL_ENDPOINT_XFER_INT || cand->type == TENDRIL_ENDPOINT_XFER_BULK)) {
             ep = cand;
         }
@@ -1308,7 +1330,10 @@ static void configured_continue(struct tendril_device *dev) {
 
     if (is_hub(dev) && dev->num_interfaces > 0) {
         /* BEGIN FreeBSD sys/dev/usb/usb_hub.c */
-        /* FreeBSD's sys/dev/usb/usb_hub.c (BSD-2-Clause, uhub_attach) leaves these hubs unused too. */
+        /*
+         * FreeBSD's sys/dev/usb/usb_hub.c (BSD-2-Clause, uhub_attach) leaves
+         * these hubs unused too.
+         */
         struct tendril_device *parent = dev->parent;
         const char *why = NULL;
         if (dev->depth > MAX_HUB_DEPTH) {
@@ -1334,7 +1359,7 @@ static void configured_continue(struct tendril_device *dev) {
 static void configured(struct tendril_device *dev) {
     dev->state = DEV_CONFIGURED;
     /* BEGIN FreeBSD sys/dev/usb/usb_device.c */
-    if ((dev->quirks & TENDRIL_DEV_QUIRK_DYMO_EJECT) && dymo_eject(dev)) {
+    if ((dev->quirks & TENDRIL_DEV_QUIRK_DYMO_EJECT) != 0 && dymo_eject(dev)) {
         return;
     }
     /* END FreeBSD sys/dev/usb/usb_device.c */
@@ -1356,15 +1381,12 @@ void tendril_device_hub_ready(struct tendril_device *dev, int status) {
 }
 
 static void control_step(
-    struct tendril_device *dev, int step, uint8_t request_type, uint8_t request, uint16_t value,
-    uint16_t index, uint32_t timeout_ms, const char *what
+    struct tendril_device *dev, int step, uint8_t request_type, uint8_t request, uint16_t value, uint16_t index,
+    uint32_t timeout_ms, const char *what
 ) {
     dev->step = step;
     dev->op_busy = true;
-    int st = control_async_ms(
-        dev, &dev->xfer, request_type, request, value, index, NULL, 0,
-        &dev->async, timeout_ms
-    );
+    int st = control_async_ms(dev, &dev->xfer, request_type, request, value, index, NULL, 0, &dev->async, timeout_ms);
     if (st != TENDRIL_OK) {
         dev->op_busy = false;
         enum_fail(dev, st, what);
@@ -1399,7 +1421,10 @@ static void dev_step(struct tendril_device *dev) {
                 break;
             }
             /* BEGIN FreeBSD sys/dev/usb/usb_request.c */
-            /* The settling time FreeBSD gives SET_ADDRESS when the controller sends it too. */
+            /*
+             * The settling time FreeBSD gives SET_ADDRESS when the controller
+             * sends it too.
+             */
             dev_wait(dev, STEP_HC_ADDRESS_WAIT, SET_ADDRESS_SETTLE_MS);
             /* END FreeBSD sys/dev/usb/usb_request.c */
             break;
@@ -1420,7 +1445,10 @@ static void dev_step(struct tendril_device *dev) {
                 enum_fail(dev, descriptor_ok(st) ? TENDRIL_ERR_PROTOCOL : st, "reading the device descriptor");
                 break;
             }
-            /* USB 2.0 5.5.3 and USB 3.2 revision 1.1 9.6.1 fix it for all speeds but full. */
+            /*
+             * USB 2.0 5.5.3 and USB 3.2 revision 1.1 9.6.1 fix it for all
+             * speeds but full.
+             */
             set_ep0_mps(dev, std_packet_size(TENDRIL_ENDPOINT_XFER_CONTROL, dev->speed, dev->buf[7]));
             if (hc->ops->device_address == NULL) {
                 hc_lock(hc);
@@ -1444,7 +1472,10 @@ static void dev_step(struct tendril_device *dev) {
                 break;
             }
             /* BEGIN FreeBSD sys/dev/usb/usb_request.c */
-            /* EP0 keeps targeting address 0 until STEP_EP0_ADDRESS; FreeBSD allows SET_ADDRESS a second. */
+            /*
+             * EP0 keeps targeting address 0 until STEP_EP0_ADDRESS; FreeBSD
+             * allows SET_ADDRESS a second.
+             */
             control_step(
                 dev, STEP_SET_ADDRESS, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
                 TENDRIL_REQ_SET_ADDRESS, dev->new_address, 0, 1000, "SET_ADDRESS"
@@ -1456,8 +1487,8 @@ static void dev_step(struct tendril_device *dev) {
             /* BEGIN FreeBSD sys/dev/usb/usb_device.c, usb_request.c */
             /*
              * Like FreeBSD's sys/dev/usb/usb_device.c (BSD-2-Clause,
-             * usb_alloc_device), carry on past a failure: some devices take the
-             * address before the status stage completes, which reading the
+             * usb_alloc_device), carry on past a failure: some devices take
+             * the address before the status stage completes, which reading the
              * descriptor at the new address then shows.
              */
             if (st == TENDRIL_ERR_NO_DEVICE) {
@@ -1582,7 +1613,10 @@ static void dev_step(struct tendril_device *dev) {
         }
         case STEP_SELF_POWER: {
             /* BEGIN FreeBSD sys/dev/usb/usb_device.c */
-            /* USB 2.0 9.4.5: bit 0 of the device status; FreeBSD takes a failure as bus-powered. */
+            /*
+             * USB 2.0 9.4.5: bit 0 of the device status; FreeBSD takes a
+             * failure as bus-powered.
+             */
             dev->self_powered = st == TENDRIL_OK && actual >= 1 && (dev->buf[0] & 1) != 0;
             /* END FreeBSD sys/dev/usb/usb_device.c */
             configure_endpoints(dev);
@@ -1641,7 +1675,10 @@ static void dev_step(struct tendril_device *dev) {
         }
         /* END FreeBSD sys/dev/usb/usb_device.c */
         case STEP_UNCONFIGURE: {
-            /* The device may be on its way out already; what it answered does not matter. */
+            /*
+             * The device may be on its way out already; what it answered does
+             * not matter.
+             */
             struct tendril_endpoint *drop[MAX_DEVICE_ENDPOINTS];
             size_t num_drop = collect_open_endpoints(dev, NULL, drop);
             dev->step = STEP_UNCONFIGURE_DROP;
@@ -1793,7 +1830,10 @@ static void start_teardown(struct tendril_device *dev) {
     hc_unlock(hc);
 }
 
-/* Called by transfer completion when the last transfer of a gone device finished. */
+/*
+ * Called by transfer completion when the last transfer of a gone device
+ * finished.
+ */
 void tendril_device_transfers_idle(struct tendril_device *dev) {
     struct tendril_hc *hc = dev->hc;
     hc_lock(hc);
@@ -1815,11 +1855,11 @@ struct tendril_device *tendril_device_parent(struct tendril_device *dev) {
     return dev->parent;
 }
 
-size_t tendril_device_port(struct tendril_device *dev) {
+uint8_t tendril_device_port(struct tendril_device *dev) {
     return dev->port->number;
 }
 
-unsigned int tendril_device_depth(struct tendril_device *dev) {
+size_t tendril_device_depth(struct tendril_device *dev) {
     return dev->depth;
 }
 
@@ -1873,7 +1913,7 @@ const char *tendril_device_serial(struct tendril_device *dev) {
     return dev->serial;
 }
 
-struct tendril_device *tendril_device_child(struct tendril_device *hub, size_t port) {
+struct tendril_device *tendril_device_child(struct tendril_device *hub, uint8_t port) {
     if (hub->hub == NULL || port == 0 || port > hub->hub->num_ports) {
         return NULL;
     }
@@ -1944,7 +1984,7 @@ struct tendril_endpoint *tendril_interface_endpoint(struct tendril_interface *in
     return &intf->endpoints[index];
 }
 
-struct tendril_endpoint *tendril_interface_find_endpoint(struct tendril_interface *intf, uint8_t type, uint8_t dir) {
+struct tendril_endpoint *tendril_interface_find_endpoint(struct tendril_interface *intf, int type, int dir) {
     for (size_t i = 0; i < intf->num_endpoints; i++) {
         struct tendril_endpoint *ep = &intf->endpoints[i];
         if (ep->type == type && (ep->address & TENDRIL_ENDPOINT_DIR_MASK) == dir) {
@@ -1978,15 +2018,15 @@ uint8_t tendril_endpoint_address(struct tendril_endpoint *ep) {
     return ep->address;
 }
 
-uint8_t tendril_endpoint_type(struct tendril_endpoint *ep) {
+int tendril_endpoint_type(struct tendril_endpoint *ep) {
     return ep->type;
 }
 
-uint16_t tendril_endpoint_max_packet(struct tendril_endpoint *ep) {
+size_t tendril_endpoint_max_packet(struct tendril_endpoint *ep) {
     return ep->max_packet;
 }
 
-unsigned int tendril_endpoint_max_streams(struct tendril_endpoint *ep) {
+size_t tendril_endpoint_max_streams(struct tendril_endpoint *ep) {
     return ep->max_streams;
 }
 
@@ -2009,7 +2049,10 @@ struct dev_op {
     uint8_t value;
     char *out;
     size_t out_size;
-    /* Power management: a request is out, the give-up time, and the result once undone. */
+    /*
+     * Power management: a request is out, the give-up time, and the result
+     * once undone.
+     */
     bool requested;
     uint64_t deadline;
     int result;
@@ -2030,7 +2073,10 @@ static struct dev_op *op_alloc(
     op->ctx = ctx;
     tendril_async_init(&op->async, fn);
     tendril_device_ref(dev);
-    /* Counted like a transfer, so drivers are not disconnected before `done` runs. */
+    /*
+     * Counted like a transfer, so drivers are not disconnected before `done`
+     * runs.
+     */
     hc_lock(dev->hc);
     dev->pending++;
     hc_unlock(dev->hc);
@@ -2094,7 +2140,10 @@ static void alt_work(struct tendril_work *work) {
                 op_finish(op, st);
                 return;
             }
-            /* The old endpoints are closed; switch to the new ones before the request. */
+            /*
+             * The old endpoints are closed; switch to the new ones before the
+             * request.
+             */
             tendril_free(intf->endpoints, intf->num_endpoints * sizeof(struct tendril_endpoint));
             intf->endpoints = op->new_eps;
             intf->num_endpoints = op->num_new_eps;
@@ -2107,8 +2156,7 @@ static void alt_work(struct tendril_work *work) {
             op->step = ALT_SET_INTERFACE;
             st = tendril_control_async(
                 dev, &op->xfer, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_INTERFACE,
-                TENDRIL_REQ_SET_INTERFACE, intf->alts[op->alt]->alternate_setting, intf->number,
-                NULL, 0, &op->async
+                TENDRIL_REQ_SET_INTERFACE, intf->alts[op->alt]->alternate_setting, intf->number, NULL, 0, &op->async
             );
             if (st != TENDRIL_OK) {
                 op_finish(op, st);
@@ -2116,7 +2164,9 @@ static void alt_work(struct tendril_work *work) {
             return;
         }
         case ALT_SET_INTERFACE: {
-            /* USB 2.0 9.4.10: a device with one setting may stall the request. */
+            /*
+             * USB 2.0 9.4.10: a device with one setting may stall the request.
+             */
             if (st == TENDRIL_ERR_STALL && intf->num_alts == 1) {
                 st = TENDRIL_OK;
             }
@@ -2242,9 +2292,8 @@ int tendril_endpoint_clear_halt(struct tendril_endpoint *ep, void (*done)(void *
     op->ep = ep;
     op->step = HALT_CLEAR_FEATURE;
     int st = tendril_control_async(
-        dev, &op->xfer, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_ENDPOINT,
-        TENDRIL_REQ_CLEAR_FEATURE, TENDRIL_FEATURE_ENDPOINT_HALT, ep->address,
-        NULL, 0, &op->async
+        dev, &op->xfer, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_ENDPOINT, TENDRIL_REQ_CLEAR_FEATURE,
+        TENDRIL_FEATURE_ENDPOINT_HALT, ep->address, NULL, 0, &op->async
     );
     if (st != TENDRIL_OK) {
         op->done = NULL;
@@ -2261,7 +2310,7 @@ static void streams_work(struct tendril_work *work) {
 }
 
 int tendril_endpoint_alloc_streams(
-    struct tendril_endpoint **eps, size_t count, unsigned int *streams, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_endpoint **eps, size_t count, size_t *streams, void (*done)(void *ctx, int status), void *ctx
 ) {
     if (count == 0 || *streams == 0) {
         return TENDRIL_ERR_INVALID;
@@ -2269,10 +2318,10 @@ int tendril_endpoint_alloc_streams(
     struct tendril_device *dev = eps[0]->dev;
     struct tendril_hc *hc = dev->hc;
 
-    if (hc->ops->alloc_streams == NULL || (hc->quirks & TENDRIL_HC_QUIRK_NO_STREAMS)) {
+    if (hc->ops->alloc_streams == NULL || (hc->quirks & TENDRIL_HC_QUIRK_NO_STREAMS) != 0) {
         return TENDRIL_ERR_UNSUPPORTED;
     }
-    unsigned int n = *streams;
+    size_t n = *streams;
     for (size_t i = 0; i < count; i++) {
         if (eps[i]->dev != dev || eps[i]->type != TENDRIL_ENDPOINT_XFER_BULK || eps[i]->max_streams == 0) {
             return TENDRIL_ERR_UNSUPPORTED;
@@ -2360,9 +2409,8 @@ int tendril_device_read_string(
     op->out_size = size;
     uint16_t langid = dev->langid != 0 ? dev->langid : 0x0409;
     int st = tendril_control_async(
-        dev, &op->xfer, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-        TENDRIL_REQ_GET_DESCRIPTOR, (uint16_t)(TENDRIL_DT_STRING << 8 | index),
-        langid, op->buf, 255, &op->async
+        dev, &op->xfer, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE, TENDRIL_REQ_GET_DESCRIPTOR,
+        (uint16_t)(TENDRIL_DT_STRING << 8 | index), langid, op->buf, 255, &op->async
     );
     if (st != TENDRIL_OK) {
         op->done = NULL;
@@ -2412,7 +2460,10 @@ static void config_op_step(struct dev_op *op) {
     }
     switch (op->step) {
         case CFG_WAIT: {
-            /* Everything the drivers started must finish before they are unbound; this operation counts too. */
+            /*
+             * Everything the drivers started must finish before they are
+             * unbound; this operation counts too.
+             */
             hc_lock(hc);
             bool busy = dev->pending > 1;
             if (busy) {
@@ -2470,7 +2521,7 @@ static void config_op_step(struct dev_op *op) {
             }
             dev->active_config = index;
             const struct tendril_config_descriptor *cd = (const void *)dev->configs[index];
-            dev->self_powered = !(dev->quirks & TENDRIL_DEV_QUIRK_BUS_POWERED)
+            dev->self_powered = (dev->quirks & TENDRIL_DEV_QUIRK_BUS_POWERED) == 0
                 && (cd->attributes & TENDRIL_CONFIG_ATTR_SELF_POWERED) != 0;
             struct tendril_endpoint *add[MAX_DEVICE_ENDPOINTS];
             size_t num_add = collect_endpoints(dev, add);
@@ -2553,7 +2604,10 @@ int tendril_device_set_configuration(
     if (dev->step != STEP_RUNNING || dev->hub != NULL || dev->config_busy || dev->pm_busy) {
         return TENDRIL_ERR_BUSY;
     }
-    /* Checked now, as the change starts by tearing the current configuration down. */
+    /*
+     * Checked now, as the change starts by tearing the current configuration
+     * down.
+     */
     int index = value != 0 ? find_config(dev, value) : -1;
     if (value != 0 && index < 0) {
         return TENDRIL_ERR_INVALID;
@@ -2572,7 +2626,8 @@ int tendril_device_set_configuration(
     op->step = CFG_WAIT;
     /*
      * Drivers must stop their transfers before they are unbound: everything
-     * outstanding is cancelled, control requests too, and new ones are refused.
+     * outstanding is cancelled, control requests too, and new ones are
+     * refused.
      */
     hc_lock(dev->hc);
     cancel_all(dev, TENDRIL_ERR_CANCELLED, true);
@@ -2615,7 +2670,10 @@ bool tendril_device_can_wake(struct tendril_device *dev) {
     return cd != NULL && (cd->attributes & TENDRIL_CONFIG_ATTR_REMOTE_WAKEUP) != 0;
 }
 
-/* USB 3.2 revision 1.1 9.4.9: FUNCTION_SUSPEND goes to the first interface of each function. */
+/*
+ * USB 3.2 revision 1.1 9.4.9: FUNCTION_SUSPEND goes to the first interface of
+ * each function.
+ */
 static bool function_head(struct tendril_interface *intf) {
     return intf->iad == NULL || intf->iad->first_interface == intf->number;
 }
@@ -2649,10 +2707,7 @@ static void pm_finish(struct dev_op *op, int status) {
 
 static void pm_request(struct dev_op *op, uint8_t request_type, uint8_t request, uint16_t value, uint16_t index) {
     op->requested = true;
-    int st = tendril_control_async(
-        op->dev, &op->xfer, request_type, request, value, index, NULL, 0,
-        &op->async
-    );
+    int st = tendril_control_async(op->dev, &op->xfer, request_type, request, value, index, NULL, 0, &op->async);
     if (st != TENDRIL_OK) {
         hc_lock(op->dev->hc);
         tendril_async_complete(op->dev->hc, &op->async, st);
@@ -2696,7 +2751,10 @@ static bool pm_next_wake_request(struct dev_op *op, bool arm) {
     return false;
 }
 
-/* Undoes a suspend that got partway: disarms wakeup, then lets the drivers carry on. */
+/*
+ * Undoes a suspend that got partway: disarms wakeup, then lets the drivers
+ * carry on.
+ */
 static void pm_abort(struct dev_op *op, int status) {
     op->result = status;
     op->step = PM_RESUME_CLEAR;
@@ -2806,7 +2864,9 @@ static void pm_step(struct dev_op *op) {
             return;
         }
         case PM_RESUME_PARENT: {
-            /* The hub above comes back first, which may take its own resume. */
+            /*
+             * The hub above comes back first, which may take its own resume.
+             */
             struct tendril_device *parent = dev->parent;
             if (parent != NULL && (parent->suspended || parent->pm_busy)) {
                 if (tendril_now() >= op->deadline) {

@@ -25,14 +25,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_HID_H
-#define TENDRIL_HID_H
+#ifndef TENDRIL_TENDRIL_HID_H
+#define TENDRIL_TENDRIL_HID_H
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include <tendril/tendril.h>
+#include "tendril.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,7 +63,10 @@ extern "C" {
 #define TENDRIL_HID_VOLATILE 0x080
 #define TENDRIL_HID_BUFFERED_BYTES 0x100
 
-/* Usages are the usage page in the high 16 bits and the usage ID in the low 16. */
+/*
+ * Usages are the usage page in the high 16 bits and the usage ID in the low
+ * 16.
+ */
 #define TENDRIL_HID_USAGE(page, id) (((uint32_t)(page) << 16) | (uint32_t)(id))
 #define TENDRIL_HID_PAGE_GENERIC_DESKTOP 0x01
 #define TENDRIL_HID_PAGE_KEYBOARD 0x07
@@ -91,13 +93,13 @@ extern "C" {
 #define TENDRIL_HID_MOD_RGUI 0x80
 
 struct tendril_hid_field {
-    uint8_t type;
+    int type;
     uint8_t report_id;
     uint16_t flags;
     /* Position in the report, after any report ID byte. */
-    uint32_t bit_offset;
-    uint16_t bit_size;
-    uint16_t count;
+    size_t bit_offset;
+    size_t bit_size;
+    size_t count;
     int32_t logical_min;
     int32_t logical_max;
     int32_t physical_min;
@@ -107,20 +109,20 @@ struct tendril_hid_field {
     /* Usage of the enclosing application collection. */
     uint32_t application;
     /*
-     * A variable field's element i has usages[i] (the last usage repeats).
-     * An array field's value v selects usage_min + v - logical_min, or
-     * usages[v - logical_min] when usages were listed one by one.
+     * A variable field's element i has usages[i] (the last usage repeats). An
+     * array field's value v selects usage_min + v - logical_min, or usages[v -
+     * logical_min] when usages were listed one by one.
      */
     uint32_t usage_min;
     uint32_t usage_max;
     uint32_t *usages;
-    uint16_t num_usages;
+    size_t num_usages;
 };
 
 struct tendril_hid_report_info {
-    uint8_t type;
+    int type;
     uint8_t id;
-    uint32_t bits;
+    size_t bits;
 };
 
 struct tendril_hid_report_desc {
@@ -135,21 +137,21 @@ struct tendril_hid_report_desc {
 int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_report_desc **out);
 void tendril_hid_free(struct tendril_hid_report_desc *rd);
 /* Size in bytes of a report, without its report ID byte. */
-size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, uint8_t type, uint8_t id);
-uint32_t tendril_hid_extract(const uint8_t *data, size_t size, uint32_t bit_offset, unsigned int bit_size);
-void tendril_hid_insert(uint8_t *data, size_t size, uint32_t bit_offset, unsigned int bit_size, uint32_t value);
-/* Element `index` of a field, sign-extended when the logical range is signed. */
+size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, int type, uint8_t id);
+uint32_t tendril_hid_extract(const uint8_t *data, size_t size, size_t bit_offset, size_t bit_size);
+void tendril_hid_insert(uint8_t *data, size_t size, size_t bit_offset, size_t bit_size, uint32_t value);
+/*
+ * Element `index` of a field, sign-extended when the logical range is signed.
+ */
 int32_t tendril_hid_field_get(const struct tendril_hid_field *f, const uint8_t *data, size_t size, size_t index);
-void tendril_hid_field_set(
-    const struct tendril_hid_field *f, uint8_t *data, size_t size, size_t index, int32_t value
-);
+void tendril_hid_field_set(const struct tendril_hid_field *f, uint8_t *data, size_t size, size_t index, int32_t value);
 /* The usage of element `index` of a variable field. */
 uint32_t tendril_hid_field_usage(const struct tendril_hid_field *f, size_t index);
 /* The usage an array field element value stands for, or 0. */
 uint32_t tendril_hid_array_usage(const struct tendril_hid_field *f, int32_t value);
 /* Finds the variable field element with `usage` in reports of `type`. */
 const struct tendril_hid_field *tendril_hid_find(
-    const struct tendril_hid_report_desc *rd, uint8_t type, uint32_t usage, size_t *index
+    const struct tendril_hid_report_desc *rd, int type, uint32_t usage, size_t *index
 );
 
 /* Class driver */
@@ -184,7 +186,9 @@ struct tendril_hid_callbacks {
     void (*attach)(struct tendril_hid *hid);
     /* The interface is gone; no callbacks follow. */
     void (*detach)(struct tendril_hid *hid);
-    /* Every input report, without its report ID byte, which is passed as `id`. */
+    /*
+     * Every input report, without its report ID byte, which is passed as `id`.
+     */
     void (*report)(struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size);
     /* A key, as a keyboard usage page ID, went down or up. */
     void (*key)(struct tendril_hid *hid, uint16_t key, bool pressed, uint8_t modifiers);
@@ -194,7 +198,9 @@ struct tendril_hid_callbacks {
 /* Use the boot protocol on keyboards and mice that support it. */
 #define TENDRIL_HID_BOOT_PROTOCOL 0x1
 
-/* Registers the HID class driver; call before the first controller is added. */
+/*
+ * Registers the HID class driver; call before the first controller is added.
+ */
 void tendril_hid_register(const struct tendril_hid_callbacks *callbacks, uint32_t flags);
 
 struct tendril_interface *tendril_hid_interface(struct tendril_hid *hid);
@@ -208,13 +214,13 @@ void *tendril_hid_user(struct tendril_hid *hid);
 int tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds);
 
 int tendril_hid_get_report(
-    struct tendril_hid *hid, uint8_t type, uint8_t id, void *buf, size_t size,
+    struct tendril_hid *hid, int type, uint8_t id, void *buf, size_t size,
     void (*done)(void *ctx, int status, size_t actual), void *ctx
 );
 /* Output reports go to the interrupt OUT endpoint if there is one. */
 int tendril_hid_set_report(
-    struct tendril_hid *hid, uint8_t type, uint8_t id, const void *buf, size_t size,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_hid *hid, int type, uint8_t id, const void *buf, size_t size, void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 #ifdef __cplusplus

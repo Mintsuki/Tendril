@@ -25,6 +25,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include "../../include/tendril/tendril.h"
 #include "../internal.h"
 
 struct tendril_driver *tendril_drivers;
@@ -69,7 +72,10 @@ void tendril_bind_interfaces(struct tendril_device *dev) {
             if (claimed) {
                 break;
             }
-            /* A declined probe must not leave companion claims or driver data behind. */
+            /*
+             * A declined probe must not leave companion claims or driver data
+             * behind.
+             */
             for (size_t j = 0; j < dev->num_interfaces; j++) {
                 if (dev->interfaces[j].primary == intf) {
                     dev->interfaces[j].driver = NULL;

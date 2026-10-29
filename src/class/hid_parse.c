@@ -25,8 +25,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/hid.h"
+#include "../../include/tendril/tendril.h"
 #include "../internal.h"
-#include <tendril/hid.h>
 
 /* HID 1.11 6.2.2: report descriptor items. */
 
@@ -75,8 +79,8 @@ struct globals {
     int32_t physical_max;
     int32_t unit_exponent;
     uint32_t unit;
-    uint32_t report_size;
-    uint32_t report_count;
+    size_t report_size;
+    size_t report_count;
     uint8_t report_id;
 };
 
@@ -93,10 +97,10 @@ struct parser {
     size_t num_ranges;
     bool have_min;
     uint32_t pending_min;
-    uint32_t delimiter;
+    bool delimiter;
     bool delimiter_used;
     uint32_t collections[MAX_COLLECTIONS];
-    uint8_t collection_types[MAX_COLLECTIONS];
+    int collection_types[MAX_COLLECTIONS];
     /* Collections open, which may be more than MAX_COLLECTIONS keeps. */
     size_t depth;
     struct tendril_hid_report_desc *rd;
@@ -139,7 +143,7 @@ static int trim(void **array, size_t cap, size_t count, size_t elem) {
     return TENDRIL_OK;
 }
 
-static struct tendril_hid_report_info *report_info(struct parser *p, uint8_t type, uint8_t id) {
+static struct tendril_hid_report_info *report_info(struct parser *p, int type, uint8_t id) {
     struct tendril_hid_report_desc *rd = p->rd;
     for (size_t i = 0; i < rd->num_reports; i++) {
         if (rd->reports[i].type == type && rd->reports[i].id == id) {
@@ -164,7 +168,7 @@ static void clear_locals(struct parser *p) {
 
 static void add_usage(struct parser *p, uint32_t min, uint32_t max) {
     /* Inside a delimiter set, only the first usage counts. */
-    if (p->delimiter != 0) {
+    if (p->delimiter) {
         if (p->delimiter_used) {
             return;
         }
@@ -182,15 +186,15 @@ static uint32_t first_usage(struct parser *p) {
 }
 
 static uint32_t application(struct parser *p) {
-    for (size_t i = MIN(p->depth, (size_t)MAX_COLLECTIONS); i > 0; i--) {
-        if (p->collection_types[i - 1] == 0x01) {
-            return p->collections[i - 1];
+    for (size_t i = MIN(p->depth, (size_t)MAX_COLLECTIONS); i-- > 0; ) {
+        if (p->collection_types[i] == 0x01) {
+            return p->collections[i];
         }
     }
     return 0;
 }
 
-static int add_field(struct parser *p, uint8_t type, uint32_t flags) {
+static int add_field(struct parser *p, int type, uint32_t flags) {
     struct globals *g = &p->g;
     struct tendril_hid_report_desc *rd = p->rd;
     struct tendril_hid_report_info *r = report_info(p, type, g->report_id);
@@ -203,7 +207,10 @@ static int add_field(struct parser *p, uint8_t type, uint32_t flags) {
     }
     uint32_t bits = (uint32_t)bits64;
     if (g->report_size > 32) {
-        /* Larger elements cannot be read as values; keep the layout right anyway. */
+        /*
+         * Larger elements cannot be read as values; keep the layout right
+         * anyway.
+         */
         r->bits += bits;
         return TENDRIL_OK;
     }
@@ -321,8 +328,8 @@ int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_repor
         }
         size_t bsize = prefix & 3;
         size_t len = bsize == 3 ? 4 : bsize;
-        unsigned int type = (prefix >> 2) & 3;
-        unsigned int tag = prefix >> 4;
+        int type = (prefix >> 2) & 3;
+        int tag = prefix >> 4;
         if (i + len > size) {
             break;
         }
@@ -434,7 +441,10 @@ int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_repor
         }
 
         if (type == TYPE_LOCAL) {
-            /* 16-bit usages take the current usage page; 32-bit ones carry their own. */
+            /*
+             * 16-bit usages take the current usage page; 32-bit ones carry
+             * their own.
+             */
             uint32_t usage = len == 4 ? v : (g->usage_page << 16) | (v & 0xffff);
             switch (tag) {
                 case LOCAL_USAGE: {
@@ -454,7 +464,7 @@ int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_repor
                     break;
                 }
                 case LOCAL_DELIMITER: {
-                    p->delimiter = v;
+                    p->delimiter = v != 0;
                     p->delimiter_used = false;
                     break;
                 }
@@ -488,7 +498,7 @@ int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_repor
     return TENDRIL_OK;
 }
 
-size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, uint8_t type, uint8_t id) {
+size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, int type, uint8_t id) {
     for (size_t i = 0; i < rd->num_reports; i++) {
         if (rd->reports[i].type == type && rd->reports[i].id == id) {
             return (rd->reports[i].bits + 7) / 8;
@@ -497,27 +507,27 @@ size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, uint8_t
     return 0;
 }
 
-uint32_t tendril_hid_extract(const uint8_t *data, size_t size, uint32_t bit_offset, unsigned int bit_size) {
+uint32_t tendril_hid_extract(const uint8_t *data, size_t size, size_t bit_offset, size_t bit_size) {
     uint32_t v = 0;
     for (size_t b = 0; b < bit_size && b < 32; b++) {
-        uint32_t bit = bit_offset + (uint32_t)b;
+        size_t bit = bit_offset + b;
         if (bit / 8 >= size) {
             break;
         }
-        if (data[bit / 8] & ((uint32_t)1 << (bit % 8))) {
+        if ((data[bit / 8] & ((uint32_t)1 << (bit % 8))) != 0) {
             v |= (uint32_t)1 << b;
         }
     }
     return v;
 }
 
-void tendril_hid_insert(uint8_t *data, size_t size, uint32_t bit_offset, unsigned int bit_size, uint32_t value) {
+void tendril_hid_insert(uint8_t *data, size_t size, size_t bit_offset, size_t bit_size, uint32_t value) {
     for (size_t b = 0; b < bit_size && b < 32; b++) {
-        uint32_t bit = bit_offset + (uint32_t)b;
+        size_t bit = bit_offset + b;
         if (bit / 8 >= size) {
             break;
         }
-        if (value & ((uint32_t)1 << b)) {
+        if ((value & ((uint32_t)1 << b)) != 0) {
             data[bit / 8] |= (uint8_t)((uint32_t)1 << (bit % 8));
         } else {
             data[bit / 8] &= (uint8_t)~((uint32_t)1 << (bit % 8));
@@ -527,7 +537,7 @@ void tendril_hid_insert(uint8_t *data, size_t size, uint32_t bit_offset, unsigne
 
 int32_t tendril_hid_field_get(const struct tendril_hid_field *f, const uint8_t *data, size_t size, size_t index) {
     uint32_t v = tendril_hid_extract(data, size, f->bit_offset + (uint32_t)index * f->bit_size, f->bit_size);
-    if (f->logical_min < 0 && f->bit_size < 32 && (v & ((uint32_t)1 << (f->bit_size - 1)))) {
+    if (f->logical_min < 0 && f->bit_size < 32 && (v & ((uint32_t)1 << (f->bit_size - 1))) != 0) {
         v |= ~(uint32_t)0 << f->bit_size;
     }
     return (int32_t)v;
@@ -564,11 +574,11 @@ uint32_t tendril_hid_array_usage(const struct tendril_hid_field *f, int32_t valu
 }
 
 const struct tendril_hid_field *tendril_hid_find(
-    const struct tendril_hid_report_desc *rd, uint8_t type, uint32_t usage, size_t *index
+    const struct tendril_hid_report_desc *rd, int type, uint32_t usage, size_t *index
 ) {
     for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
-        if (f->type != type || !(f->flags & TENDRIL_HID_VARIABLE) || (f->flags & TENDRIL_HID_CONSTANT)) {
+        if (f->type != type || (f->flags & TENDRIL_HID_VARIABLE) == 0 || (f->flags & TENDRIL_HID_CONSTANT) != 0) {
             continue;
         }
         for (size_t e = 0; e < f->count; e++) {

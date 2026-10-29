@@ -30,6 +30,10 @@
  * effect is unknown, and its reply is ignored (clean-room specification).
  */
 
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/spec.h"
+#include "../../include/tendril/tendril.h"
 #include "../internal.h"
 
 int tendril_msc_shuttle_init(

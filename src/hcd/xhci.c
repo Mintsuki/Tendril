@@ -89,6 +89,12 @@
  * SUCH DAMAGE.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/glue.h"
+#include "../../include/tendril/spec.h"
+#include "../../include/tendril/tendril.h"
 #include "../internal.h"
 
 #define CAP_CAPLENGTH 0x00
@@ -161,7 +167,10 @@
 #define PLS_U0 ((uint32_t)0)
 #define PLS_U3 ((uint32_t)3)
 #define PLS_RESUME ((uint32_t)15)
-/* USB 2.0 7.1.7.7: TDRSMDN, the resume signalling software times on USB2 ports. */
+/*
+ * USB 2.0 7.1.7.7: TDRSMDN, the resume signalling software times on USB2
+ * ports.
+ */
 #define RESUME_SIGNAL_MS 20
 
 #define RT_MFINDEX 0x00
@@ -270,7 +279,10 @@
 #define CMD_TIMEOUT_MS 5000
 #define MAX_TRB_LEN 65536
 /* BEGIN FreeBSD sys/dev/usb/controller/xhci_pci.c */
-/* As long as FreeBSD's sys/dev/usb/controller/xhci_pci.c (BSD-2-Clause, xhci_pci_take_controller) waits. */
+/*
+ * As long as FreeBSD's sys/dev/usb/controller/xhci_pci.c (BSD-2-Clause,
+ * xhci_pci_take_controller) waits.
+ */
 #define HANDOFF_MS 5000
 /* END FreeBSD sys/dev/usb/controller/xhci_pci.c */
 /* BEGIN FreeBSD sys/dev/usb/controller/xhcireg.h */
@@ -299,30 +311,30 @@ struct xhci_ring {
 struct xhci_cmd {
     struct tendril_list node;
     size_t index;
-    void (*done)(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned int code, struct xhci_trb *event);
+    void (*done)(struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *event);
     struct tendril_async *async;
     struct tendril_device *dev;
     struct xhci_ep *xep;
-    unsigned int arg;
+    uint32_t arg;
 };
 
 struct xhci_ep {
     struct tendril_endpoint *ep;
     struct tendril_device *dev;
-    unsigned int dci;
+    uint8_t dci;
     struct xhci_ring ring;
-    unsigned int num_streams;
+    size_t num_streams;
     struct xhci_ring *streams;
     void *stream_ctx;
     uint64_t stream_ctx_dma;
     size_t stream_ctx_size;
-    unsigned int pending_set_deq;
+    size_t pending_set_deq;
     bool stopping;
     bool recovering;
 };
 
 struct xhci_dev {
-    unsigned int slot;
+    uint8_t slot;
     uint8_t *out_ctx;
     uint64_t out_ctx_dma;
     uint8_t *in_ctx;
@@ -351,7 +363,7 @@ struct xhci {
     uint32_t rt;
     uint32_t db;
     uint32_t hcc1;
-    unsigned int max_slots;
+    size_t max_slots;
     size_t max_ports;
     size_t ctx_size;
     bool ac64;
@@ -428,8 +440,8 @@ static void rt_write64(struct tendril_hc *hc, uint32_t reg, uint64_t v) {
     hc_write32(hc, X(hc)->rt + reg + 4, (uint32_t)(v >> 32));
 }
 
-static void ring_doorbell(struct tendril_hc *hc, unsigned int slot, unsigned int target, unsigned int stream) {
-    hc_write32(hc, X(hc)->db + 4 * slot, (uint32_t)target | (uint32_t)stream << 16);
+static void ring_doorbell(struct tendril_hc *hc, uint8_t slot, uint8_t target, uint16_t stream) {
+    hc_write32(hc, X(hc)->db + (uint32_t)(4 * slot), (uint32_t)target | (uint32_t)stream << 16);
 }
 
 static void trb_write(struct xhci_trb *trb, uint64_t param, uint32_t status, uint32_t control) {
@@ -455,7 +467,10 @@ static uint32_t *ctx_at(struct tendril_hc *hc, uint8_t *base, size_t index) {
     return (uint32_t *)(void *)(base + index * X(hc)->ctx_size);
 }
 
-/* Input context: index 0 is the control context, 1 the slot, 1 + DCI endpoints. */
+/*
+ * Input context: index 0 is the control context, 1 the slot, 1 + DCI
+ * endpoints.
+ */
 static uint32_t *in_ctrl(struct tendril_hc *hc, struct xhci_dev *xd) {
     return ctx_at(hc, xd->in_ctx, 0);
 }
@@ -464,7 +479,7 @@ static uint32_t *in_slot(struct tendril_hc *hc, struct xhci_dev *xd) {
     return ctx_at(hc, xd->in_ctx, 1);
 }
 
-static uint32_t *in_ep(struct tendril_hc *hc, struct xhci_dev *xd, unsigned int dci) {
+static uint32_t *in_ep(struct tendril_hc *hc, struct xhci_dev *xd, uint8_t dci) {
     return ctx_at(hc, xd->in_ctx, 1 + dci);
 }
 
@@ -472,7 +487,7 @@ static uint32_t *out_slot(struct tendril_hc *hc, struct xhci_dev *xd) {
     return ctx_at(hc, xd->out_ctx, 0);
 }
 
-static uint32_t *out_ep(struct tendril_hc *hc, struct xhci_dev *xd, unsigned int dci) {
+static uint32_t *out_ep(struct tendril_hc *hc, struct xhci_dev *xd, uint8_t dci) {
     return ctx_at(hc, xd->out_ctx, dci);
 }
 
@@ -488,12 +503,12 @@ static void clear_input(struct tendril_hc *hc, struct xhci_dev *xd) {
     memset(xd->in_ctx, 0, X(hc)->ctx_size * 33);
 }
 
-static unsigned int ep_dci(struct tendril_endpoint *ep) {
-    unsigned int num = ep->address & TENDRIL_ENDPOINT_NUMBER_MASK;
+static uint8_t ep_dci(struct tendril_endpoint *ep) {
+    uint8_t num = ep->address & TENDRIL_ENDPOINT_NUMBER_MASK;
     if (num == 0) {
         return 1;
     }
-    return num * 2 + ((ep->address & TENDRIL_ENDPOINT_DIR_MASK) ? 1 : 0);
+    return (uint8_t)(num * 2 + ((ep->address & TENDRIL_ENDPOINT_DIR_MASK) != 0 ? 1 : 0));
 }
 
 /* Rings */
@@ -581,7 +596,7 @@ static size_t span_last(struct xhci_ring *ring, size_t first, size_t count) {
     return (first + count - 1) % usable;
 }
 
-static unsigned int trb_len(const struct xhci_trb *trb) {
+static size_t trb_len(const struct xhci_trb *trb) {
     return trb_d(trb, 2) & 0x1ffff;
 }
 
@@ -591,7 +606,7 @@ static void give_first(struct xhci_ring *ring, size_t index, uint32_t cycle) {
     trb->d[3] = tendril_le32((tendril_le32(trb->d[3]) & ~TRB_CYCLE) | cycle);
 }
 
-static int cc_status(unsigned int code) {
+static int cc_status(int code) {
     switch (code) {
         case CC_SUCCESS:
         case CC_SHORT_PACKET: {
@@ -637,8 +652,8 @@ static void port_timer_work(struct tendril_work *work);
 
 static int cmd_submit(
     struct tendril_hc *hc, uint64_t param, uint32_t status, uint32_t control,
-    void (*done)(struct tendril_hc *, struct xhci_cmd *, unsigned int, struct xhci_trb *), struct tendril_async *async,
-    struct tendril_device *dev, struct xhci_ep *xep, unsigned int arg
+    void (*done)(struct tendril_hc *, struct xhci_cmd *, int, struct xhci_trb *), struct tendril_async *async,
+    struct tendril_device *dev, struct xhci_ep *xep, uint32_t arg
 ) {
     struct xhci *x = X(hc);
     if (hc->dead) {
@@ -669,7 +684,7 @@ static int cmd_submit(
 static void handle_command_completion(struct tendril_hc *hc, struct xhci_trb *ev) {
     struct xhci *x = X(hc);
     int index = ring_index(&x->cmd, trb_param(ev));
-    unsigned int code = trb_d(ev, 2) >> 24;
+    int code = (int)(trb_d(ev, 2) >> 24);
     struct tendril_list *it;
 
     if (index < 0) {
@@ -696,7 +711,7 @@ static void handle_command_completion(struct tendril_hc *hc, struct xhci_trb *ev
 }
 
 /* Completes an async-backed command with its translated completion code. */
-static void cmd_async_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned int code, struct xhci_trb *ev) {
+static void cmd_async_done(struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev) {
     (void)ev;
     tendril_async_complete(hc, cmd->async, code == CC_SUCCESS ? TENDRIL_OK : cc_status(code));
 }
@@ -724,12 +739,15 @@ static size_t xfer_count(struct tendril_transfer *xfer) {
 }
 
 static bool trb_is_data(const struct xhci_trb *trb) {
-    unsigned int type = TRB_GET_TYPE(trb_d(trb, 3));
+    int type = (int)TRB_GET_TYPE(trb_d(trb, 3));
     return type == TRB_NORMAL || type == TRB_DATA || type == TRB_ISOCH;
 }
 
-/* Bytes moved by the TRBs of a transfer before `index`, plus the TRB at `index`. */
-static size_t bytes_through(struct xhci_ring *ring, size_t first, size_t index, unsigned int residual) {
+/*
+ * Bytes moved by the TRBs of a transfer before `index`, plus the TRB at
+ * `index`.
+ */
+static size_t bytes_through(struct xhci_ring *ring, size_t first, size_t index, size_t residual) {
     size_t total = 0;
     for (size_t i = first; i != index; i = ring_next(ring, i)) {
         if (trb_is_data(&ring->trbs[i])) {
@@ -738,7 +756,7 @@ static size_t bytes_through(struct xhci_ring *ring, size_t first, size_t index, 
     }
     struct xhci_trb *trb = &ring->trbs[index];
     if (trb_is_data(trb)) {
-        unsigned int len = trb_len(trb);
+        size_t len = trb_len(trb);
         total += residual < len ? len - residual : 0;
     }
     return total;
@@ -780,7 +798,7 @@ static void doorbell_ep(struct tendril_hc *hc, struct xhci_ep *xep) {
     }
     for (size_t s = 1; s <= xep->num_streams; s++) {
         if (xep->streams[s].enq != xep->streams[s].deq) {
-            ring_doorbell(hc, xd->slot, xep->dci, (unsigned int)s);
+            ring_doorbell(hc, xd->slot, xep->dci, (uint16_t)s);
         }
     }
 }
@@ -790,7 +808,7 @@ static void doorbell_ep(struct tendril_hc *hc, struct xhci_ep *xep) {
 static void start_stop(struct tendril_hc *hc, struct xhci_ep *xep);
 static void start_recovery(struct tendril_hc *hc, struct xhci_ep *xep);
 
-static unsigned int ep_state(struct tendril_hc *hc, struct xhci_ep *xep) {
+static int ep_state(struct tendril_hc *hc, struct xhci_ep *xep) {
     return ctx_get(out_ep(hc, xdev(xep->dev), xep->dci), 0) & 0x7;
 }
 
@@ -798,7 +816,7 @@ static bool any_cancelled(struct xhci_ep *xep) {
     struct tendril_list *it;
     LIST_FOR_EACH(it, &xep->ep->transfers) {
         struct tendril_transfer *xfer = CONTAINER_OF(it, struct tendril_transfer, internal.node);
-        if (xfer->internal.hcd_data[XD_FLAGS] & XF_CANCEL) {
+        if ((xfer->internal.hcd_data[XD_FLAGS] & XF_CANCEL) != 0) {
             return true;
         }
     }
@@ -829,7 +847,7 @@ static uint32_t dcs_at(struct xhci_ring *ring, size_t index) {
     return trb_d(&ring->trbs[index], 3) & TRB_CYCLE;
 }
 
-static uint64_t ring_hw_dequeue(struct tendril_hc *hc, struct xhci_ep *xep, unsigned int stream) {
+static uint64_t ring_hw_dequeue(struct tendril_hc *hc, struct xhci_ep *xep, uint16_t stream) {
     if (stream == 0) {
         uint32_t *ctx = out_ep(hc, xdev(xep->dev), xep->dci);
         return ((uint64_t)ctx_get(ctx, 2) | (uint64_t)ctx_get(ctx, 3) << 32) & ~(uint64_t)0xf;
@@ -838,16 +856,14 @@ static uint64_t ring_hw_dequeue(struct tendril_hc *hc, struct xhci_ep *xep, unsi
     return ((uint64_t)tendril_le32(sc[0]) | (uint64_t)tendril_le32(sc[1]) << 32) & ~(uint64_t)0xf;
 }
 
-static void set_deq_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned int code, struct xhci_trb *ev);
+static void set_deq_done(struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev);
 
 /*
  * With the endpoint stopped, completes cancelled and failed transfers and
- * moves the dequeue pointer of each ring past them. Returns the number of
- * Set TR Dequeue Pointer commands issued.
+ * moves the dequeue pointer of each ring past them. Returns the number of Set
+ * TR Dequeue Pointer commands issued.
  */
-static unsigned int sweep_ring(
-    struct tendril_hc *hc, struct xhci_ep *xep, struct xhci_ring *ring, unsigned int stream
-) {
+static size_t sweep_ring(struct tendril_hc *hc, struct xhci_ep *xep, struct xhci_ring *ring, uint16_t stream) {
     int hw = ring_index(ring, ring_hw_dequeue(hc, xep, stream));
     size_t hw_index = hw < 0 ? ring->deq : (size_t)hw;
     size_t new_index = hw_index;
@@ -857,7 +873,7 @@ static unsigned int sweep_ring(
 
     LIST_FOR_EACH_SAFE(it, tmp, &xep->ep->transfers) {
         struct tendril_transfer *xfer = CONTAINER_OF(it, struct tendril_transfer, internal.node);
-        if (xfer_ring(xfer) != ring || !(xfer->internal.hcd_data[XD_FLAGS] & XF_CANCEL)) {
+        if (xfer_ring(xfer) != ring || (xfer->internal.hcd_data[XD_FLAGS] & XF_CANCEL) == 0) {
             continue;
         }
         size_t first = xfer_first(xfer);
@@ -882,9 +898,8 @@ static unsigned int sweep_ring(
     }
     struct xhci_dev *xd = xdev(xep->dev);
     int st = cmd_submit(
-        hc, ptr, (uint32_t)stream << 16,
-        TRB_TYPE(TRB_SET_TR_DEQUEUE) | TRB_SLOT(xd->slot) | TRB_EP(xep->dci),
-        set_deq_done, NULL, xep->dev, xep, (unsigned int)new_index | stream << 16
+        hc, ptr, (uint32_t)stream << 16, TRB_TYPE(TRB_SET_TR_DEQUEUE) | TRB_SLOT(xd->slot) | TRB_EP(xep->dci),
+        set_deq_done, NULL, xep->dev, xep, (uint32_t)new_index | (uint32_t)stream << 16
     );
     if (st != TENDRIL_OK) {
         controller_died(hc, "command ring full");
@@ -894,12 +909,12 @@ static unsigned int sweep_ring(
 }
 
 static void sweep(struct tendril_hc *hc, struct xhci_ep *xep) {
-    unsigned int issued = 0;
+    size_t issued = 0;
     if (xep->num_streams == 0) {
         issued += sweep_ring(hc, xep, &xep->ring, 0);
     } else {
         for (size_t s = 1; s <= xep->num_streams; s++) {
-            issued += sweep_ring(hc, xep, &xep->streams[s], (unsigned int)s);
+            issued += sweep_ring(hc, xep, &xep->streams[s], (uint16_t)s);
         }
     }
     xep->pending_set_deq = issued;
@@ -913,10 +928,10 @@ static void sweep(struct tendril_hc *hc, struct xhci_ep *xep) {
     }
 }
 
-static void set_deq_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned int code, struct xhci_trb *ev) {
+static void set_deq_done(struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev) {
     struct xhci_ep *xep = cmd->xep;
     (void)ev;
-    unsigned int stream = cmd->arg >> 16;
+    uint16_t stream = (uint16_t)(cmd->arg >> 16);
     struct xhci_ring *ring = stream == 0 ? &xep->ring : &xep->streams[stream];
     if (code == CC_SUCCESS) {
         ring->deq = cmd->arg & 0xffff;
@@ -934,7 +949,7 @@ static void set_deq_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned i
     }
 }
 
-static void stop_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned int code, struct xhci_trb *ev) {
+static void stop_done(struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev) {
     struct xhci_ep *xep = cmd->xep;
     (void)ev;
     xep->stopping = false;
@@ -953,8 +968,8 @@ static void start_stop(struct tendril_hc *hc, struct xhci_ep *xep) {
     struct xhci_dev *xd = xdev(xep->dev);
     xep->stopping = true;
     int st = cmd_submit(
-        hc, 0, 0, TRB_TYPE(TRB_STOP_ENDPOINT) | TRB_SLOT(xd->slot) | TRB_EP(xep->dci),
-        stop_done, NULL, xep->dev, xep, 0
+        hc, 0, 0, TRB_TYPE(TRB_STOP_ENDPOINT) | TRB_SLOT(xd->slot) | TRB_EP(xep->dci), stop_done, NULL, xep->dev, xep,
+        0
     );
     if (st != TENDRIL_OK) {
         xep->stopping = false;
@@ -962,7 +977,7 @@ static void start_stop(struct tendril_hc *hc, struct xhci_ep *xep) {
     }
 }
 
-static void reset_ep_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned int code, struct xhci_trb *ev) {
+static void reset_ep_done(struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev) {
     struct xhci_ep *xep = cmd->xep;
     (void)ev;
     if (code != CC_SUCCESS && code != CC_CONTEXT_STATE) {
@@ -976,8 +991,8 @@ static void start_recovery(struct tendril_hc *hc, struct xhci_ep *xep) {
     struct xhci_dev *xd = xdev(xep->dev);
     xep->recovering = true;
     int st = cmd_submit(
-        hc, 0, 0, TRB_TYPE(TRB_RESET_ENDPOINT) | TRB_SLOT(xd->slot) | TRB_EP(xep->dci),
-        reset_ep_done, NULL, xep->dev, xep, 0
+        hc, 0, 0, TRB_TYPE(TRB_RESET_ENDPOINT) | TRB_SLOT(xd->slot) | TRB_EP(xep->dci), reset_ep_done, NULL, xep->dev,
+        xep, 0
     );
     if (st != TENDRIL_OK) {
         xep->recovering = false;
@@ -987,13 +1002,13 @@ static void start_recovery(struct tendril_hc *hc, struct xhci_ep *xep) {
 
 /* Transfer events */
 
-static bool halting_code(unsigned int code) {
+static bool halting_code(int code) {
     return code == CC_STALL || code == CC_BABBLE || code == CC_USB_TRANSACTION || code == CC_SPLIT_TRANSACTION;
 }
 
 static void finish_control(
     struct tendril_hc *hc, struct xhci_ep *xep, struct tendril_transfer *xfer, struct xhci_ring *ring, size_t index,
-    unsigned int code, unsigned int residual
+    int code, size_t residual
 ) {
     uintptr_t *hd = xfer->internal.hcd_data;
     size_t first = xfer_first(xfer);
@@ -1002,7 +1017,7 @@ static void finish_control(
 
     if (code == CC_SUCCESS || code == CC_SHORT_PACKET) {
         if (index == status_index) {
-            size_t actual = (hd[XD_FLAGS] & XF_DATA_DONE) ? hd[XD_ACTUAL] : data_len;
+            size_t actual = (hd[XD_FLAGS] & XF_DATA_DONE) != 0 ? hd[XD_ACTUAL] : data_len;
             complete_xfer(hc, xfer, TENDRIL_OK, actual);
             return;
         }
@@ -1010,8 +1025,11 @@ static void finish_control(
             hd[XD_ACTUAL] = bytes_through(ring, ring_next(ring, first), index, residual);
             hd[XD_FLAGS] |= XF_DATA_DONE;
             /* BEGIN FreeBSD sys/dev/usb/controller/xhci.c */
-            if (hd[XD_FLAGS] & XF_STEP) {
-                /* The status stage was held back until the data stage finished. */
+            if ((hd[XD_FLAGS] & XF_STEP) != 0) {
+                /*
+                 * The status stage was held back until the data stage
+                 * finished.
+                 */
                 hd[XD_FLAGS] &= ~XF_STEP;
                 give_first(ring, hd[XD_STATUS_TRB] & 0xffff, (uint32_t)(hd[XD_STATUS_TRB] >> 16) & 1);
                 doorbell_ep(hc, xep);
@@ -1022,7 +1040,7 @@ static void finish_control(
     }
 
     size_t actual = index == first ? 0 : bytes_through(ring, ring_next(ring, first), index, residual);
-    if (index == status_index && (hd[XD_FLAGS] & XF_DATA_DONE)) {
+    if (index == status_index && (hd[XD_FLAGS] & XF_DATA_DONE) != 0) {
         actual = hd[XD_ACTUAL];
     }
     xfer->internal.hcd_data[XD_FLAGS] |= XF_CANCEL;
@@ -1034,10 +1052,10 @@ static void handle_transfer_event(struct tendril_hc *hc, struct xhci_trb *ev) {
     struct xhci *x = X(hc);
     uint32_t d2 = trb_d(ev, 2);
     uint32_t d3 = trb_d(ev, 3);
-    unsigned int slot = d3 >> 24;
-    unsigned int dci = (d3 >> 16) & 0x1f;
-    unsigned int code = d2 >> 24;
-    unsigned int residual = d2 & 0xffffff;
+    uint8_t slot = (uint8_t)(d3 >> 24);
+    uint8_t dci = (uint8_t)((d3 >> 16) & 0x1f);
+    int code = (int)(d2 >> 24);
+    size_t residual = d2 & 0xffffff;
     uint64_t ptr = trb_param(ev);
 
     if (slot == 0 || slot > x->max_slots || x->devs[slot] == NULL) {
@@ -1089,7 +1107,7 @@ static void handle_transfer_event(struct tendril_hc *hc, struct xhci_trb *ev) {
             size_t packet = 0;
             size_t td_first = first;
             for (size_t i = first; i != (size_t)index; i = ring_next(ring, i)) {
-                if (!(trb_d(&ring->trbs[i], 3) & TRB_CH)) {
+                if ((trb_d(&ring->trbs[i], 3) & TRB_CH) == 0) {
                     packet++;
                     td_first = ring_next(ring, i);
                 }
@@ -1101,7 +1119,7 @@ static void handle_transfer_event(struct tendril_hc *hc, struct xhci_trb *ev) {
                 hd[XD_ACTUAL] += pkt->actual;
             }
             size_t td_last = (size_t)index;
-            while (trb_d(&ring->trbs[td_last], 3) & TRB_CH) {
+            while ((trb_d(&ring->trbs[td_last], 3) & TRB_CH) != 0) {
                 td_last = ring_next(ring, td_last);
             }
             if (td_last == last || packet + 1 >= xfer->num_iso_packets) {
@@ -1113,7 +1131,9 @@ static void handle_transfer_event(struct tendril_hc *hc, struct xhci_trb *ev) {
             size_t actual = bytes_through(ring, first, (size_t)index, residual);
             if (code == CC_SUCCESS || code == CC_SHORT_PACKET) {
                 if (code == CC_SUCCESS && (size_t)index != last) {
-                    /* An IOC is only on the last TRB; anything else is stale. */
+                    /*
+                     * An IOC is only on the last TRB; anything else is stale.
+                     */
                     break;
                 }
                 complete_xfer(hc, xfer, TENDRIL_OK, actual);
@@ -1128,7 +1148,10 @@ static void handle_transfer_event(struct tendril_hc *hc, struct xhci_trb *ev) {
 
     if (code != CC_SUCCESS && code != CC_SHORT_PACKET && code != CC_MISSED_SERVICE
      && xep->ep->type != TENDRIL_ENDPOINT_XFER_ISOC) {
-        /* The failed transfer is completed once the endpoint is stopped or reset. */
+        /*
+         * The failed transfer is completed once the endpoint is stopped or
+         * reset.
+         */
         if (halting_code(code) || ep_state(hc, xep) == EP_STATE_HALTED) {
             if (!xep->recovering) {
                 start_recovery(hc, xep);
@@ -1142,7 +1165,7 @@ static void handle_transfer_event(struct tendril_hc *hc, struct xhci_trb *ev) {
 /* Events */
 
 static void handle_port_event(struct tendril_hc *hc, struct xhci_trb *ev) {
-    size_t port = trb_d(ev, 0) >> 24;
+    uint8_t port = (uint8_t)(trb_d(ev, 0) >> 24);
     tendril_roothub_changed(hc, port);
 }
 
@@ -1173,7 +1196,7 @@ static void process_events(struct tendril_hc *hc) {
                 break;
             }
             case TRB_HOST_CONTROLLER_EVENT: {
-                unsigned int code = trb_d(ev, 2) >> 24;
+                int code = (int)(trb_d(ev, 2) >> 24);
                 if (code == CC_EVENT_RING_FULL) {
                     LOG_WARN("xHCI: event ring full");
                 } else {
@@ -1207,14 +1230,17 @@ static void xhci_poll(struct tendril_hc *hc) {
         controller_died(hc, "controller removed");
         return;
     }
-    if (sts & (USBSTS_HSE | USBSTS_HCE)) {
-        controller_died(hc, sts & USBSTS_HCE ? "host controller error" : "host system error");
+    if ((sts & (USBSTS_HSE | USBSTS_HCE)) != 0) {
+        controller_died(hc, (sts & USBSTS_HCE) != 0 ? "host controller error" : "host system error");
         return;
     }
-    if (sts & (USBSTS_EINT | USBSTS_PCD)) {
+    if ((sts & (USBSTS_EINT | USBSTS_PCD)) != 0) {
         op_write(hc, OP_USBSTS, sts & (USBSTS_EINT | USBSTS_PCD));
     }
-    /* Keeps the frame count going, as nothing else may look at MFINDEX for a whole wrap. */
+    /*
+     * Keeps the frame count going, as nothing else may look at MFINDEX for a
+     * whole wrap.
+     */
     (void)xhci_frame_number(hc);
     process_events(hc);
 }
@@ -1225,10 +1251,13 @@ static bool xhci_irq(struct tendril_hc *hc) {
         return false;
     }
     uint32_t iman = rt_read(hc, RT_IR0 + IR_IMAN);
-    if (!(sts & (USBSTS_EINT | USBSTS_HSE | USBSTS_HCE)) && !(iman & IMAN_IP)) {
+    if ((sts & (USBSTS_EINT | USBSTS_HSE | USBSTS_HCE)) == 0 && (iman & IMAN_IP) == 0) {
         return false;
     }
-    /* Clearing IP and EINT deasserts the interrupt; EHB holds off another until poll. */
+    /*
+     * Clearing IP and EINT deasserts the interrupt; EHB holds off another
+     * until poll.
+     */
     op_write(hc, OP_USBSTS, sts & USBSTS_EINT);
     rt_write(hc, RT_IR0 + IR_IMAN, iman | IMAN_IP);
     return true;
@@ -1298,7 +1327,7 @@ static void bios_handoff(struct tendril_hc *hc) {
     while (off != 0) {
         uint32_t cap = hc_read32(hc, off);
         if ((cap & 0xff) == 1) {
-            if (cap & ((uint32_t)1 << 16)) {
+            if ((cap & ((uint32_t)1 << 16)) != 0) {
                 LOG_DEBUG("xHCI: taking over from firmware");
                 hc_write32(hc, off, cap | ((uint32_t)1 << 24));
                 if (!tendril_hc_wait32(hc, off, (uint32_t)1 << 16, 0, HANDOFF_MS * 1000)) {
@@ -1356,8 +1385,10 @@ static void parse_protocols(struct tendril_hc *hc) {
     }
 }
 
-/* Maps a PORTSC speed ID to a speed, through the protocol's PSI table if any. */
-static int port_speed(struct tendril_hc *hc, size_t port, unsigned int id) {
+/*
+ * Maps a PORTSC speed ID to a speed, through the protocol's PSI table if any.
+ */
+static int port_speed(struct tendril_hc *hc, uint8_t port, int id) {
     struct xhci_port_proto *proto = &X(hc)->ports[port - 1];
     if (proto->psic == 0) {
         switch (id) {
@@ -1383,7 +1414,7 @@ static int port_speed(struct tendril_hc *hc, size_t port, unsigned int id) {
     }
     for (size_t i = 0; i < proto->psic; i++) {
         uint32_t psi = proto->psi[i];
-        if ((psi & 0xf) != id) {
+        if ((int)(psi & 0xf) != id) {
             continue;
         }
         uint64_t mantissa = psi >> 16;
@@ -1433,7 +1464,7 @@ static void free_all(struct tendril_hc *hc) {
 }
 
 static uint32_t imod(struct tendril_hc *hc) {
-    return (hc->quirks & TENDRIL_HC_QUIRK_XHCI_IMOD_LP) ? IMOD_LP : IMOD_DEFAULT;
+    return (hc->quirks & TENDRIL_HC_QUIRK_XHCI_IMOD_LP) != 0 ? IMOD_LP : IMOD_DEFAULT;
 }
 
 static int halt_and_reset(struct tendril_hc *hc) {
@@ -1441,7 +1472,7 @@ static int halt_and_reset(struct tendril_hc *hc) {
         return TENDRIL_ERR_TIMEOUT;
     }
     uint32_t cmd = op_read(hc, OP_USBCMD);
-    if (cmd & USBCMD_RS) {
+    if ((cmd & USBCMD_RS) != 0) {
         op_write(hc, OP_USBCMD, cmd & ~(USBCMD_RS | USBCMD_INTE));
     }
     /* xHCI 1.2, 5.4.1.1: halting completes within 16 microframes. */
@@ -1450,7 +1481,10 @@ static int halt_and_reset(struct tendril_hc *hc) {
     }
     op_write(hc, OP_USBCMD, USBCMD_HCRST);
     /* BEGIN FreeBSD sys/dev/usb/controller/xhci.c */
-    /* FreeBSD's sys/dev/usb/controller/xhci.c (BSD-2-Clause, xhci_reset_controller) waits 10 ms before looking. */
+    /*
+     * FreeBSD's sys/dev/usb/controller/xhci.c (BSD-2-Clause,
+     * xhci_reset_controller) waits 10 ms before looking.
+     */
     tendril_delay_us(10000);
     /* END FreeBSD sys/dev/usb/controller/xhci.c */
     if (!tendril_hc_wait32(hc, X(hc)->op + OP_USBCMD, USBCMD_HCRST, 0, 1000000)
@@ -1465,8 +1499,8 @@ static int halt_and_reset(struct tendril_hc *hc) {
  * Switches every port that can be switched over to the xHCI: USB3_PSSEN from
  * USB3PRM and XUSB2PR from XUSB2PRM (Intel 9 Series Chipset Family PCH
  * datasheet 330550-002, 16.1.36 to 16.1.39), as FreeBSD's
- * sys/dev/usb/controller/xhci_pci.c (BSD-2-Clause) does for the controllers
- * it lists.
+ * sys/dev/usb/controller/xhci_pci.c (BSD-2-Clause) does for the controllers it
+ * lists.
  */
 static void intel_port_routing(struct tendril_hc *hc) {
     void *ctx = hc->ctx;
@@ -1502,13 +1536,13 @@ static int xhci_start(struct tendril_hc *hc) {
     x->hcc1 = hc_read32(hc, CAP_HCCPARAMS1);
     x->max_slots = hcs1 & 0xff;
     x->max_ports = hcs1 >> 24;
-    x->ctx_size = (x->hcc1 & HCC1_CSZ) ? 64 : 32;
-    x->ac64 = (x->hcc1 & HCC1_AC64) && !(hc->quirks & TENDRIL_HC_QUIRK_NO_64BIT);
+    x->ctx_size = (x->hcc1 & HCC1_CSZ) != 0 ? 64 : 32;
+    x->ac64 = (x->hcc1 & HCC1_AC64) != 0 && (hc->quirks & TENDRIL_HC_QUIRK_NO_64BIT) == 0;
     hc->dma32 = !x->ac64;
     hc->data32 = !x->ac64;
     LOG_INFO(
-        "xHCI %x.%02x: %u slots, %zu ports, %zu-byte contexts%s", cap0 >> 24, (cap0 >> 16) & 0xff,
-        x->max_slots, x->max_ports, x->ctx_size, x->ac64 ? ", 64-bit" : ""
+        "xHCI %x.%02x: %zu slots, %zu ports, %zu-byte contexts%s", cap0 >> 24, (cap0 >> 16) & 0xff, x->max_slots,
+        x->max_ports, x->ctx_size, x->ac64 ? ", 64-bit" : ""
     );
 
     x->devs = tendril_zalloc((x->max_slots + 1) * sizeof(struct xhci_dev *));
@@ -1518,7 +1552,7 @@ static int xhci_start(struct tendril_hc *hc) {
         return TENDRIL_ERR_NO_MEMORY;
     }
 
-    if (hc->config.pci && !(hc->quirks & TENDRIL_HC_QUIRK_NO_HANDOFF)) {
+    if (hc->config.pci && (hc->quirks & TENDRIL_HC_QUIRK_NO_HANDOFF) == 0) {
         bios_handoff(hc);
     }
     int st = halt_and_reset(hc);
@@ -1529,7 +1563,7 @@ static int xhci_start(struct tendril_hc *hc) {
     }
 
     uint32_t pagesize = op_read(hc, OP_PAGESIZE) & 0xffff;
-    if (!(pagesize & 1)) {
+    if ((pagesize & 1) == 0) {
         LOG_ERROR("xHCI: 4 KiB pages unsupported (PAGESIZE 0x%x)", pagesize);
         free_all(hc);
         return TENDRIL_ERR_UNSUPPORTED;
@@ -1578,7 +1612,7 @@ static int xhci_start(struct tendril_hc *hc) {
     x->erst[1] = tendril_le64(EVENT_RING_TRBS);
     x->evt_cycle = 1;
 
-    op_write(hc, OP_CONFIG, (op_read(hc, OP_CONFIG) & ~(uint32_t)0xff) | x->max_slots);
+    op_write(hc, OP_CONFIG, (op_read(hc, OP_CONFIG) & ~(uint32_t)0xff) | (uint32_t)x->max_slots);
     op_write(hc, OP_DNCTRL, 0);
     op_write64(hc, OP_DCBAAP, x->dcbaa_dma);
     op_write64(hc, OP_CRCR, x->cmd.dma | CRCR_RCS);
@@ -1595,7 +1629,7 @@ static int xhci_start(struct tendril_hc *hc) {
         rt_write(hc, RT_IR0 + IR_IMAN, IMAN_IP);
     }
 
-    if (hc->config.pci && (hc->quirks & TENDRIL_HC_QUIRK_INTEL_PORT_ROUTING)) {
+    if (hc->config.pci && (hc->quirks & TENDRIL_HC_QUIRK_INTEL_PORT_ROUTING) != 0) {
         intel_port_routing(hc);
     }
 
@@ -1617,13 +1651,16 @@ static int xhci_start(struct tendril_hc *hc) {
     for (size_t p = 1; p <= x->max_ports; p++) {
         hc->root.ports[p - 1].superspeed = x->ports[p - 1].major >= 3;
         uint32_t sc = op_read(hc, OP_PORTSC(p));
-        if ((x->hcc1 & HCC1_PPC) && !(sc & PORTSC_PP)) {
+        if ((x->hcc1 & HCC1_PPC) != 0 && (sc & PORTSC_PP) == 0) {
             op_write(hc, OP_PORTSC(p), (sc & PORTSC_KEEP) | PORTSC_PP);
             powered = true;
         }
     }
     if (powered) {
-        /* USB 2.0 7.1.7.3: time for power to settle before connects are trusted. */
+        /*
+         * USB 2.0 7.1.7.3: time for power to settle before connects are
+         * trusted.
+         */
         tendril_delay_us(20000);
     }
     return TENDRIL_OK;
@@ -1657,28 +1694,32 @@ static void xhci_destroy(struct tendril_hc *hc) {
 
 /* Root hub */
 
-static void portsc_write(struct tendril_hc *hc, size_t port, uint32_t set);
+static void portsc_write(struct tendril_hc *hc, uint8_t port, uint32_t set);
 
-static void set_link_state(struct tendril_hc *hc, size_t port, unsigned int pls, uint32_t extra) {
+static void set_link_state(struct tendril_hc *hc, uint8_t port, uint32_t pls, uint32_t extra) {
     portsc_write(hc, port, PORTSC_LWS | (pls << PORTSC_PLS_SHIFT) | extra);
 }
 
 /*
- * Root ports behave as a hub's would (USB 2.0 11.24.2.7.1.3 and 11.24.2.7.2.3):
- * resume signalling is timed here, and the port reports itself suspended until
- * it is back in U0. xHCI 1.2, 4.15.2 leaves that timing to software on USB2
- * ports, and a USB3 port that a device woke waits for software to allow U0.
+ * Root ports behave as a hub's would (USB 2.0 11.24.2.7.1.3 and
+ * 11.24.2.7.2.3): resume signalling is timed here, and the port reports itself
+ * suspended until it is back in U0. xHCI 1.2, 4.15.2 leaves that timing to
+ * software on USB2 ports, and a USB3 port that a device woke waits for
+ * software to allow U0.
  */
-static uint32_t advance_resume(struct tendril_hc *hc, size_t port, uint32_t sc) {
+static uint32_t advance_resume(struct tendril_hc *hc, uint8_t port, uint32_t sc) {
     struct xhci *x = X(hc);
     struct xhci_port_proto *p = &x->ports[port - 1];
-    unsigned int pls = (sc & PORTSC_PLS_MASK) >> PORTSC_PLS_SHIFT;
+    uint32_t pls = (sc & PORTSC_PLS_MASK) >> PORTSC_PLS_SHIFT;
 
     if (p->resume == RESUME_ENDING && pls != PLS_RESUME) {
         p->resume = RESUME_IDLE;
     }
-    if (p->resume == RESUME_IDLE && pls == PLS_RESUME && (sc & PORTSC_PED)) {
-        /* The device signalled a wakeup. Its PLC is consumed here; U0 raises another. */
+    if (p->resume == RESUME_IDLE && pls == PLS_RESUME && (sc & PORTSC_PED) != 0) {
+        /*
+         * The device signalled a wakeup. Its PLC is consumed here; U0 raises
+         * another.
+         */
         if (p->major >= 3) {
             set_link_state(hc, port, PLS_U0, PORTSC_PLC);
             p->resume = RESUME_ENDING;
@@ -1705,7 +1746,7 @@ static void port_timer_work(struct tendril_work *work) {
     bool again = false;
     for (size_t p = 1; !hc->dead && p <= x->max_ports; p++) {
         if (x->ports[p - 1].resume == RESUME_SIGNALLING) {
-            advance_resume(hc, p, op_read(hc, OP_PORTSC(p)));
+            advance_resume(hc, (uint8_t)p, op_read(hc, OP_PORTSC(p)));
             again |= x->ports[p - 1].resume == RESUME_SIGNALLING;
         }
     }
@@ -1715,77 +1756,80 @@ static void port_timer_work(struct tendril_work *work) {
     hc_unlock(hc);
 }
 
-static void xhci_port_status(struct tendril_hc *hc, size_t port, struct tendril_port_status *st) {
+static void xhci_port_status(struct tendril_hc *hc, uint8_t port, struct tendril_port_status *st) {
     struct xhci *x = X(hc);
     uint32_t sc = advance_resume(hc, port, op_read(hc, OP_PORTSC(port)));
     bool ss = x->ports[port - 1].major >= 3;
-    unsigned int pls = (sc & PORTSC_PLS_MASK) >> PORTSC_PLS_SHIFT;
+    uint32_t pls = (sc & PORTSC_PLS_MASK) >> PORTSC_PLS_SHIFT;
     bool resuming = pls == PLS_RESUME || x->ports[port - 1].resume != RESUME_IDLE;
 
     st->status = 0;
     st->change = 0;
-    if (sc & PORTSC_CCS) {
+    if ((sc & PORTSC_CCS) != 0) {
         st->status |= TENDRIL_PORT_STAT_CONNECTION;
     }
-    if (sc & PORTSC_PED) {
+    if ((sc & PORTSC_PED) != 0) {
         st->status |= TENDRIL_PORT_STAT_ENABLE;
     }
-    if (sc & PORTSC_OCA) {
+    if ((sc & PORTSC_OCA) != 0) {
         st->status |= TENDRIL_PORT_STAT_OVER_CURRENT;
     }
-    if (sc & PORTSC_PR) {
+    if ((sc & PORTSC_PR) != 0) {
         st->status |= TENDRIL_PORT_STAT_RESET;
     }
     st->speed = port_speed(hc, port, PORTSC_SPEED(sc));
     if (ss) {
-        /* Hubs have no Resume link state: the link is in U3 until it reaches U0. */
-        unsigned int shown = pls == PLS_RESUME ? PLS_U3 : pls;
+        /*
+         * Hubs have no Resume link state: the link is in U3 until it reaches
+         * U0.
+         */
+        uint32_t shown = pls == PLS_RESUME ? PLS_U3 : pls;
         st->status |= (uint16_t)(shown << TENDRIL_SS_PORT_STAT_LINK_STATE_SHIFT);
-        if (sc & PORTSC_PP) {
+        if ((sc & PORTSC_PP) != 0) {
             st->status |= TENDRIL_SS_PORT_STAT_POWER;
         }
     } else {
-        if (sc & PORTSC_PP) {
+        if ((sc & PORTSC_PP) != 0) {
             st->status |= TENDRIL_PORT_STAT_POWER;
         }
         if (pls == PLS_U3 || resuming) {
             st->status |= TENDRIL_PORT_STAT_SUSPEND;
         }
-        if ((sc & PORTSC_CCS) && st->speed == TENDRIL_SPEED_LOW) {
+        if ((sc & PORTSC_CCS) != 0 && st->speed == TENDRIL_SPEED_LOW) {
             st->status |= TENDRIL_PORT_STAT_LOW_SPEED;
-        } else if ((sc & PORTSC_CCS) && st->speed == TENDRIL_SPEED_HIGH) {
+        } else if ((sc & PORTSC_CCS) != 0 && st->speed == TENDRIL_SPEED_HIGH) {
             st->status |= TENDRIL_PORT_STAT_HIGH_SPEED;
         }
     }
-    if (sc & PORTSC_CSC) {
+    if ((sc & PORTSC_CSC) != 0) {
         st->change |= TENDRIL_PORT_STAT_C_CONNECTION;
     }
-    if (sc & PORTSC_PEC) {
+    if ((sc & PORTSC_PEC) != 0) {
         st->change |= TENDRIL_PORT_STAT_C_ENABLE;
     }
-    if (sc & PORTSC_OCC) {
+    if ((sc & PORTSC_OCC) != 0) {
         st->change |= TENDRIL_PORT_STAT_C_OVER_CURRENT;
     }
-    if (sc & PORTSC_PRC) {
+    if ((sc & PORTSC_PRC) != 0) {
         st->change |= TENDRIL_PORT_STAT_C_RESET;
     }
-    if (sc & PORTSC_WRC) {
+    if ((sc & PORTSC_WRC) != 0) {
         st->change |= TENDRIL_PORT_STAT_C_BH_RESET;
     }
-    if (sc & PORTSC_PLC) {
+    if ((sc & PORTSC_PLC) != 0) {
         st->change |= ss ? TENDRIL_PORT_STAT_C_LINK_STATE : TENDRIL_PORT_STAT_C_SUSPEND;
     }
-    if (sc & PORTSC_CEC) {
+    if ((sc & PORTSC_CEC) != 0) {
         st->change |= TENDRIL_PORT_STAT_C_CONFIG_ERROR;
     }
 }
 
-static void portsc_write(struct tendril_hc *hc, size_t port, uint32_t set) {
+static void portsc_write(struct tendril_hc *hc, uint8_t port, uint32_t set) {
     uint32_t sc = op_read(hc, OP_PORTSC(port));
     op_write(hc, OP_PORTSC(port), (sc & PORTSC_KEEP) | set);
 }
 
-static int xhci_port_set_feature(struct tendril_hc *hc, size_t port, unsigned int feature) {
+static int xhci_port_set_feature(struct tendril_hc *hc, uint8_t port, int feature) {
     switch (PORT_FEATURE_SELECTOR(feature)) {
         case TENDRIL_PORT_FEAT_RESET: {
             portsc_write(hc, port, PORTSC_PR);
@@ -1804,8 +1848,11 @@ static int xhci_port_set_feature(struct tendril_hc *hc, size_t port, unsigned in
             return TENDRIL_OK;
         }
         case TENDRIL_PORT_FEAT_LINK_STATE: {
-            /* USB3 ports: U3 suspends, U0 resumes (xHCI 1.2, 4.15.1 and 4.15.2.2). */
-            unsigned int target = PORT_FEATURE_PARAM(feature);
+            /*
+             * USB3 ports: U3 suspends, U0 resumes (xHCI 1.2, 4.15.1 and
+             * 4.15.2.2).
+             */
+            uint32_t target = (uint32_t)PORT_FEATURE_PARAM(feature);
             if (target != PLS_U0 && target != PLS_U3) {
                 return TENDRIL_ERR_UNSUPPORTED;
             }
@@ -1818,13 +1865,16 @@ static int xhci_port_set_feature(struct tendril_hc *hc, size_t port, unsigned in
     }
 }
 
-static int xhci_port_clear_feature(struct tendril_hc *hc, size_t port, unsigned int feature) {
+static int xhci_port_clear_feature(struct tendril_hc *hc, uint8_t port, int feature) {
     struct xhci *x = X(hc);
     switch (feature) {
         case TENDRIL_PORT_FEAT_ENABLE: {
             /* BEGIN FreeBSD sys/dev/usb/controller/xhci.c */
-            /* FreeBSD's XHCI_QUIRK_DISABLE_PORT_PED (sys/dev/usb/controller/xhci.c, BSD-2-Clause). */
-            if (!(hc->quirks & TENDRIL_HC_QUIRK_NO_PORT_DISABLE)) {
+            /*
+             * FreeBSD's XHCI_QUIRK_DISABLE_PORT_PED
+             * (sys/dev/usb/controller/xhci.c, BSD-2-Clause).
+             */
+            if ((hc->quirks & TENDRIL_HC_QUIRK_NO_PORT_DISABLE) == 0) {
                 portsc_write(hc, port, PORTSC_PED);
             }
             /* END FreeBSD sys/dev/usb/controller/xhci.c */
@@ -1836,7 +1886,10 @@ static int xhci_port_clear_feature(struct tendril_hc *hc, size_t port, unsigned 
             return TENDRIL_OK;
         }
         case TENDRIL_PORT_FEAT_SUSPEND: {
-            /* USB2 ports: drive resume, ended once advance_resume() has timed it. */
+            /*
+             * USB2 ports: drive resume, ended once advance_resume() has timed
+             * it.
+             */
             struct xhci_port_proto *p = &x->ports[port - 1];
             uint32_t sc = op_read(hc, OP_PORTSC(port));
             if (((sc & PORTSC_PLS_MASK) >> PORTSC_PLS_SHIFT) == PLS_U3 && p->resume == RESUME_IDLE) {
@@ -1884,8 +1937,10 @@ static int xhci_port_clear_feature(struct tendril_hc *hc, size_t port, unsigned 
 
 /* Devices */
 
-static unsigned int speed_id(struct tendril_hc *hc, struct tendril_device *dev) {
-    /* Slot contexts want the root port's PORTSC speed ID; walk up to the root. */
+static uint32_t speed_id(struct tendril_hc *hc, struct tendril_device *dev) {
+    /*
+     * Slot contexts want the root port's PORTSC speed ID; walk up to the root.
+     */
     if (dev->parent == NULL) {
         return PORTSC_SPEED(op_read(hc, OP_PORTSC(dev->root_port)));
     }
@@ -1957,7 +2012,7 @@ static void dev_free_mem(struct tendril_hc *hc, struct xhci_dev *xd) {
     tendril_free(xd, sizeof(struct xhci_dev));
 }
 
-static void enable_slot_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned int code, struct xhci_trb *ev) {
+static void enable_slot_done(struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev) {
     struct xhci *x = X(hc);
     struct tendril_device *dev = cmd->dev;
     struct xhci_dev *xd = xdev(dev);
@@ -1966,7 +2021,7 @@ static void enable_slot_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsign
         tendril_async_complete(hc, cmd->async, cc_status(code));
         return;
     }
-    unsigned int slot = trb_d(ev, 3) >> 24;
+    uint8_t slot = (uint8_t)(trb_d(ev, 3) >> 24);
     if (slot == 0 || slot > x->max_slots || x->devs[slot] != NULL) {
         tendril_async_complete(hc, cmd->async, TENDRIL_ERR_CONTROLLER);
         return;
@@ -2045,7 +2100,7 @@ static void fill_ep_ctx(struct tendril_hc *hc, struct xhci_dev *xd, struct xhci_
         burst = ep->mult - (uint32_t)1;
     }
     unsigned int interval = periodic || ep->dev->speed == TENDRIL_SPEED_HIGH ? ep->interval_log2 : 0;
-    uint32_t esit = periodic ? ep->max_esit_payload : 0;
+    uint32_t esit = periodic ? (uint32_t)ep->max_esit_payload : 0;
     unsigned int cerr = ep->type == TENDRIL_ENDPOINT_XFER_ISOC ? 0 : 3;
 
     ctx_set(c, 0, (mult << 8) | (interval << 16) | ((esit >> 16) << 24));
@@ -2056,14 +2111,14 @@ static void fill_ep_ctx(struct tendril_hc *hc, struct xhci_dev *xd, struct xhci_
     ctx_set(c, 4, avg | ((esit & 0xffff) << 16));
 }
 
-static void fill_slot_ctx(struct tendril_hc *hc, struct tendril_device *dev, unsigned int entries) {
+static void fill_slot_ctx(struct tendril_hc *hc, struct tendril_device *dev, size_t entries) {
     struct xhci_dev *xd = xdev(dev);
     uint32_t *s = in_slot(hc, xd);
     uint32_t dw0 = (dev->route & 0xfffff) | ((uint32_t)xd->speed_id << 20) | ((uint32_t)entries << 27);
     uint32_t dw2 = 0;
 
     if (dev->tt_hub != NULL && dev->tt_hub->hcd != NULL) {
-        dw2 |= xdev(dev->tt_hub)->slot | ((uint32_t)dev->tt_port << 8);
+        dw2 |= (uint32_t)xdev(dev->tt_hub)->slot | ((uint32_t)dev->tt_port << 8);
         if (dev->tt_hub->hub != NULL && dev->tt_hub->hub->multi_tt) {
             dw0 |= (uint32_t)1 << 25;
         }
@@ -2084,7 +2139,7 @@ static void fill_slot_ctx(struct tendril_hc *hc, struct tendril_device *dev, uns
     ctx_set(s, 3, 0);
 }
 
-static void address_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned int code, struct xhci_trb *ev) {
+static void address_done(struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev) {
     struct tendril_device *dev = cmd->dev;
     (void)ev;
     if (code == CC_SUCCESS) {
@@ -2100,8 +2155,7 @@ static int xhci_device_address(struct tendril_hc *hc, struct tendril_device *dev
     fill_slot_ctx(hc, dev, 1);
     fill_ep_ctx(hc, xd, xd->eps[1]);
     return cmd_submit(
-        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_ADDRESS_DEVICE) | TRB_SLOT(xd->slot), address_done, async,
-        dev, NULL, 0
+        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_ADDRESS_DEVICE) | TRB_SLOT(xd->slot), address_done, async, dev, NULL, 0
     );
 }
 
@@ -2118,16 +2172,15 @@ static int xhci_ep0_update(struct tendril_hc *hc, struct tendril_device *dev, st
     memcpy(c, out, X(hc)->ctx_size);
     ctx_set(c, 1, (ctx_get(out, 1) & 0xffff) | ((uint32_t)dev->ep0.max_packet << 16));
     return cmd_submit(
-        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_EVALUATE_CONTEXT) | TRB_SLOT(xd->slot), cmd_async_done,
-        async, dev, NULL, 0
+        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_EVALUATE_CONTEXT) | TRB_SLOT(xd->slot), cmd_async_done, async, dev, NULL, 0
     );
 }
 
-static unsigned int context_entries(struct xhci_dev *xd) {
-    unsigned int last = 1;
+static size_t context_entries(struct xhci_dev *xd) {
+    size_t last = 1;
     for (size_t i = 2; i < 32; i++) {
         if (xd->eps[i] != NULL) {
-            last = (unsigned int)i;
+            last = i;
         }
     }
     return last;
@@ -2145,8 +2198,8 @@ static int xhci_hub_update(struct tendril_hc *hc, struct tendril_device *dev, st
     ctx_set(in_ctrl(hc, xd), 1, (uint32_t)1 << 0);
     fill_slot_ctx(hc, dev, context_entries(xd));
     return cmd_submit(
-        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_CONFIGURE_ENDPOINT) | TRB_SLOT(xd->slot), cmd_async_done,
-        async, dev, NULL, 0
+        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_CONFIGURE_ENDPOINT) | TRB_SLOT(xd->slot), cmd_async_done, async, dev, NULL,
+        0
     );
 }
 
@@ -2158,7 +2211,7 @@ struct config_change {
     size_t num_drop;
 };
 
-static void configure_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned int code, struct xhci_trb *ev) {
+static void configure_done(struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev) {
     struct tendril_device *dev = cmd->dev;
     struct xhci_dev *xd = xdev(dev);
     struct config_change *cc = (struct config_change *)(uintptr_t)cmd->xep;
@@ -2249,8 +2302,8 @@ static int xhci_configure(
     ctx_set(s, 0, (ctx_get(s, 0) & ~((uint32_t)0x1f << 27)) | ((uint32_t)context_entries(xd) << 27));
 
     int st = cmd_submit(
-        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_CONFIGURE_ENDPOINT) | TRB_SLOT(xd->slot),
-        configure_done, async, dev, (struct xhci_ep *)(uintptr_t)cc, 0
+        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_CONFIGURE_ENDPOINT) | TRB_SLOT(xd->slot), configure_done, async, dev,
+        (struct xhci_ep *)(uintptr_t)cc, 0
     );
     if (st != TENDRIL_OK) {
         for (size_t j = 0; j < cc->num_add; j++) {
@@ -2289,21 +2342,23 @@ static int xhci_endpoint_reset(struct tendril_hc *hc, struct tendril_endpoint *e
     ctx_set(in_ctrl(hc, xd), 1, ((uint32_t)1 << 0) | ((uint32_t)1 << xep->dci));
     copy_out_slot(hc, xd);
     return cmd_submit(
-        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_CONFIGURE_ENDPOINT) | TRB_SLOT(xd->slot), cmd_async_done,
-        async, ep->dev, xep, 0
+        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_CONFIGURE_ENDPOINT) | TRB_SLOT(xd->slot), cmd_async_done, async, ep->dev,
+        xep, 0
     );
 }
 
 static int xhci_alloc_streams(
-    struct tendril_hc *hc, struct tendril_endpoint **eps, size_t count, unsigned int streams,
-    struct tendril_async *async
+    struct tendril_hc *hc, struct tendril_endpoint **eps, size_t count, size_t streams, struct tendril_async *async
 ) {
     struct xhci *x = X(hc);
     unsigned int max_psa = HCC1_MAXPSA(x->hcc1);
     if (max_psa == 0) {
         return TENDRIL_ERR_UNSUPPORTED;
     }
-    /* A linear primary array of 2^(MaxPStreams + 1) entries, stream 0 reserved. */
+    /*
+     * A linear primary array of 2^(MaxPStreams + 1) entries, stream 0
+     * reserved.
+     */
     unsigned int order = 1;
     while (((uint32_t)1 << order) < streams + 1) {
         order++;
@@ -2358,8 +2413,8 @@ static int xhci_alloc_streams(
     ctx_set(in_ctrl(hc, xd), 1, flags);
     copy_out_slot(hc, xd);
     st = cmd_submit(
-        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_CONFIGURE_ENDPOINT) | TRB_SLOT(xd->slot), cmd_async_done,
-        async, dev, NULL, 0
+        hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_CONFIGURE_ENDPOINT) | TRB_SLOT(xd->slot), cmd_async_done, async, dev, NULL,
+        0
     );
     if (st == TENDRIL_OK) {
         return TENDRIL_OK;
@@ -2374,7 +2429,7 @@ fail:
     return st;
 }
 
-static void disable_slot_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned int code, struct xhci_trb *ev) {
+static void disable_slot_done(struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev) {
     struct xhci *x = X(hc);
     struct tendril_device *dev = cmd->dev;
     struct xhci_dev *xd = xdev(dev);
@@ -2397,8 +2452,7 @@ static void xhci_device_free(struct tendril_hc *hc, struct tendril_device *dev, 
     }
     if (xd->slot != 0 && !hc->dead) {
         int st = cmd_submit(
-            hc, 0, 0, TRB_TYPE(TRB_DISABLE_SLOT) | TRB_SLOT(xd->slot),
-            disable_slot_done, async, dev, NULL, 0
+            hc, 0, 0, TRB_TYPE(TRB_DISABLE_SLOT) | TRB_SLOT(xd->slot), disable_slot_done, async, dev, NULL, 0
         );
         if (st == TENDRIL_OK) {
             return;
@@ -2484,7 +2538,7 @@ static void tb_push(struct td_builder *tb, uint64_t param, uint32_t status, uint
 }
 
 static void push_td(
-    struct td_builder *tb, struct cursor *c, size_t len, uint16_t mps, uint32_t first_ctl, uint32_t all_ctl,
+    struct td_builder *tb, struct cursor *c, size_t len, size_t mps, uint32_t first_ctl, uint32_t all_ctl,
     uint32_t last_ctl
 ) {
     size_t tdpc = len == 0 ? 0 : (len + mps - 1) / mps;
@@ -2523,8 +2577,11 @@ static int submit_control(struct tendril_hc *hc, struct xhci_ep *xep, struct ten
     size_t len = tendril_le16(xfer->setup.length);
     bool in = (xfer->setup.request_type & TENDRIL_DIR_IN) != 0;
     /* BEGIN FreeBSD sys/dev/usb/controller/xhci.c */
-    /* FreeBSD's ctlstep (sys/dev/usb/controller/xhci.c, BSD-2-Clause): the status stage waits for the data stage. */
-    bool step = len != 0 && (hc->quirks & TENDRIL_HC_QUIRK_XHCI_CTRL_STEP);
+    /*
+     * FreeBSD's ctlstep (sys/dev/usb/controller/xhci.c, BSD-2-Clause): the
+     * status stage waits for the data stage.
+     */
+    bool step = len != 0 && (hc->quirks & TENDRIL_HC_QUIRK_XHCI_CTRL_STEP) != 0;
     /* END FreeBSD sys/dev/usb/controller/xhci.c */
     struct cursor c;
 
@@ -2574,7 +2631,7 @@ static int submit_bulk(
     struct tendril_endpoint *ep = xep->ep;
     bool in = (ep->address & TENDRIL_ENDPOINT_DIR_MASK) != 0;
     size_t len = xfer->length;
-    bool zlp = !in && (xfer->flags & TENDRIL_XFER_ZERO_PACKET) && len != 0 && len % ep->max_packet == 0;
+    bool zlp = !in && (xfer->flags & TENDRIL_XFER_ZERO_PACKET) != 0 && len != 0 && len % ep->max_packet == 0;
     struct cursor c;
     (void)hc;
 
@@ -2616,7 +2673,7 @@ static int submit_isoc(struct tendril_hc *hc, struct xhci_ep *xep, struct tendri
 
     cursor_init(&c, xfer);
     size_t need = 0;
-    for (uint32_t i = 0; i < xfer->num_iso_packets; i++) {
+    for (size_t i = 0; i < xfer->num_iso_packets; i++) {
         size_t n = count_td(&c, xfer->iso_packets[i].length);
         if (n == 0) {
             return TENDRIL_ERR_INVALID;
@@ -2640,11 +2697,11 @@ static int submit_isoc(struct tendril_hc *hc, struct xhci_ep *xep, struct tendri
 
     struct td_builder tb = { ring, 0, 0, 0 };
     cursor_init(&c, xfer);
-    for (uint32_t i = 0; i < xfer->num_iso_packets; i++) {
-        uint32_t plen = xfer->iso_packets[i].length;
-        unsigned int tdpc = plen == 0 ? 1 : (plen + ep->max_packet - 1) / ep->max_packet;
-        unsigned int tbc = (tdpc + burst - 1) / burst - 1;
-        unsigned int residue = tdpc % burst;
+    for (size_t i = 0; i < xfer->num_iso_packets; i++) {
+        size_t plen = xfer->iso_packets[i].length;
+        size_t tdpc = plen == 0 ? 1 : (plen + ep->max_packet - 1) / ep->max_packet;
+        unsigned int tbc = (unsigned int)((tdpc + burst - 1) / burst - 1);
+        unsigned int residue = (unsigned int)(tdpc % burst);
         unsigned int tlbpc = residue == 0 ? burst - 1 : residue - 1;
         uint32_t first = TRB_TYPE(TRB_ISOCH) | ((uint32_t)(tbc & 3) << 7) | ((uint32_t)(tlbpc & 0xf) << 16);
         if (asap) {
@@ -2716,22 +2773,21 @@ static void xhci_cancel(struct tendril_hc *hc, struct tendril_transfer *xfer) {
 
 /* Power management */
 
-static void suspend_next(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async, unsigned int dci
-);
+static void suspend_next(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async, uint8_t dci);
 
-static void suspend_stop_done(struct tendril_hc *hc, struct xhci_cmd *cmd, unsigned int code, struct xhci_trb *ev) {
+static void suspend_stop_done(struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev) {
     (void)ev;
     if (code != CC_SUCCESS && code != CC_CONTEXT_STATE) {
         LOG_DEBUG("xHCI: Stop Endpoint for a suspend failed with code %u", code);
     }
-    suspend_next(hc, cmd->dev, cmd->async, cmd->arg + 1);
+    suspend_next(hc, cmd->dev, cmd->async, (uint8_t)(cmd->arg + 1));
 }
 
-/* xHCI 1.2, 4.15.1.1: endpoints stop, flagged as suspending, before the link is suspended. */
-static void suspend_next(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async, unsigned int dci
-) {
+/*
+ * xHCI 1.2, 4.15.1.1: endpoints stop, flagged as suspending, before the link
+ * is suspended.
+ */
+static void suspend_next(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async, uint8_t dci) {
     struct xhci_dev *xd = xdev(dev);
     for (; xd != NULL && dci < 32; dci++) {
         struct xhci_ep *xep = xd->eps[dci];
@@ -2739,9 +2795,8 @@ static void suspend_next(
             continue;
         }
         int st = cmd_submit(
-            hc, 0, 0,
-            TRB_TYPE(TRB_STOP_ENDPOINT) | TRB_SLOT(xd->slot) | TRB_EP(dci) | TRB_SP,
-            suspend_stop_done, async, dev, xep, dci
+            hc, 0, 0, TRB_TYPE(TRB_STOP_ENDPOINT) | TRB_SLOT(xd->slot) | TRB_EP(dci) | TRB_SP, suspend_stop_done,
+            async, dev, xep, (uint32_t)dci
         );
         if (st != TENDRIL_OK) {
             tendril_async_complete(hc, async, st);
@@ -2795,14 +2850,17 @@ static int xhci_resume(struct tendril_hc *hc) {
     if (!tendril_hc_wait32(hc, x->op + OP_USBSTS, USBSTS_CNR, 0, 1000000)) {
         return TENDRIL_ERR_IO;
     }
-    /* Registers that kept their values mean the controller kept power, and its state with it. */
+    /*
+     * Registers that kept their values mean the controller kept power, and its
+     * state with it.
+     */
     bool kept = (op_read(hc, OP_CONFIG) & 0xff) == x->max_slots && op_read(hc, OP_DCBAAP) == (uint32_t)x->dcbaa_dma
         && op_read(hc, OP_DCBAAP + 4) == (uint32_t)(x->dcbaa_dma >> 32);
     if (!kept) {
         if (x->save_failed) {
             return TENDRIL_ERR_IO;
         }
-        if (hc->config.pci && (hc->quirks & TENDRIL_HC_QUIRK_INTEL_PORT_ROUTING)) {
+        if (hc->config.pci && (hc->quirks & TENDRIL_HC_QUIRK_INTEL_PORT_ROUTING) != 0) {
             intel_port_routing(hc);
         }
         op_write(hc, OP_DNCTRL, 0);
@@ -2815,11 +2873,13 @@ static int xhci_resume(struct tendril_hc *hc) {
         rt_write(hc, RT_IR0 + IR_IMOD, imod(hc));
         op_write(hc, OP_USBCMD, x->saved_cmd | USBCMD_CRS);
         if (!tendril_hc_wait32(hc, x->op + OP_USBSTS, USBSTS_RSS, 0, 1000000)
-         || (op_read(hc, OP_USBSTS) & USBSTS_SRE)) {
+         || (op_read(hc, OP_USBSTS) & USBSTS_SRE) != 0) {
             LOG_WARN("xHCI: restoring the controller state failed");
             return TENDRIL_ERR_IO;
         }
-        /* The command ring starts over, empty, at the address CRCR is given. */
+        /*
+         * The command ring starts over, empty, at the address CRCR is given.
+         */
         memset(x->cmd.trbs, 0, x->cmd.size * sizeof(struct xhci_trb));
         x->cmd.enq = 0;
         x->cmd.deq = 0;

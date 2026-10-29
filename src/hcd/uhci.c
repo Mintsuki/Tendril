@@ -25,7 +25,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* UHCI 1.1. Registers sit in I/O space; descriptors are little-endian with 32-bit addresses. */
+/*
+ * UHCI 1.1. Registers sit in I/O space; descriptors are little-endian with
+ * 32-bit addresses.
+ */
 
 /*
  * Parts of this file are derived from FreeBSD's sys/dev/usb/usb.h and
@@ -96,6 +99,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/glue.h"
+#include "../../include/tendril/spec.h"
+#include "../../include/tendril/tendril.h"
 #include "../internal.h"
 
 #define REG_USBCMD 0x00
@@ -208,10 +217,12 @@ struct uhci_td {
 #define KIND_INTR 2
 #define KIND_SKELETON 3
 
-/* Waits for endpoints being closed, then completes an asynchronous operation. */
+/*
+ * Waits for endpoints being closed, then completes an asynchronous operation.
+ */
 struct uhci_close {
     struct tendril_async *async;
-    unsigned int remaining;
+    size_t remaining;
     int status;
 };
 
@@ -232,8 +243,10 @@ struct uhci_qh {
     bool linked;
     bool waiting;
     bool closing;
-    /* The data toggle of the next TD queued on a bulk or interrupt endpoint. */
-    unsigned int toggle;
+    /*
+     * The data toggle of the next TD queued on a bulk or interrupt endpoint.
+     */
+    uint32_t toggle;
 };
 
 /* Per isochronous endpoint: where its stream of frames stands. */
@@ -267,9 +280,11 @@ struct uhci {
     struct tendril_timer timer;
     int phase[MAX_PORTS];
     uint64_t phase_start[MAX_PORTS];
-    unsigned int enable_tries[MAX_PORTS];
+    size_t enable_tries[MAX_PORTS];
     bool reset_changed[MAX_PORTS];
-    /* Resume signalling under way, and resumes finished but not yet reported. */
+    /*
+     * Resume signalling under way, and resumes finished but not yet reported.
+     */
     uint64_t resume_start[MAX_PORTS];
     bool resuming[MAX_PORTS];
     bool resume_changed[MAX_PORTS];
@@ -287,7 +302,10 @@ struct uhci {
 #define XF_CANCEL ((uint32_t)1 << 0)
 #define XF_SHORT ((uint32_t)1 << 1)
 
-/* Isochronous transfers are tracked through a list node kept beside the transfer. */
+/*
+ * Isochronous transfers are tracked through a list node kept beside the
+ * transfer.
+ */
 struct uhci_iso_xfer {
     struct tendril_list node;
     struct tendril_transfer *xfer;
@@ -379,13 +397,13 @@ static uint64_t cursor_take(struct cursor *c, size_t want, size_t *got) {
 }
 
 static int td_status(uint32_t s) {
-    if (s & TD_STATUS_BABBLE) {
+    if ((s & TD_STATUS_BABBLE) != 0) {
         return TENDRIL_ERR_BABBLE;
     }
-    if (s & TD_STATUS_DBE) {
+    if ((s & TD_STATUS_DBE) != 0) {
         return TENDRIL_ERR_OVERRUN;
     }
-    if (s & (TD_STATUS_CRC_TIMEOUT | TD_STATUS_BITSTUFF)) {
+    if ((s & (TD_STATUS_CRC_TIMEOUT | TD_STATUS_BITSTUFF)) != 0) {
         return TENDRIL_ERR_IO;
     }
     return TENDRIL_ERR_STALL;
@@ -437,7 +455,10 @@ static size_t intr_level(struct tendril_endpoint *ep) {
     return MIN(log2, (size_t)LEVELS - 1);
 }
 
-/* Off the schedule, a queue head is safe to change once two frames have started. */
+/*
+ * Off the schedule, a queue head is safe to change once two frames have
+ * started.
+ */
 static void wait_frames(struct tendril_hc *hc, struct uhci_qh *qh) {
     struct uhci *u = U(hc);
     if (qh->waiting) {
@@ -478,12 +499,15 @@ static void free_xfer_tds(struct tendril_hc *hc, struct tendril_transfer *xfer) 
     free_chain(hc, xfer_first(xfer), xfer_last(xfer)->sw_next);
 }
 
-static uint32_t td_token(struct tendril_endpoint *ep, uint32_t pid, size_t len, unsigned int toggle) {
-    return TOKEN_MAXLEN(len) | (toggle ? TOKEN_D : 0) | TOKEN_ENDPT(ep->address & TENDRIL_ENDPOINT_NUMBER_MASK)
+static uint32_t td_token(struct tendril_endpoint *ep, uint32_t pid, size_t len, uint32_t toggle) {
+    return TOKEN_MAXLEN(len) | (toggle != 0 ? TOKEN_D : 0) | TOKEN_ENDPT(ep->address & TENDRIL_ENDPOINT_NUMBER_MASK)
         | TOKEN_ADDR(ep->dev->address & 0x7f) | pid;
 }
 
-/* An inactive TD ending a queue; it holds a valid token in case the controller looks. */
+/*
+ * An inactive TD ending a queue; it holds a valid token in case the controller
+ * looks.
+ */
 static void make_dummy(struct uhci_td *td) {
     td->link = le(LINK_T);
     td->status = 0;
@@ -506,14 +530,14 @@ static int submit_queue(struct tendril_hc *hc, struct uhci_qh *qh, struct tendri
     struct tendril_endpoint *ep = xfer->endpoint;
     bool control = ep->type == TENDRIL_ENDPOINT_XFER_CONTROL;
     bool in = is_in(xfer);
-    uint16_t mps = ep->max_packet;
+    size_t mps = ep->max_packet;
     size_t len = control ? tendril_le16(xfer->setup.length) : xfer->length;
-    bool zlp = !in && (xfer->flags & TENDRIL_XFER_ZERO_PACKET) && len != 0 && len % mps == 0;
+    bool zlp = !in && (xfer->flags & TENDRIL_XFER_ZERO_PACKET) != 0 && len != 0 && len % mps == 0;
     uint32_t base = TD_CERR(3) | (ep->dev->speed == TENDRIL_SPEED_LOW ? TD_LS : 0);
     struct uhci_td *first = qh->dummy;
     struct uhci_td *dummy = td_alloc(hc);
     struct uhci_td *td = NULL;
-    unsigned int toggle = control ? 1 : qh->toggle;
+    uint32_t toggle = control ? 1 : qh->toggle;
     struct cursor c;
 
     if (dummy == NULL) {
@@ -524,7 +548,10 @@ static int submit_queue(struct tendril_hc *hc, struct uhci_qh *qh, struct tendri
     first->sw_next = NULL;
     first->skipped = false;
 
-    /* Appends a TD to the chain, the old dummy first; its status is set by the caller. */
+    /*
+     * Appends a TD to the chain, the old dummy first; its status is set by the
+     * caller.
+     */
 #define NEXT_TD() \
     do { \
         struct uhci_td *n_ = td == NULL ? first : td_alloc(hc); \
@@ -571,7 +598,10 @@ static int submit_queue(struct tendril_hc *hc, struct uhci_qh *qh, struct tendri
         NEXT_TD();
         td->buffer = le((uint32_t)addr);
         td->token = le(td_token(ep, in ? PID_IN : PID_OUT, chunk, toggle));
-        /* Short packet detection stops the queue on a short IN packet, for the driver to sort out. */
+        /*
+         * Short packet detection stops the queue on a short IN packet, for the
+         * driver to sort out.
+         */
         set_status(td, first, base | TD_ACTIVE | (in ? TD_SPD : 0));
         toggle ^= 1;
         done += chunk;
@@ -602,14 +632,17 @@ static int submit_queue(struct tendril_hc *hc, struct uhci_qh *qh, struct tendri
     return TENDRIL_OK;
 }
 
-/* Rewrites the data toggles from `td` on, after packets queued earlier did not all happen. */
-static void retoggle(struct uhci_qh *qh, struct uhci_td *td, unsigned int toggle) {
+/*
+ * Rewrites the data toggles from `td` on, after packets queued earlier did not
+ * all happen.
+ */
+static void retoggle(struct uhci_qh *qh, struct uhci_td *td, uint32_t toggle) {
     for (; td != NULL && td != qh->dummy; td = td->sw_next) {
         if (td->skipped) {
             continue;
         }
         uint32_t token = le(td->token) & ~TOKEN_D;
-        td->token = le(token | (toggle ? TOKEN_D : 0));
+        td->token = le(token | (toggle != 0 ? TOKEN_D : 0));
         toggle ^= 1;
     }
     qh->toggle = toggle;
@@ -632,10 +665,10 @@ static bool scan_queue_xfer(struct tendril_hc *hc, struct uhci_qh *qh, struct te
     struct uhci_td *last = xfer_last(xfer);
     size_t actual = 0;
 
-    for (struct uhci_td *td = first;; td = td->sw_next) {
+    for (struct uhci_td *td = first; ; td = td->sw_next) {
         if (!td->skipped) {
             uint32_t s = le(td->status);
-            if (s & TD_ACTIVE) {
+            if ((s & TD_ACTIVE) != 0) {
                 return false;
             }
             dma_barrier();
@@ -645,13 +678,16 @@ static bool scan_queue_xfer(struct tendril_hc *hc, struct uhci_qh *qh, struct te
             if (data) {
                 actual += moved;
             }
-            if (s & TD_ERRORS) {
+            if ((s & TD_ERRORS) != 0) {
                 struct uhci_td *next = last->sw_next;
                 if (!control) {
                     /* The failed packet did not toggle. */
                     retoggle(qh, next, (token & TOKEN_D) != 0);
                 }
-                /* The element pointer leaves the failed TDs before they are freed. */
+                /*
+                 * The element pointer leaves the failed TDs before they are
+                 * freed.
+                 */
                 queue_restart(qh, next);
                 free_xfer_tds(hc, xfer);
                 tendril_transfer_complete(hc, xfer, td_status(s), actual);
@@ -663,7 +699,7 @@ static bool scan_queue_xfer(struct tendril_hc *hc, struct uhci_qh *qh, struct te
                 for (struct uhci_td *k = td->sw_next; k != resume; k = k->sw_next) {
                     k->skipped = true;
                 }
-                if (!(xfer->internal.hcd_data[XD_FLAGS] & XF_SHORT)) {
+                if ((xfer->internal.hcd_data[XD_FLAGS] & XF_SHORT) == 0) {
                     xfer->internal.hcd_data[XD_FLAGS] |= XF_SHORT;
                     if (!control) {
                         retoggle(qh, resume, (token & TOKEN_D) == 0);
@@ -688,7 +724,7 @@ static void scan_qh(struct tendril_hc *hc, struct uhci_qh *qh) {
     struct tendril_endpoint *ep = qh->ep;
     while (!list_empty(&ep->transfers)) {
         struct tendril_transfer *xfer = CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
-        if (xfer->internal.hcd_data[XD_FLAGS] & XF_CANCEL) {
+        if ((xfer->internal.hcd_data[XD_FLAGS] & XF_CANCEL) != 0) {
             break;
         }
         if (!scan_queue_xfer(hc, qh, xfer)) {
@@ -715,7 +751,7 @@ static void sweep_qh(struct tendril_hc *hc, struct uhci_qh *qh) {
 
     LIST_FOR_EACH_SAFE(it, tmp, &ep->transfers) {
         struct tendril_transfer *xfer = CONTAINER_OF(it, struct tendril_transfer, internal.node);
-        if (!(xfer->internal.hcd_data[XD_FLAGS] & XF_CANCEL)) {
+        if ((xfer->internal.hcd_data[XD_FLAGS] & XF_CANCEL) == 0) {
             continue;
         }
         size_t actual = 0;
@@ -727,14 +763,14 @@ static void sweep_qh(struct tendril_hc *hc, struct uhci_qh *qh) {
                 if (td->skipped) {
                     continue;
                 }
-                if (s & TD_ACTIVE) {
+                if ((s & TD_ACTIVE) != 0) {
                     if (toggle < 0) {
                         toggle = (token & TOKEN_D) != 0;
                     }
                     break;
                 }
                 /* A completed packet toggled; one that failed did not. */
-                toggle = (int)(((token & TOKEN_D) != 0) ^ !(s & TD_ERRORS));
+                toggle = (int)(((token & TOKEN_D) != 0) ^ ((s & TD_ERRORS) == 0));
                 if (!control || (td != xfer_first(xfer) && td != xfer_last(xfer))) {
                     actual += TD_ACTLEN(s);
                 }
@@ -744,7 +780,10 @@ static void sweep_qh(struct tendril_hc *hc, struct uhci_qh *qh) {
         tendril_transfer_complete(hc, xfer, xfer->internal.cancel_status, actual);
     }
 
-    /* Rebuild the links between the transfers left, in order, ending at the dummy. */
+    /*
+     * Rebuild the links between the transfers left, in order, ending at the
+     * dummy.
+     */
     struct tendril_transfer *prev = NULL;
     LIST_FOR_EACH(it, &ep->transfers) {
         struct tendril_transfer *xfer = CONTAINER_OF(it, struct tendril_transfer, internal.node);
@@ -765,7 +804,10 @@ static void sweep_qh(struct tendril_hc *hc, struct uhci_qh *qh) {
     if (!control && restart) {
         retoggle(qh, head, toggle < 0 ? qh->toggle : (unsigned int)toggle);
     } else if (!control && !list_empty(&ep->transfers)) {
-        /* The transfer in flight keeps its toggles; whatever was queued behind it moves up. */
+        /*
+         * The transfer in flight keeps its toggles; whatever was queued behind
+         * it moves up.
+         */
         struct tendril_transfer *h = CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
         retoggle(qh, xfer_last(h)->sw_next, ((le(xfer_last(h)->token) & TOKEN_D) != 0) ^ (uint32_t)1);
     }
@@ -817,11 +859,11 @@ static int submit_iso(struct tendril_hc *hc, struct tendril_transfer *xfer) {
     struct uhci_iso_ep *iep = ep->hcd;
     bool in = is_in(xfer);
     uint32_t now = current_frame(hc);
-    uint32_t n = xfer->num_iso_packets;
+    size_t n = xfer->num_iso_packets;
     uint32_t frame;
     struct cursor c;
 
-    if (!(xfer->flags & TENDRIL_XFER_ISO_ASAP)) {
+    if ((xfer->flags & TENDRIL_XFER_ISO_ASAP) == 0) {
         frame = xfer->start_frame;
     } else if (iep->streaming && (int32_t)(iep->next_frame - now) > 0) {
         /* Back to back with what is queued. */
@@ -841,8 +883,8 @@ static int submit_iso(struct tendril_hc *hc, struct tendril_transfer *xfer) {
     struct uhci_td *first = NULL;
     struct uhci_td *prev = NULL;
     cursor_init(&c, xfer);
-    for (uint32_t i = 0; i < n; i++) {
-        uint32_t len = xfer->iso_packets[i].length;
+    for (size_t i = 0; i < n; i++) {
+        size_t len = xfer->iso_packets[i].length;
         size_t got = 0;
         uint64_t addr = len != 0 ? cursor_take(&c, len, &got) : 0;
         struct uhci_td *td = got == len ? td_alloc(hc) : NULL;
@@ -852,7 +894,7 @@ static int submit_iso(struct tendril_hc *hc, struct tendril_transfer *xfer) {
             return got == len ? TENDRIL_ERR_NO_MEMORY : TENDRIL_ERR_BOUNCE;
         }
         td->sw_next = NULL;
-        td->frame = frame + i;
+        td->frame = frame + (uint32_t)i;
         td->buffer = le((uint32_t)addr);
         td->token = le(td_token(ep, in ? PID_IN : PID_OUT, len, 0));
         td->status = le(TD_ACTIVE | TD_IOS | (i == n - 1 ? TD_IOC : 0));
@@ -873,22 +915,25 @@ static int submit_iso(struct tendril_hc *hc, struct tendril_transfer *xfer) {
         u->frame_list[idx] = le((uint32_t)td->dma);
     }
     ix->xfer = xfer;
-    ix->last_frame = frame + n - 1;
+    ix->last_frame = frame + (uint32_t)n - 1;
     list_add_tail(&u->iso_active, &ix->node);
     xfer->internal.hcd_data[XD_FIRST] = (uintptr_t)first;
     xfer->internal.hcd_data[XD_NODE] = (uintptr_t)ix;
     xfer->internal.hcd_data[XD_FLAGS] = 0;
     xfer->start_frame = frame;
     /* What is queued ends with whichever transfer ends last. */
-    if (!iep->streaming || (int32_t)(frame + n - iep->next_frame) > 0) {
-        iep->next_frame = frame + n;
+    if (!iep->streaming || (int32_t)(frame + (uint32_t)n - iep->next_frame) > 0) {
+        iep->next_frame = frame + (uint32_t)n;
     }
     iep->streaming = true;
     tendril_timer_arm(hc, &u->timer, 2 * NS_PER_MS);
     return TENDRIL_OK;
 }
 
-/* Whether none of the transfer's frames is close enough to now for the controller to be on it. */
+/*
+ * Whether none of the transfer's frames is close enough to now for the
+ * controller to be on it.
+ */
 static bool iso_frames_clear(struct tendril_transfer *xfer, uint32_t now) {
     for (struct uhci_td *td = xfer_first(xfer); td != NULL; td = td->sw_next) {
         int32_t d = (int32_t)(td->frame - now);
@@ -899,7 +944,10 @@ static bool iso_frames_clear(struct tendril_transfer *xfer, uint32_t now) {
     return true;
 }
 
-/* Completes isochronous transfers once their frames are over, or cancelled ones once they are clear. */
+/*
+ * Completes isochronous transfers once their frames are over, or cancelled
+ * ones once they are clear.
+ */
 static void scan_iso(struct tendril_hc *hc) {
     struct uhci *u = U(hc);
     struct tendril_list *it;
@@ -919,10 +967,10 @@ static void scan_iso(struct tendril_hc *hc) {
         for (struct uhci_td *td = xfer_first(xfer); td != NULL; td = td->sw_next, i++) {
             struct tendril_iso_packet *pkt = &xfer->iso_packets[i];
             uint32_t s = le(td->status);
-            if (s & TD_ACTIVE || (ix->cancelled && TD_ACTLEN(s) == 0 && !(s & TD_ERRORS))) {
+            if ((s & TD_ACTIVE) != 0 || (ix->cancelled && TD_ACTLEN(s) == 0 && (s & TD_ERRORS) == 0)) {
                 pkt->status = TENDRIL_ERR_MISSED;
                 pkt->actual = 0;
-            } else if (s & TD_ERRORS) {
+            } else if ((s & TD_ERRORS) != 0) {
                 pkt->status = td_status(s);
                 pkt->actual = 0;
             } else {
@@ -1017,10 +1065,10 @@ static void check_ports(struct tendril_hc *hc) {
     u->port_check = tendril_now();
     for (size_t p = 1; p <= u->num_ports; p++) {
         uint16_t v = reg_read16(hc, REG_PORTSC(p));
-        bool woke = (v & PORT_SUSP) && (v & PORT_RD) && !u->resuming[p - 1];
-        if ((v & PORT_RWC) || u->phase[p - 1] != PHASE_IDLE || u->reset_changed[p - 1] || woke
+        bool woke = (v & PORT_SUSP) != 0 && (v & PORT_RD) != 0 && !u->resuming[p - 1];
+        if ((v & PORT_RWC) != 0 || u->phase[p - 1] != PHASE_IDLE || u->reset_changed[p - 1] || woke
          || u->resume_changed[p - 1]) {
-            tendril_roothub_changed(hc, p);
+            tendril_roothub_changed(hc, (uint8_t)p);
         }
     }
 }
@@ -1072,7 +1120,10 @@ static void uhci_cancel(struct tendril_hc *hc, struct tendril_transfer *xfer) {
             tendril_transfer_complete(hc, xfer, xfer->internal.cancel_status, 0);
             return;
         }
-        /* Inactive TDs are passed over; they come off the frame list once the controller cannot be on them. */
+        /*
+         * Inactive TDs are passed over; they come off the frame list once the
+         * controller cannot be on them.
+         */
         for (struct uhci_td *td = xfer_first(xfer); td != NULL; td = td->sw_next) {
             td->status = le(le(td->status) & ~TD_ACTIVE);
         }
@@ -1228,7 +1279,10 @@ static int uhci_device_init(struct tendril_hc *hc, struct tendril_device *dev, s
 }
 
 static int uhci_ep0_update(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async) {
-    /* The address and packet size go into each TD as it is built; nothing is stored. */
+    /*
+     * The address and packet size go into each TD as it is built; nothing is
+     * stored.
+     */
     (void)dev;
     tendril_async_complete(hc, async, TENDRIL_OK);
     return TENDRIL_OK;
@@ -1267,11 +1321,11 @@ static void uhci_device_free(struct tendril_hc *hc, struct tendril_device *dev, 
 
 /* Root hub */
 
-static void port_write(struct tendril_hc *hc, size_t port, uint16_t v) {
+static void port_write(struct tendril_hc *hc, uint8_t port, uint16_t v) {
     reg_write16(hc, REG_PORTSC(port), v);
 }
 
-static uint16_t port_read_rw(struct tendril_hc *hc, size_t port) {
+static uint16_t port_read_rw(struct tendril_hc *hc, uint8_t port) {
     return (uint16_t)(reg_read16(hc, REG_PORTSC(port)) & ~PORT_RWC);
 }
 
@@ -1281,14 +1335,17 @@ static uint16_t port_read_rw(struct tendril_hc *hc, size_t port) {
  * software, in the steps FreeBSD's sys/dev/usb/controller/uhci.c
  * (BSD-2-Clause, uhci_portreset) takes.
  */
-static void port_advance(struct tendril_hc *hc, size_t port) {
+static void port_advance(struct tendril_hc *hc, uint8_t port) {
     struct uhci *u = U(hc);
     size_t i = port - 1;
     uint64_t elapsed = tendril_now() - u->phase_start[i];
 
     if (u->phase[i] == PHASE_RESET && elapsed >= ROOT_RESET_MS * NS_PER_MS) {
         port_write(hc, port, (uint16_t)(port_read_rw(hc, port) & ~PORT_PR));
-        /* FreeBSD's uhci_portreset found that some devices need exactly this pause before the port is enabled. */
+        /*
+         * FreeBSD's uhci_portreset found that some devices need exactly this
+         * pause before the port is enabled.
+         */
         tendril_delay_us(100);
         port_write(hc, port, (uint16_t)(port_read_rw(hc, port) | PORT_PE));
         u->phase[i] = PHASE_ENABLE;
@@ -1302,10 +1359,13 @@ static void port_advance(struct tendril_hc *hc, size_t port) {
     u->enable_tries[i]++;
     uint16_t v = reg_read16(hc, REG_PORTSC(port));
     bool done = false;
-    if (!(v & PORT_CCS) || (v & PORT_PE) || u->enable_tries[i] >= ENABLE_TRIES) {
+    if ((v & PORT_CCS) == 0 || (v & PORT_PE) != 0 || u->enable_tries[i] >= ENABLE_TRIES) {
         done = true;
-    } else if (v & PORT_RWC) {
-        /* Connection and enable changes from the reset itself: clear them and look again. */
+    } else if ((v & PORT_RWC) != 0) {
+        /*
+         * Connection and enable changes from the reset itself: clear them and
+         * look again.
+         */
         port_write(hc, port, (uint16_t)((v & ~PORT_RWC) | (v & PORT_RWC)));
     } else {
         port_write(hc, port, (uint16_t)((v & ~PORT_RWC) | PORT_PE));
@@ -1318,23 +1378,29 @@ static void port_advance(struct tendril_hc *hc, size_t port) {
 /* END FreeBSD sys/dev/usb/controller/uhci.c */
 
 /*
- * Root ports behave as a hub's would (USB 2.0 11.24.2.7.1.3 and 11.24.2.7.2.3):
- * software times resume signalling, ending it as UHCI 1.1, 2.1.7.1 describes,
- * and the port reports itself suspended until then.
+ * Root ports behave as a hub's would (USB 2.0 11.24.2.7.1.3 and
+ * 11.24.2.7.2.3): software times resume signalling, ending it as UHCI 1.1,
+ * 2.1.7.1 describes, and the port reports itself suspended until then.
  */
-static void advance_resume(struct tendril_hc *hc, size_t port) {
+static void advance_resume(struct tendril_hc *hc, uint8_t port) {
     struct uhci *u = U(hc);
     size_t i = port - 1;
     uint16_t v = reg_read16(hc, REG_PORTSC(port));
 
-    if (!u->resuming[i] && (v & PORT_SUSP) && (v & PORT_RD)) {
-        /* The device signalled a wakeup; the controller drives resume while RD stays set. */
+    if (!u->resuming[i] && (v & PORT_SUSP) != 0 && (v & PORT_RD) != 0) {
+        /*
+         * The device signalled a wakeup; the controller drives resume while RD
+         * stays set.
+         */
         u->resuming[i] = true;
         u->resume_start[i] = tendril_now();
         tendril_timer_arm(hc, &u->port_timer, RESUME_SIGNAL_MS * NS_PER_MS);
     }
     if (u->resuming[i] && tendril_now() - u->resume_start[i] >= RESUME_SIGNAL_MS * NS_PER_MS) {
-        /* Resume Detect and Suspend clear together, then RD reads one until the EOP is out. */
+        /*
+         * Resume Detect and Suspend clear together, then RD reads one until
+         * the EOP is out.
+         */
         port_write(hc, port, (uint16_t)(port_read_rw(hc, port) & ~(PORT_RD | PORT_SUSP)));
         tendril_hc_wait16(hc, REG_PORTSC(port), PORT_RD, 0, 1000);
         u->resuming[i] = false;
@@ -1351,11 +1417,11 @@ static void port_timer_work(struct tendril_work *work) {
         if (!u->resuming[p - 1]) {
             continue;
         }
-        advance_resume(hc, p);
+        advance_resume(hc, (uint8_t)p);
         if (u->resuming[p - 1]) {
             again = true;
         } else {
-            tendril_roothub_changed(hc, p);
+            tendril_roothub_changed(hc, (uint8_t)p);
         }
     }
     if (again) {
@@ -1364,7 +1430,7 @@ static void port_timer_work(struct tendril_work *work) {
     hc_unlock(hc);
 }
 
-static void uhci_port_status(struct tendril_hc *hc, size_t port, struct tendril_port_status *st) {
+static void uhci_port_status(struct tendril_hc *hc, uint8_t port, struct tendril_port_status *st) {
     struct uhci *u = U(hc);
     size_t i = port - 1;
 
@@ -1375,27 +1441,27 @@ static void uhci_port_status(struct tendril_hc *hc, size_t port, struct tendril_
     uint16_t v = reg_read16(hc, REG_PORTSC(port));
     st->status = TENDRIL_PORT_STAT_POWER;
     st->change = 0;
-    st->speed = (v & PORT_LSDA) ? TENDRIL_SPEED_LOW : TENDRIL_SPEED_FULL;
-    if (v & PORT_CCS) {
+    st->speed = (v & PORT_LSDA) != 0 ? TENDRIL_SPEED_LOW : TENDRIL_SPEED_FULL;
+    if ((v & PORT_CCS) != 0) {
         st->status |= TENDRIL_PORT_STAT_CONNECTION;
     }
-    if ((v & PORT_PE) && u->phase[i] == PHASE_IDLE) {
+    if ((v & PORT_PE) != 0 && u->phase[i] == PHASE_IDLE) {
         st->status |= TENDRIL_PORT_STAT_ENABLE;
     }
-    if (v & PORT_SUSP) {
+    if ((v & PORT_SUSP) != 0) {
         st->status |= TENDRIL_PORT_STAT_SUSPEND;
     }
-    if ((v & PORT_PR) || u->phase[i] != PHASE_IDLE) {
+    if ((v & PORT_PR) != 0 || u->phase[i] != PHASE_IDLE) {
         st->status |= TENDRIL_PORT_STAT_RESET;
     }
-    if (v & PORT_LSDA) {
+    if ((v & PORT_LSDA) != 0) {
         st->status |= TENDRIL_PORT_STAT_LOW_SPEED;
     }
     if (u->phase[i] == PHASE_IDLE) {
-        if (v & PORT_CSC) {
+        if ((v & PORT_CSC) != 0) {
             st->change |= TENDRIL_PORT_STAT_C_CONNECTION;
         }
-        if (v & PORT_PEC) {
+        if ((v & PORT_PEC) != 0) {
             st->change |= TENDRIL_PORT_STAT_C_ENABLE;
         }
     }
@@ -1407,7 +1473,7 @@ static void uhci_port_status(struct tendril_hc *hc, size_t port, struct tendril_
     }
 }
 
-static int uhci_port_set_feature(struct tendril_hc *hc, size_t port, unsigned int feature) {
+static int uhci_port_set_feature(struct tendril_hc *hc, uint8_t port, int feature) {
     struct uhci *u = U(hc);
     switch (feature) {
         case TENDRIL_PORT_FEAT_RESET: {
@@ -1434,20 +1500,23 @@ static int uhci_port_set_feature(struct tendril_hc *hc, size_t port, unsigned in
     }
 }
 
-static int uhci_port_clear_feature(struct tendril_hc *hc, size_t port, unsigned int feature) {
+static int uhci_port_clear_feature(struct tendril_hc *hc, uint8_t port, int feature) {
     struct uhci *u = U(hc);
     uint16_t v = port_read_rw(hc, port);
     switch (feature) {
         case TENDRIL_PORT_FEAT_ENABLE: {
-            if (!(hc->quirks & TENDRIL_HC_QUIRK_NO_PORT_DISABLE)) {
+            if ((hc->quirks & TENDRIL_HC_QUIRK_NO_PORT_DISABLE) == 0) {
                 port_write(hc, port, (uint16_t)(v & ~PORT_PE));
             }
             return TENDRIL_OK;
         }
         case TENDRIL_PORT_FEAT_SUSPEND: {
             size_t i = port - 1;
-            if ((v & PORT_SUSP) && !u->resuming[i]) {
-                /* UHCI 1.1, 2.1.7.1: drive resume, ended by advance_resume() once timed. */
+            if ((v & PORT_SUSP) != 0 && !u->resuming[i]) {
+                /*
+                 * UHCI 1.1, 2.1.7.1: drive resume, ended by advance_resume()
+                 * once timed.
+                 */
                 port_write(hc, port, (uint16_t)(v | PORT_RD));
                 u->resuming[i] = true;
                 u->resume_start[i] = tendril_now();
@@ -1531,11 +1600,11 @@ static void uhci_poll(struct tendril_hc *hc) {
     if (ack != 0) {
         reg_write16(hc, REG_USBSTS, ack);
     }
-    if (sts & STS_HSE) {
+    if ((sts & STS_HSE) != 0) {
         controller_died(hc, "host system error");
         return;
     }
-    if (sts & STS_HCPE) {
+    if ((sts & STS_HCPE) != 0) {
         controller_died(hc, "host controller process error");
         return;
     }
@@ -1553,7 +1622,7 @@ static void uhci_poll(struct tendril_hc *hc) {
 
 static bool uhci_irq(struct tendril_hc *hc) {
     uint16_t sts = reg_read16(hc, REG_USBSTS);
-    if (sts == 0xffff || !(sts & STS_ACK)) {
+    if (sts == 0xffff || (sts & STS_ACK) == 0) {
         return false;
     }
     /* Masked until tendril_hc_poll() has handled the cause. */
@@ -1603,7 +1672,7 @@ static size_t count_ports(struct tendril_hc *hc) {
     size_t n = 0;
     while (n < MAX_PORTS) {
         uint16_t v = reg_read16(hc, REG_PORTSC(n + 1));
-        if (v == 0xffff || !(v & PORT_ALWAYS_ONE)) {
+        if (v == 0xffff || (v & PORT_ALWAYS_ONE) == 0) {
             break;
         }
         n++;
@@ -1631,8 +1700,11 @@ static int uhci_start(struct tendril_hc *hc) {
     hc->dma32 = true;
     hc->data32 = true;
 
-    if (hc->config.pci && !(hc->quirks & TENDRIL_HC_QUIRK_NO_HANDOFF)) {
-        /* Clear the trap status bits and every SMI enable (Intel 82371AB PIIX4 datasheet 290562, 6.1.12). */
+    if (hc->config.pci && (hc->quirks & TENDRIL_HC_QUIRK_NO_HANDOFF) == 0) {
+        /*
+         * Clear the trap status bits and every SMI enable (Intel 82371AB PIIX4
+         * datasheet 290562, 6.1.12).
+         */
         tendril_glue_pci_write16(hc->ctx, PCI_LEGSUP, LEGSUP_CLEAR);
     }
     halt(hc);
@@ -1663,7 +1735,10 @@ static int uhci_start(struct tendril_hc *hc) {
         free_structures(hc);
         return TENDRIL_ERR_NO_MEMORY;
     }
-    /* Level k runs every 2^k frames ahead of level k - 1, then control, then bulk. */
+    /*
+     * Level k runs every 2^k frames ahead of level k - 1, then control, then
+     * bulk.
+     */
     u->bulk_skel->link = le(LINK_T);
     u->control_skel->link = le((uint32_t)u->bulk_skel->dma | LINK_QH);
     u->skel[0]->link = le((uint32_t)u->control_skel->dma | LINK_QH);
@@ -1687,9 +1762,12 @@ static int uhci_start(struct tendril_hc *hc) {
         free_structures(hc);
         return TENDRIL_ERR_TIMEOUT;
     }
-    if (hc->config.pci && !(hc->quirks & TENDRIL_HC_QUIRK_NO_HANDOFF)) {
+    if (hc->config.pci && (hc->quirks & TENDRIL_HC_QUIRK_NO_HANDOFF) == 0) {
         /* BEGIN FreeBSD sys/dev/usb/controller/uhci_pci.c */
-        /* Interrupts back on PIRQD, as FreeBSD's sys/dev/usb/controller/uhci_pci.c (BSD-2-Clause) leaves it. */
+        /*
+         * Interrupts back on PIRQD, as FreeBSD's
+         * sys/dev/usb/controller/uhci_pci.c (BSD-2-Clause) leaves it.
+         */
         tendril_glue_pci_write16(hc->ctx, PCI_LEGSUP, LEGSUP_PIRQ);
         /* END FreeBSD sys/dev/usb/controller/uhci_pci.c */
     }
@@ -1735,8 +1813,11 @@ static int uhci_resume(struct tendril_hc *hc) {
     if (reg_read16(hc, REG_USBSTS) == 0xffff) {
         return TENDRIL_ERR_NO_DEVICE;
     }
-    /* A frame list address that no longer reads back means the controller lost power. */
-    if (hc_read32(hc, REG_FLBASEADD) != (uint32_t)u->frame_list_dma || !(reg_read16(hc, REG_USBCMD) & CMD_CF)) {
+    /*
+     * A frame list address that no longer reads back means the controller lost
+     * power.
+     */
+    if (hc_read32(hc, REG_FLBASEADD) != (uint32_t)u->frame_list_dma || (reg_read16(hc, REG_USBCMD) & CMD_CF) == 0) {
         return TENDRIL_ERR_IO;
     }
     reg_write16(hc, REG_USBINTR, hc->config.irq ? u->intr : 0);

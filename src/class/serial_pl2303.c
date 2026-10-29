@@ -90,6 +90,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/serial.h"
+#include "../../include/tendril/spec.h"
+#include "../../include/tendril/tendril.h"
+#include "../internal.h"
 #include "serial_internal.h"
 
 #define PL2303_ORIGINAL 0
@@ -133,8 +140,8 @@ static const struct init_step init_steps[] = {
 
 /* BEGIN FreeBSD sys/dev/usb/serial/uplcom.c */
 /*
- * Rates written as they are, and which rates each chip takes, follow
- * FreeBSD's sys/dev/usb/serial/uplcom.c (BSD-2-Clause, uplcom_rates and
+ * Rates written as they are, and which rates each chip takes, follow FreeBSD's
+ * sys/dev/usb/serial/uplcom.c (BSD-2-Clause, uplcom_rates and
  * uplcom_pre_param).
  */
 static const uint32_t listed_rates[] = {
@@ -218,7 +225,10 @@ static void probe_done(struct tendril_serial *port, struct serial_op *op, size_t
 
 void serial_pl2303_setup(struct tendril_serial *port, struct serial_op *op) {
     if (port->chip == PL2303_HX) {
-        /* An HXN, guessed as an HX, rejects the older request code (clean-room specification). */
+        /*
+         * An HXN, guessed as an HX, rejects the older request code (clean-room
+         * specification).
+         */
         vendor_read(op, 0x8080, port->intf->number);
         op->after = probe_done;
         return;
@@ -265,7 +275,10 @@ static bool encode_rate(int chip, uint32_t rate, uint32_t *out) {
     }
     /* END FreeBSD sys/dev/usb/serial/uplcom.c */
 
-    /* rate = 383385600 / (m * 4^e), 9-bit m and 3-bit e (clean-room specification). */
+    /*
+     * rate = 383385600 / (m * 4^e), 9-bit m and 3-bit e (clean-room
+     * specification).
+     */
     uint32_t m = DIVISOR_BASE / rate;
     uint32_t e = 0;
     if (m == 0) {
@@ -333,7 +346,10 @@ void serial_pl2303_lines(struct tendril_serial *port, struct serial_op *op) {
     serial_op_add(op, REQ_CLASS_OUT, PSTN_SET_CONTROL_LINE_STATE, (uint16_t)value, port->intf->number, NULL, 0);
 }
 
-/* SEND_BREAK, where 0xffff holds the break until one with 0 (CDC PSTN 1.2, 6.3.13). */
+/*
+ * SEND_BREAK, where 0xffff holds the break until one with 0 (CDC PSTN 1.2,
+ * 6.3.13).
+ */
 void serial_pl2303_break(struct tendril_serial *port, struct serial_op *op) {
     uint16_t duration = 0;
 
@@ -343,7 +359,10 @@ void serial_pl2303_break(struct tendril_serial *port, struct serial_op *op) {
     serial_op_add(op, REQ_CLASS_OUT, PSTN_SEND_BREAK, duration, port->intf->number, NULL, 0);
 }
 
-/* Byte 8 of an interrupt packet holds TENDRIL_SERIAL_* bits (clean-room specification). */
+/*
+ * Byte 8 of an interrupt packet holds TENDRIL_SERIAL_* bits (clean-room
+ * specification).
+ */
 void serial_pl2303_status(struct tendril_serial *port, const uint8_t *buf, size_t len) {
     if (len <= 8) {
         return;

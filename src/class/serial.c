@@ -28,8 +28,8 @@
 /*
  * Serial ports. CDC ACM follows the CDC PSTN subclass specification revision
  * 1.2 (February 9, 2007). CP210x follows Silicon Labs application note AN571
- * revision 0.4 and FreeBSD's sys/dev/usb/serial/uslcom.c (ISC license).
- * CH34x, whose maker publishes no protocol, follows FreeBSD's
+ * revision 0.4 and FreeBSD's sys/dev/usb/serial/uslcom.c (ISC license). CH34x,
+ * whose maker publishes no protocol, follows FreeBSD's
  * sys/dev/usb/serial/uchcom.c (BSD-2-Clause). FTDI and PL2303 parts are
  * handled in serial_ftdi.c and serial_pl2303.c.
  */
@@ -354,13 +354,23 @@
  * SUCH DAMAGE.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/serial.h"
+#include "../../include/tendril/spec.h"
+#include "../../include/tendril/tendril.h"
+#include "../internal.h"
 #include "serial_internal.h"
 
 #define CTRL_TIMEOUT_MS 5000
 #define RETRY_MS 20
 #define MAX_ERRORS 50
 /* BEGIN FreeBSD sys/dev/usb/serial/uslcom.c */
-/* CP210x parts have no status endpoint; FreeBSD's uslcom.c (ISC) asks them four times a second. */
+/*
+ * CP210x parts have no status endpoint; FreeBSD's uslcom.c (ISC) asks them
+ * four times a second.
+ */
 #define CP210X_POLL_MS 250
 /* END FreeBSD sys/dev/usb/serial/uslcom.c */
 /* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
@@ -453,7 +463,10 @@ struct serial_id {
     uint16_t product;
     uint8_t kind;
     /* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
-    /* FTDI interfaces left for JTAG use, one bit each, or SKIP_BY_NAME, as in FreeBSD's uftdi.c. */
+    /*
+     * FTDI interfaces left for JTAG use, one bit each, or SKIP_BY_NAME, as in
+     * FreeBSD's uftdi.c.
+     */
     uint8_t skip;
     /* END FreeBSD sys/dev/usb/serial/uftdi.c */
 };
@@ -1333,8 +1346,8 @@ static const struct serial_id serial_ids[] = {
 
 /* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs */
 /*
- * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c (BSD-2-Clause), naming the IDs as
- * its sys/dev/usb/usbdevs (BSD-2-Clause) does.
+ * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c (BSD-2-Clause), naming the IDs
+ * as its sys/dev/usb/usbdevs (BSD-2-Clause) does.
  */
 static const struct tendril_id_quirk serial_quirks[] = {
     { 0x0870, 0x0001, 0x0100, 0x0100, SQ_ASSUME_CM_OVER_DATA }, /* METRICOM RICOCHET_GS */
@@ -1362,9 +1375,9 @@ struct acm_id {
 /* BEGIN FreeBSD sys/dev/usb/serial/umodem.c, sys/dev/usb/usbdevs */
 /*
  * The interfaces FreeBSD's umodem.c drives (umodem_dual_devs[] and
- * umodem_host_devs[]), ANY matching every value, naming the IDs as its
- * usbdevs does. Left out is its Huawei match for the vendor-specific CDC ACM
- * protocol, which its sys/dev/usb/net/if_urndis.c (ISC license) wins.
+ * umodem_host_devs[]), ANY matching every value, naming the IDs as its usbdevs
+ * does. Left out is its Huawei match for the vendor-specific CDC ACM protocol,
+ * which its sys/dev/usb/net/if_urndis.c (ISC license) wins.
  */
 static const struct acm_id acm_ids[] = {
     { ANY, ANY, TENDRIL_CLASS_CDC, CDC_SUBCLASS_ACM, CDC_PROTOCOL_AT },
@@ -1422,7 +1435,7 @@ static struct serial_op *op_new(void (*done)(void *, int), void *ctx) {
 
 void serial_op_add(
     struct serial_op *op, uint8_t type, uint8_t request, uint16_t value, uint16_t index, const void *data,
-    uint16_t length
+    size_t length
 ) {
     if (op->count >= MAX_REQS || length > sizeof(op->reqs[0].data)) {
         op->status = TENDRIL_ERR_INVALID;
@@ -1486,7 +1499,7 @@ static void op_kick(struct tendril_serial *port) {
             xfer->setup.request = r->request;
             xfer->setup.value = tendril_le16(r->value);
             xfer->setup.index = tendril_le16(r->index);
-            xfer->setup.length = tendril_le16(r->length);
+            xfer->setup.length = tendril_le16((uint16_t)r->length);
             xfer->buffer = r->length != 0 ? r->data : NULL;
             xfer->length = r->length;
             xfer->timeout_ms = CTRL_TIMEOUT_MS;
@@ -1543,8 +1556,11 @@ static void acm_lines(struct tendril_serial *port, struct serial_op *op) {
 
 static void acm_break(struct tendril_serial *port, struct serial_op *op) {
     /* BEGIN FreeBSD sys/dev/usb/serial/umodem.c */
-    /* FreeBSD's umodem.c sends no break to a device without SendBreak in its capabilities. */
-    if (!(port->acm_caps & ACM_BREAK)) {
+    /*
+     * FreeBSD's umodem.c sends no break to a device without SendBreak in its
+     * capabilities.
+     */
+    if ((port->acm_caps & ACM_BREAK) == 0) {
         op->status = TENDRIL_ERR_UNSUPPORTED;
         return;
     }
@@ -1574,7 +1590,10 @@ static void ch_line(struct tendril_serial *port, struct serial_op *op) {
         op->status = c->baud == 0 || c->baud > max ? TENDRIL_ERR_INVALID : TENDRIL_ERR_UNSUPPORTED;
         return;
     }
-    /* The prescaler choice of FreeBSD's uchcom.c; the factor counts up to 256 at the scaled clock. */
+    /*
+     * The prescaler choice of FreeBSD's uchcom.c; the factor counts up to 256
+     * at the scaled clock.
+     */
     if (c->baud >= 256000 && port->chip == CH_343) {
         divisor = 7;
     } else if (c->baud > 23529) {
@@ -1638,7 +1657,9 @@ static void ch_break(struct tendril_serial *port, struct serial_op *op) {
         ch_write_reg(port, op, (uint8_t)(CH343_BREAK | (port->in_break ? 0 : CH_ABREAK)), 0, 0, 0);
         return;
     }
-    /* Read the break and line control registers, then flip their break bits. */
+    /*
+     * Read the break and line control registers, then flip their break bits.
+     */
     serial_op_add(op, REQ_VENDOR_IN, CH_READ_REG, CH_REG_BREAK1 | CH_REG_LCR1 << 8, 0, NULL, 8);
     op->after = ch_break_after;
 }
@@ -1659,14 +1680,20 @@ static void cp_line(struct tendril_serial *port, struct serial_op *op) {
         op, REQ_VENDOR_IFACE_OUT, CP_SET_LINE_CTL, (uint16_t)(c->stop_bits | c->parity << 4 | c->data_bits << 8),
         iface, NULL, 0
     );
-    /* AN571 revision 0.4, table 9: the handshake word and the flow replacement word, then thresholds left at zero. */
+    /*
+     * AN571 revision 0.4, table 9: the handshake word and the flow replacement
+     * word, then thresholds left at zero.
+     */
     put_le32(flow, (port->dtr ? CP_DTR_ACTIVE : 0) | (c->rtscts ? CP_CTS_HANDSHAKE : 0));
     put_le32(flow + 4, c->rtscts ? CP_RTS_HANDSHAKE : (port->rts ? CP_RTS_ACTIVE : 0));
     serial_op_add(op, REQ_VENDOR_IFACE_OUT, CP_SET_FLOW, 0, iface, flow, sizeof(flow));
 }
 
 static void cp_lines(struct tendril_serial *port, struct serial_op *op) {
-    /* The high byte says which lines the low byte sets; RTS stays with the handshake when that is on. */
+    /*
+     * The high byte says which lines the low byte sets; RTS stays with the
+     * handshake when that is on.
+     */
     uint16_t value = (uint16_t)(0x0100 | (port->dtr ? 1 : 0));
     if (!port->config.rtscts) {
         value |= (uint16_t)(0x0200 | (port->rts ? 2 : 0));
@@ -1683,8 +1710,8 @@ static void cp_status_after(struct tendril_serial *port, struct serial_op *op, s
     port->poll_queued = false;
     if (st == TENDRIL_OK) {
         uint8_t m = op->reqs[0].data[0];
-        uint32_t status = ((m & 0x10) ? TENDRIL_SERIAL_CTS : 0) | ((m & 0x20) ? TENDRIL_SERIAL_DSR : 0)
-            | ((m & 0x40) ? TENDRIL_SERIAL_RI : 0) | ((m & 0x80) ? TENDRIL_SERIAL_DCD : 0);
+        uint32_t status = ((m & 0x10) != 0 ? TENDRIL_SERIAL_CTS : 0) | ((m & 0x20) != 0 ? TENDRIL_SERIAL_DSR : 0)
+            | ((m & 0x40) != 0 ? TENDRIL_SERIAL_RI : 0) | ((m & 0x80) != 0 ? TENDRIL_SERIAL_DCD : 0);
         serial_status_update(port, status);
     }
 }
@@ -1852,7 +1879,10 @@ static void intr_done(struct tendril_transfer *xfer) {
     port->intr_errors = 0;
     switch (port->kind) {
         case TENDRIL_SERIAL_ACM: {
-            /* A notification header, then for SerialState two bytes laid out as the status bits here. */
+            /*
+             * A notification header, then for SerialState two bytes laid out
+             * as the status bits here.
+             */
             if (n >= 10 && b[1] == ACM_SERIAL_STATE) {
                 serial_status_update(port, b[8] & (uint32_t)0x7f);
             }
@@ -1867,8 +1897,8 @@ static void intr_done(struct tendril_transfer *xfer) {
             if (n >= CH_INTR_MIN) {
                 /* Active-low CTS, DSR, RI, and DCD in the low nibble. */
                 uint8_t s = (uint8_t)~b[port->chip == CH_343 ? n - 1 : CH_INTR_STAT];
-                uint32_t status = ((s & 1) ? TENDRIL_SERIAL_CTS : 0) | ((s & 2) ? TENDRIL_SERIAL_DSR : 0)
-                    | ((s & 4) ? TENDRIL_SERIAL_RI : 0) | ((s & 8) ? TENDRIL_SERIAL_DCD : 0);
+                uint32_t status = ((s & 1) != 0 ? TENDRIL_SERIAL_CTS : 0) | ((s & 2) != 0 ? TENDRIL_SERIAL_DSR : 0)
+                    | ((s & 4) != 0 ? TENDRIL_SERIAL_RI : 0) | ((s & 8) != 0 ? TENDRIL_SERIAL_DCD : 0);
                 serial_status_update(port, status);
             }
             /* END FreeBSD sys/dev/usb/serial/uchcom.c */
@@ -1905,7 +1935,7 @@ static void timer_work(struct tendril_work *work) {
         return;
     }
     for (size_t i = 0; i < RX_BUFS; i++) {
-        if (port->rx_idle & ((uint32_t)1 << i)) {
+        if ((port->rx_idle & ((uint32_t)1 << i)) != 0) {
             port->rx_idle &= ~((uint32_t)1 << i);
             rx_submit(port, i);
         }
@@ -2021,7 +2051,10 @@ static void ch_version_after(struct tendril_serial *port, struct serial_op *op, 
     }
     port->ch_version = st == TENDRIL_OK ? op->reqs[0].data[0] : 0;
     if (port->chip != CH_343) {
-        /* What FreeBSD's uchcom.c sets before the line settings: reset, then the prescaler and padding registers. */
+        /*
+         * What FreeBSD's uchcom.c sets before the line settings: reset, then
+         * the prescaler and padding registers.
+         */
         serial_op_add(op, REQ_VENDOR_OUT, CH_RESET, 0, 0, NULL, 0);
         ch_write_reg(port, op, CH_REG_BPS_PRE, 0x82, CH_REG_BPS_DIV, 0xd9);
         ch_write_reg(port, op, 0x2c, 0x07, CH_REG_BPS_PAD, 0);
@@ -2040,9 +2073,12 @@ static int port_setup(struct tendril_serial *port) {
     switch (port->kind) {
         case TENDRIL_SERIAL_ACM: {
             /* BEGIN FreeBSD sys/dev/usb/serial/umodem.c */
-            /* Call management multiplexed over the data interface (CDC PSTN 1.2, 6.3.1), as umodem.c asks for. */
-            if (!(port->quirks & SQ_ASSUME_CM_OVER_DATA) && (port->cm_caps & CM_OVER_DATA)
-             && (port->acm_caps & ACM_COMM_FEATURE)) {
+            /*
+             * Call management multiplexed over the data interface (CDC PSTN
+             * 1.2, 6.3.1), as umodem.c asks for.
+             */
+            if ((port->quirks & SQ_ASSUME_CM_OVER_DATA) == 0 && (port->cm_caps & CM_OVER_DATA) != 0
+             && (port->acm_caps & ACM_COMM_FEATURE) != 0) {
                 static const uint8_t state[2] = { ACM_DATA_MULTIPLEXED & 0xff, ACM_DATA_MULTIPLEXED >> 8 };
                 serial_op_add(
                     op, REQ_CLASS_OUT, ACM_SET_COMM_FEATURE, ACM_ABSTRACT_STATE, port->ctrl_intf->number, state,
@@ -2105,8 +2141,11 @@ static bool acm_match(struct tendril_device *dev, const struct tendril_interface
     return false;
 }
 
-/* The interface's first CDC functional descriptor of a subtype, if at least `length` bytes long. */
-static const uint8_t *cdc_descriptor(struct tendril_interface *intf, uint8_t subtype, uint8_t length) {
+/*
+ * The interface's first CDC functional descriptor of a subtype, if at least
+ * `length` bytes long.
+ */
+static const uint8_t *cdc_descriptor(struct tendril_interface *intf, int subtype, size_t length) {
     size_t size;
     const uint8_t *p = tendril_interface_descriptors(intf, &size);
     const uint8_t *end = p + size;
@@ -2122,12 +2161,12 @@ static const uint8_t *cdc_descriptor(struct tendril_interface *intf, uint8_t sub
 /*
  * The data interface, as FreeBSD's umodem.c finds it: the one the Call
  * Management functional descriptor names, else the first subordinate of the
- * Union one (CDC PSTN 1.2, 5.3.1; CDC 1.2, 5.2.3.2), else a neighbour, the
- * one after winning unless only the one before is a CDC data interface.
+ * Union one (CDC PSTN 1.2, 5.3.1; CDC 1.2, 5.2.3.2), else a neighbour, the one
+ * after winning unless only the one before is a CDC data interface.
  */
 static struct tendril_interface *acm_data_interface(struct tendril_interface *intf, uint32_t quirks) {
     struct tendril_device *dev = intf->dev;
-    const uint8_t *cm = (quirks & SQ_IGNORE_CDC_CM) ? NULL : cdc_descriptor(intf, CDC_CALL_MANAGEMENT, 5);
+    const uint8_t *cm = (quirks & SQ_IGNORE_CDC_CM) != 0 ? NULL : cdc_descriptor(intf, CDC_CALL_MANAGEMENT, 5);
     if (cm != NULL) {
         return tendril_device_find_interface(dev, cm[4]);
     }
@@ -2244,7 +2283,10 @@ static bool serial_probe(struct tendril_interface *intf) {
             port->intr_ep = tendril_interface_find_endpoint(intf, TENDRIL_ENDPOINT_XFER_INT, TENDRIL_DIR_IN);
             /* BEGIN FreeBSD sys/dev/usb/serial/uplcom.c */
             if (!data_endpoints(port) && dev->num_interfaces > 1) {
-                /* Some carry the data on a second interface, as FreeBSD's uplcom.c (BSD-2-Clause) handles. */
+                /*
+                 * Some carry the data on a second interface, as FreeBSD's
+                 * uplcom.c (BSD-2-Clause) handles.
+                 */
                 struct tendril_interface *second = &dev->interfaces[1];
                 if (second != intf && tendril_interface_claim(second, &serial_driver)) {
                     port->intf = second;
@@ -2255,7 +2297,10 @@ static bool serial_probe(struct tendril_interface *intf) {
         }
         case TENDRIL_SERIAL_CH34X: {
             /* BEGIN FreeBSD sys/dev/usb/serial/uchcom.c */
-            /* The CH343 and CH9102 put the data on a second interface; FreeBSD's uchcom.c tells them apart by that. */
+            /*
+             * The CH343 and CH9102 put the data on a second interface;
+             * FreeBSD's uchcom.c tells them apart by that.
+             */
             port->chip = CH_341;
             port->intr_ep = tendril_interface_find_endpoint(intf, TENDRIL_ENDPOINT_XFER_INT, TENDRIL_DIR_IN);
             if (dev->num_interfaces > 1 && intf == &dev->interfaces[0]) {
@@ -2270,7 +2315,10 @@ static bool serial_probe(struct tendril_interface *intf) {
         }
         case TENDRIL_SERIAL_ACM: {
             /* BEGIN FreeBSD sys/dev/usb/serial/umodem.c */
-            /* With no Call Management descriptor, umodem.c takes call management over the data interface as given. */
+            /*
+             * With no Call Management descriptor, umodem.c takes call
+             * management over the data interface as given.
+             */
             const uint8_t *cm = cdc_descriptor(intf, CDC_CALL_MANAGEMENT, 5);
             const uint8_t *acm = cdc_descriptor(intf, CDC_ACM, 4);
             port->cm_caps = cm != NULL ? cm[3] : CM_HANDLES | CM_OVER_DATA;
@@ -2297,7 +2345,9 @@ static bool serial_probe(struct tendril_interface *intf) {
         }
     }
     if (!have && kind == TENDRIL_SERIAL_ACM) {
-        /* CDC data interfaces may keep their endpoints in alternate setting 1. */
+        /*
+         * CDC data interfaces may keep their endpoints in alternate setting 1.
+         */
         struct tendril_interface *d = port->intf;
         for (size_t a = 0; a < d->num_alts; a++) {
             if (d->alts[a]->num_endpoints >= 2) {
@@ -2325,7 +2375,10 @@ static bool serial_suspend(struct tendril_interface *intf) {
     if (port == NULL || port->stopped) {
         return true;
     }
-    /* Still being set up, writing, or changing settings; the modem status poll may finish on its own. */
+    /*
+     * Still being set up, writing, or changing settings; the modem status poll
+     * may finish on its own.
+     */
     if (!port->attached || port->writing != NULL || !list_empty(&port->writes) || !list_empty(&port->ops)
      || (port->op != NULL && !port->poll_queued)) {
         return false;

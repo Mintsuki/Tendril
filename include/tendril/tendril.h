@@ -155,15 +155,13 @@
  * SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_TENDRIL_H
-#define TENDRIL_TENDRIL_H
+#ifndef TENDRIL_TENDRIL_TENDRIL_H
+#define TENDRIL_TENDRIL_TENDRIL_H
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include <tendril/glue.h>
-#include <tendril/spec.h>
+#include "spec.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -284,7 +282,9 @@ struct tendril_hc_config {
 /* Maps a PCI class code (class << 16 | subclass << 8 | prog-if) to a type. */
 bool tendril_pci_hc_type(uint32_t class_code, int *type);
 
-/* The built-in quirks of a PCI controller, for checks before tendril_hc_add(). */
+/*
+ * The built-in quirks of a PCI controller, for checks before tendril_hc_add().
+ */
 uint32_t tendril_pci_hc_quirks(int type, uint16_t vendor, uint16_t device);
 
 /*
@@ -294,8 +294,8 @@ uint32_t tendril_pci_hc_quirks(int type, uint16_t vendor, uint16_t device);
 int tendril_hc_add(const struct tendril_hc_config *config, struct tendril_hc **hc);
 
 /*
- * Halts and resets the controller, then detaches every device, whose
- * transfers fail with TENDRIL_ERR_NO_DEVICE, and frees the controller.
+ * Halts and resets the controller, then detaches every device, whose transfers
+ * fail with TENDRIL_ERR_NO_DEVICE, and frees the controller.
  */
 void tendril_hc_remove(struct tendril_hc *hc);
 
@@ -309,8 +309,8 @@ bool tendril_hc_irq(struct tendril_hc *hc);
 /*
  * Processes completions, port changes and timers, and invokes callbacks.
  * Returns the time, per tendril_glue_time_ns(), by which it must be called
- * again, or UINT64_MAX. Calls for one controller must not overlap, except
- * when nested from within callbacks.
+ * again, or UINT64_MAX. Calls for one controller must not overlap, except when
+ * nested from within callbacks.
  */
 uint64_t tendril_hc_poll(struct tendril_hc *hc);
 
@@ -319,8 +319,8 @@ void tendril_hc_wait(struct tendril_hc *hc, volatile bool *flag);
 
 /*
  * Prepares the controller for system sleep: suspends every device, arming
- * remote wakeup on those that support it if `wake`, then stops the
- * controller. On failure, the devices suspended so far are resumed. Calls
+ * remote wakeup on those that support it if `wake`, then stops the controller.
+ * On failure, the devices suspended so far are resumed. Calls
  * tendril_hc_poll() until done, so it must not be called from a callback.
  */
 int tendril_hc_suspend(struct tendril_hc *hc, bool wake);
@@ -335,12 +335,12 @@ int tendril_hc_resume(struct tendril_hc *hc);
 int tendril_hc_type(struct tendril_hc *hc);
 uint32_t tendril_hc_quirks(struct tendril_hc *hc);
 size_t tendril_hc_num_ports(struct tendril_hc *hc);
-struct tendril_device *tendril_hc_port_device(struct tendril_hc *hc, size_t port);
+struct tendril_device *tendril_hc_port_device(struct tendril_hc *hc, uint8_t port);
 
 /*
- * The current frame, counting 1 ms frames in 32 bits; isochronous start
- * frames count the same way. The count follows the controller's own counter,
- * which wraps every 2048 frames, so it falls behind by whole wraps if
+ * The current frame, counting 1 ms frames in 32 bits; isochronous start frames
+ * count the same way. The count follows the controller's own counter, which
+ * wraps every 2048 frames, so it falls behind by whole wraps if
  * tendril_hc_poll() goes uncalled for that long.
  */
 uint32_t tendril_hc_frame_number(struct tendril_hc *hc);
@@ -367,9 +367,9 @@ uint32_t tendril_hc_frame_number(struct tendril_hc *hc);
 struct tendril_hc *tendril_device_hc(struct tendril_device *dev);
 struct tendril_device *tendril_device_parent(struct tendril_device *dev);
 /* Port on the parent hub, or on the root hub, counting from 1. */
-size_t tendril_device_port(struct tendril_device *dev);
+uint8_t tendril_device_port(struct tendril_device *dev);
 /* Number of hubs between the device and the root hub. */
-unsigned int tendril_device_depth(struct tendril_device *dev);
+size_t tendril_device_depth(struct tendril_device *dev);
 int tendril_device_speed(struct tendril_device *dev);
 uint8_t tendril_device_address(struct tendril_device *dev);
 uint32_t tendril_device_quirks(struct tendril_device *dev);
@@ -384,7 +384,7 @@ const struct tendril_bos_descriptor *tendril_device_bos(struct tendril_device *d
 const char *tendril_device_manufacturer(struct tendril_device *dev);
 const char *tendril_device_product(struct tendril_device *dev);
 const char *tendril_device_serial(struct tendril_device *dev);
-struct tendril_device *tendril_device_child(struct tendril_device *hub, size_t port);
+struct tendril_device *tendril_device_child(struct tendril_device *hub, uint8_t port);
 size_t tendril_device_num_ports(struct tendril_device *hub);
 struct tendril_endpoint *tendril_device_ep0(struct tendril_device *dev);
 size_t tendril_device_num_interfaces(struct tendril_device *dev);
@@ -410,11 +410,11 @@ int tendril_device_read_string(
 );
 
 /*
- * Selectively suspends a device, arming its remote wakeup if `remote_wake`
- * and the device supports it. Drivers stop their transfers first, through
- * their suspend() hooks, and a hub can only be suspended once all its
- * children are. `done` is called once finished. Transfers to a suspended
- * device fail with TENDRIL_ERR_SUSPENDED.
+ * Selectively suspends a device, arming its remote wakeup if `remote_wake` and
+ * the device supports it. Drivers stop their transfers first, through their
+ * suspend() hooks, and a hub can only be suspended once all its children are.
+ * `done` is called once finished. Transfers to a suspended device fail with
+ * TENDRIL_ERR_SUSPENDED.
  */
 int tendril_device_suspend(
     struct tendril_device *dev, bool remote_wake, void (*done)(void *ctx, int status), void *ctx
@@ -445,8 +445,10 @@ const struct tendril_interface_descriptor *tendril_interface_alt_descriptor(
 );
 size_t tendril_interface_num_endpoints(struct tendril_interface *intf);
 struct tendril_endpoint *tendril_interface_endpoint(struct tendril_interface *intf, size_t index);
-/* The first endpoint of the current alternate setting of a type and direction. */
-struct tendril_endpoint *tendril_interface_find_endpoint(struct tendril_interface *intf, uint8_t type, uint8_t dir);
+/*
+ * The first endpoint of the current alternate setting of a type and direction.
+ */
+struct tendril_endpoint *tendril_interface_find_endpoint(struct tendril_interface *intf, int type, int dir);
 void tendril_interface_set_data(struct tendril_interface *intf, void *data);
 void *tendril_interface_data(struct tendril_interface *intf);
 
@@ -464,10 +466,10 @@ struct tendril_device *tendril_endpoint_device(struct tendril_endpoint *ep);
 const struct tendril_endpoint_descriptor *tendril_endpoint_descriptor(struct tendril_endpoint *ep);
 const struct tendril_ss_ep_companion_descriptor *tendril_endpoint_companion(struct tendril_endpoint *ep);
 uint8_t tendril_endpoint_address(struct tendril_endpoint *ep);
-uint8_t tendril_endpoint_type(struct tendril_endpoint *ep);
-uint16_t tendril_endpoint_max_packet(struct tendril_endpoint *ep);
+int tendril_endpoint_type(struct tendril_endpoint *ep);
+size_t tendril_endpoint_max_packet(struct tendril_endpoint *ep);
 /* Streams the endpoint supports, 0 if none. */
-unsigned int tendril_endpoint_max_streams(struct tendril_endpoint *ep);
+size_t tendril_endpoint_max_streams(struct tendril_endpoint *ep);
 
 /* Clears a halt on the device and resets the endpoint's data toggle. */
 int tendril_endpoint_clear_halt(struct tendril_endpoint *ep, void (*done)(void *ctx, int status), void *ctx);
@@ -477,23 +479,29 @@ int tendril_endpoint_clear_halt(struct tendril_endpoint *ep, void (*done)(void *
  * the endpoints and controller support, in which case `*streams` is updated.
  */
 int tendril_endpoint_alloc_streams(
-    struct tendril_endpoint **eps, size_t count, unsigned int *streams, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_endpoint **eps, size_t count, size_t *streams, void (*done)(void *ctx, int status), void *ctx
 );
 
 /* Transfers */
 
 /* A short packet ends the transfer with TENDRIL_ERR_SHORT. */
 #define TENDRIL_XFER_SHORT_NOT_OK ((uint32_t)1 << 0)
-/* End an OUT transfer that is a multiple of the packet size with a 0-byte packet. */
+/*
+ * End an OUT transfer that is a multiple of the packet size with a 0-byte
+ * packet.
+ */
 #define TENDRIL_XFER_ZERO_PACKET ((uint32_t)1 << 1)
 /* `dma` is the bus address of `buffer`, contiguous and coherent. */
 #define TENDRIL_XFER_DMA ((uint32_t)1 << 2)
-/* Start isochronous packets as soon as possible, after those queued on the endpoint, instead of at `start_frame`. */
+/*
+ * Start isochronous packets as soon as possible, after those queued on the
+ * endpoint, instead of at `start_frame`.
+ */
 #define TENDRIL_XFER_ISO_ASAP ((uint32_t)1 << 3)
 
 struct tendril_iso_packet {
-    uint32_t length;
-    uint32_t actual;
+    size_t length;
+    size_t actual;
     int status;
 };
 
@@ -512,7 +520,7 @@ struct tendril_transfer_internal {
     size_t bounce_size;
     size_t mapped;
     int cancel_status;
-    uint8_t state;
+    int state;
 };
 
 struct tendril_transfer {
@@ -526,11 +534,12 @@ struct tendril_transfer {
     uint32_t timeout_ms;
     uint16_t stream;
     /* Isochronous packets, laid out back to back in `buffer`. */
-    uint32_t num_iso_packets;
+    size_t num_iso_packets;
     struct tendril_iso_packet *iso_packets;
     /*
      * As tendril_hc_frame_number() counts. Submission sets it to the frame the
-     * transfer starts in, which xHCI can only estimate with TENDRIL_XFER_ISO_ASAP.
+     * transfer starts in, which xHCI can only estimate with
+     * TENDRIL_XFER_ISO_ASAP.
      */
     uint32_t start_frame;
     void (*callback)(struct tendril_transfer *xfer);
@@ -552,16 +561,20 @@ bool tendril_transfer_done(struct tendril_transfer *xfer);
 /* Synchronous control transfer on endpoint 0, by tendril_transfer_run(). */
 int tendril_control(
     struct tendril_device *dev, uint8_t request_type, uint8_t request, uint16_t value, uint16_t index, void *data,
-    uint16_t length, size_t *actual, uint32_t timeout_ms
+    size_t length, size_t *actual, uint32_t timeout_ms
 );
 
 /* Drivers */
 
 struct tendril_driver {
     const char *name;
-    /* Offered each unclaimed interface of a configured device; true claims it. */
+    /*
+     * Offered each unclaimed interface of a configured device; true claims it.
+     */
     bool (*probe)(struct tendril_interface *intf);
-    /* The claimed interface is going away; its transfers have all completed. */
+    /*
+     * The claimed interface is going away; its transfers have all completed.
+     */
     void (*disconnect)(struct tendril_interface *intf);
     /* A device finished configuration, after its interfaces were offered. */
     void (*device_added)(struct tendril_device *dev);
@@ -569,15 +582,17 @@ struct tendril_driver {
     void (*device_removed)(struct tendril_device *dev);
     /*
      * The device is being suspended: the driver stops submitting on the
-     * interface, after which the core cancels whatever is still outstanding
-     * on its endpoints. False refuses, failing the suspend with
-     * TENDRIL_ERR_BUSY. A device bound to a driver without this hook cannot be
-     * suspended.
+     * interface, after which the core cancels whatever is still outstanding on
+     * its endpoints. False refuses, failing the suspend with TENDRIL_ERR_BUSY.
+     * A device bound to a driver without this hook cannot be suspended.
      */
     bool (*suspend)(struct tendril_interface *intf);
     /* The device resumed, or its suspend failed after suspend() was called. */
     void (*resume)(struct tendril_interface *intf);
-    /* A device resumed because it signalled remote wakeup, after the resume() hooks ran. */
+    /*
+     * A device resumed because it signalled remote wakeup, after the resume()
+     * hooks ran.
+     */
     void (*device_woke)(struct tendril_device *dev);
     struct tendril_driver *next;
 };

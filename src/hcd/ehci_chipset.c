@@ -27,6 +27,8 @@
 
 /* Chipset fixes for PCI EHCI controllers. */
 
+#include <stdint.h>
+#include "../../include/tendril/glue.h"
 #include "../internal.h"
 
 void tendril_ehci_chipset_fixes(void *ctx) {
@@ -49,7 +51,7 @@ void tendril_ehci_chipset_fixes(void *ctx) {
             }
         }
         uint8_t value = tendril_glue_pci_read8(ctx, 0x53);
-        if (!(value & 0x08)) {
+        if ((value & 0x08) == 0) {
             tendril_glue_pci_write8(ctx, 0x53, (uint8_t)(value | 0x08));
             LOG_INFO("EHCI: applied the SB600/SB700 fix");
         }
@@ -61,7 +63,7 @@ void tendril_ehci_chipset_fixes(void *ctx) {
      */
     if (vendor == 0x1106 && device == 0x3104 && (revision & 0xf0) == 0x60) {
         uint8_t value = tendril_glue_pci_read8(ctx, 0x4b);
-        if (!(value & 0x20)) {
+        if ((value & 0x20) == 0) {
             tendril_glue_pci_write8(ctx, 0x4b, (uint8_t)(value | 0x20));
             LOG_INFO("EHCI: applied the VIA fix");
         }

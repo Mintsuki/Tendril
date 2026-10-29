@@ -25,11 +25,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_SERIAL_INTERNAL_H
-#define TENDRIL_SERIAL_INTERNAL_H
+#ifndef TENDRIL_CLASS_SERIAL_INTERNAL_H
+#define TENDRIL_CLASS_SERIAL_INTERNAL_H
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/serial.h"
+#include "../../include/tendril/spec.h"
+#include "../../include/tendril/tendril.h"
 #include "../internal.h"
-#include <tendril/serial.h>
 
 /* Shared by serial.c and the vendor protocol modules. */
 
@@ -47,7 +52,7 @@ struct serial_req {
     uint8_t request;
     uint16_t value;
     uint16_t index;
-    uint16_t length;
+    size_t length;
     uint8_t data[16];
 };
 
@@ -59,7 +64,10 @@ struct serial_op {
     struct serial_req reqs[MAX_REQS];
     size_t count;
     size_t next;
-    /* Setting up a port carries on past failed requests; later operations stop at the first. */
+    /*
+     * Setting up a port carries on past failed requests; later operations stop
+     * at the first.
+     */
     bool tolerant;
     int status;
     /* Called after each request, to read its answer or to add requests. */
@@ -77,17 +85,26 @@ struct serial_write {
 };
 
 struct tendril_serial {
-    /* The interface with the data endpoints, and the one taking requests and reporting status. */
+    /*
+     * The interface with the data endpoints, and the one taking requests and
+     * reporting status.
+     */
     struct tendril_interface *intf;
     struct tendril_interface *ctrl_intf;
     struct tendril_device *dev;
     struct tendril_hc *hc;
     int kind;
-    /* Owned by the vendor module: the chip model, and the wIndex value naming the port. */
+    /*
+     * Owned by the vendor module: the chip model, and the wIndex value naming
+     * the port.
+     */
     int chip;
     uint16_t port_index;
     uint8_t ch_version;
-    /* CDC ACM: the Abstract Control Management and Call Management capabilities, and its quirks. */
+    /*
+     * CDC ACM: the Abstract Control Management and Call Management
+     * capabilities, and its quirks.
+     */
     uint8_t acm_caps;
     uint8_t cm_caps;
     uint32_t quirks;
@@ -107,12 +124,12 @@ struct tendril_serial {
     struct tendril_transfer rx[RX_BUFS];
     uint8_t *rx_buf[RX_BUFS];
     size_t rx_size;
-    unsigned int rx_idle;
-    unsigned int rx_errors;
+    uint32_t rx_idle;
+    size_t rx_errors;
     struct tendril_transfer intr;
     uint8_t intr_buf[64];
     bool intr_idle;
-    unsigned int intr_errors;
+    size_t intr_errors;
     struct tendril_timer timer;
     bool poll_queued;
     struct tendril_list ops;
@@ -130,7 +147,7 @@ struct tendril_serial {
  */
 void serial_op_add(
     struct serial_op *op, uint8_t type, uint8_t request, uint16_t value, uint16_t index, const void *data,
-    uint16_t length
+    size_t length
 );
 /* Reports line states and events (TENDRIL_SERIAL_*). */
 void serial_status_update(struct tendril_serial *port, uint32_t status);
@@ -139,7 +156,9 @@ void serial_deliver(struct tendril_serial *port, const uint8_t *data, size_t len
 
 /* FTDI (serial_ftdi.c) */
 
-/* Works out the chip and port->port_index; false leaves the port unsupported. */
+/*
+ * Works out the chip and port->port_index; false leaves the port unsupported.
+ */
 bool serial_ftdi_init(struct tendril_serial *port);
 /* Brings the port up with port->config, port->dtr, and port->rts. */
 void serial_ftdi_setup(struct tendril_serial *port, struct serial_op *op);

@@ -157,6 +157,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/spec.h"
+#include "../../include/tendril/tendril.h"
 #include "../internal.h"
 
 #define ANY 0xffff
@@ -193,8 +197,8 @@ static const struct hc_quirk hc_quirks[] = {
 
 /* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs */
 /*
- * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c (BSD-2-Clause), naming the IDs as
- * its sys/dev/usb/usbdevs (BSD-2-Clause) does.
+ * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c (BSD-2-Clause), naming the IDs
+ * as its sys/dev/usb/usbdevs (BSD-2-Clause) does.
  */
 static const struct tendril_id_quirk device_quirks[] = {
     { 0x1608, 0x0001, 0x0094, 0x0094, TENDRIL_DEV_QUIRK_SWAP_UNICODE }, /* INSIDEOUT EDGEPORT4 */

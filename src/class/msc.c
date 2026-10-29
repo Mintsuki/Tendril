@@ -291,8 +291,13 @@
  * SUCH DAMAGE.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "../../include/tendril/msc.h"
+#include "../../include/tendril/spec.h"
+#include "../../include/tendril/tendril.h"
 #include "../internal.h"
-#include <tendril/msc.h>
 
 #define SUBCLASS_NOT_REPORTED 0x00
 #define SUBCLASS_RBC 0x01
@@ -315,7 +320,10 @@
 #define CBW_SIGNATURE 0x43425355
 #define CSW_SIGNATURE 0x53425355
 /* BEGIN FreeBSD sys/dev/usb/storage/umass.c */
-/* Signatures some devices put in their CSWs, accepted with MQ_WRONG_CSW_SIGNATURE, as FreeBSD's umass.c does. */
+/*
+ * Signatures some devices put in their CSWs, accepted with
+ * MQ_WRONG_CSW_SIGNATURE, as FreeBSD's umass.c does.
+ */
 #define CSW_SIGNATURE_OLYMPUS 0x55425355
 #define CSW_SIGNATURE_AS_CBW 0x43425355
 /* END FreeBSD sys/dev/usb/storage/umass.c */
@@ -362,7 +370,10 @@
 #define TYPE_NONE 0x1f
 
 /* BEGIN SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
-/* UAS information units and pipe usage IDs, as SerenityOS's Structures.h has them. */
+/*
+ * UAS information units and pipe usage IDs, as SerenityOS's Structures.h has
+ * them.
+ */
 #define IU_COMMAND 0x01
 #define IU_SENSE 0x03
 #define IU_RESPONSE 0x04
@@ -380,7 +391,10 @@
 /* END SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
 #define PIPE_BIT(id) ((uint32_t)1 << (id))
 #define UAS_PIPES (PIPE_BIT(PIPE_COMMAND) | PIPE_BIT(PIPE_STATUS) | PIPE_BIT(PIPE_DATA_IN) | PIPE_BIT(PIPE_DATA_OUT))
-/* A status IU always travels as one packet, so the largest packet holds any of them. */
+/*
+ * A status IU always travels as one packet, so the largest packet holds any of
+ * them.
+ */
 #define IU_BUF_SIZE 512
 
 #define CMD_TIMEOUT_MS 20000
@@ -423,8 +437,8 @@
 
 /* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs */
 /*
- * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c (BSD-2-Clause), naming the IDs as
- * its sys/dev/usb/usbdevs (BSD-2-Clause) does.
+ * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c (BSD-2-Clause), naming the IDs
+ * as its sys/dev/usb/usbdevs (BSD-2-Clause) does.
  */
 static const struct tendril_id_quirk msc_quirks[] = {
     { 0x0d7d, 0x1300, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE }, /* ADDON ATTACHE */
@@ -682,7 +696,7 @@ struct msc_cmd {
     struct tendril_list node;
     struct tendril_msc *msc;
     uint8_t cdb[16];
-    uint8_t cdb_len;
+    size_t cdb_len;
     uint8_t lun;
     bool in;
     void *data;
@@ -690,12 +704,15 @@ struct msc_cmd {
     uint32_t timeout_ms;
     void (*done)(struct msc_cmd *cmd);
     void *ctx;
-    /* The transport status; the SCSI status and sense data count only when it is TENDRIL_OK. */
+    /*
+     * The transport status; the SCSI status and sense data count only when it
+     * is TENDRIL_OK.
+     */
     int status;
-    uint8_t scsi_status;
+    int scsi_status;
     size_t actual;
     uint8_t sense[32];
-    uint8_t sense_len;
+    size_t sense_len;
     /* UAS */
     uint16_t tag;
     size_t pending;
@@ -722,7 +739,7 @@ struct msc_cmd {
 struct tendril_msc_lun {
     struct tendril_msc *msc;
     uint8_t number;
-    uint8_t type;
+    int type;
     bool removable;
     bool present;
     bool write_protected;
@@ -730,16 +747,19 @@ struct tendril_msc_lun {
     bool no_sync_cache;
     bool no_mode_sense;
     uint64_t blocks;
-    uint32_t block_size;
+    size_t block_size;
     char vendor[9];
     char product[17];
     char revision[5];
     void *user;
-    /* One command at a time: a probe of the medium, or a chunk of the current request. */
+    /*
+     * One command at a time: a probe of the medium, or a chunk of the current
+     * request.
+     */
     struct msc_cmd cmd;
     uint8_t buf[192];
     int step;
-    unsigned int tries;
+    size_t tries;
     bool busy;
     bool started;
     bool probe_pending;
@@ -747,7 +767,7 @@ struct tendril_msc_lun {
     bool old_present;
     bool old_write_protected;
     uint64_t old_blocks;
-    uint32_t old_block_size;
+    size_t old_block_size;
     uint64_t ready_deadline;
     struct tendril_timer timer;
     struct tendril_list requests;
@@ -767,8 +787,8 @@ struct tendril_msc_lun {
  * The checks FreeBSD's sys/dev/usb/usb_msctest.c (BSD-2-Clause) makes of a
  * device's first interface before any driver uses it: for an auto-install
  * CD-ROM (usb_iface_is_cdrom), and the MQ_SCSI_EJECT one (usb_msc_eject with
- * MSC_EJECT_STOPUNIT). Their data and status stages get the two seconds
- * that its bbb_command_start() gives the data stage of these commands.
+ * MSC_EJECT_STOPUNIT). Their data and status stages get the two seconds that
+ * its bbb_command_start() gives the data stage of these commands.
  */
 #define PRE_NONE 0
 #define PRE_CDROM 1
@@ -806,7 +826,10 @@ struct tendril_msc {
     bool suspended;
     size_t max_bytes;
     size_t alt;
-    /* The Bulk-Only or CBI setting to fall back to when UAS cannot be set up, or -1. */
+    /*
+     * The Bulk-Only or CBI setting to fall back to when UAS cannot be set up,
+     * or -1.
+     */
     int fallback_alt;
     int fallback_transport;
     int fallback_cmdset;
@@ -817,7 +840,9 @@ struct tendril_msc {
     size_t num_luns;
     struct tendril_msc_lun *luns[MAX_LUNS];
     struct tendril_list queue;
-    /* Bulk-Only and CBI: one command at a time, with automatic REQUEST SENSE. */
+    /*
+     * Bulk-Only and CBI: one command at a time, with automatic REQUEST SENSE.
+     */
     struct tendril_endpoint *bulk_in;
     struct tendril_endpoint *bulk_out;
     struct tendril_endpoint *intr_in;
@@ -838,10 +863,13 @@ struct tendril_msc {
     struct tendril_endpoint *data_in_ep;
     struct tendril_endpoint *data_out_ep;
     bool streams;
-    unsigned int num_streams;
+    size_t num_streams;
     size_t num_tags;
     size_t next_tag;
-    /* Tags in use, including those of failed commands that wait for an ABORT TASK. */
+    /*
+     * Tags in use, including those of failed commands that wait for an ABORT
+     * TASK.
+     */
     uint64_t tag_busy;
     uint64_t abort_mask;
     uint8_t abort_lun[MAX_TAGS + 1];
@@ -859,7 +887,7 @@ struct tendril_msc {
     int pre;
     bool pre_cdrom;
     bool pre_eject;
-    unsigned int pre_tries;
+    size_t pre_tries;
     struct msc_cmd pre_cmd;
     uint8_t pre_buf[36];
     struct tendril_timer pre_timer;
@@ -907,7 +935,10 @@ static uint32_t get_le32(const uint8_t *p) {
     return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24;
 }
 
-/* Sense key, ASC, and ASCQ from fixed or descriptor format sense data; false without sense data. */
+/*
+ * Sense key, ASC, and ASCQ from fixed or descriptor format sense data; false
+ * without sense data.
+ */
 static bool sense_codes(const struct msc_cmd *cmd, uint8_t *key, uint8_t *asc, uint8_t *ascq) {
     const uint8_t *s = cmd->sense;
     uint8_t code = s[0] & 0x7f;
@@ -967,8 +998,7 @@ static void op_done(void *ctx, int st) {
 }
 
 static void submit(
-    struct tendril_msc *msc, int step, struct tendril_endpoint *ep, void *buf, size_t len,
-    uint32_t timeout_ms
+    struct tendril_msc *msc, int step, struct tendril_endpoint *ep, void *buf, size_t len, uint32_t timeout_ms
 ) {
     struct tendril_transfer *xfer = &msc->xfer;
     msc->xstep = step;
@@ -993,7 +1023,7 @@ static void clear_halt(struct tendril_msc *msc, int step, struct tendril_endpoin
 }
 
 static void class_request(
-    struct tendril_msc *msc, int step, uint8_t request, void *data, uint16_t len, uint32_t timeout_ms
+    struct tendril_msc *msc, int step, uint8_t request, void *data, size_t len, uint32_t timeout_ms
 ) {
     struct tendril_transfer *xfer = &msc->ctrl;
     msc->xstep = step;
@@ -1001,7 +1031,7 @@ static void class_request(
     xfer->setup.request_type = TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE;
     xfer->setup.request = request;
     xfer->setup.index = tendril_le16(msc->intf->number);
-    xfer->setup.length = tendril_le16(len);
+    xfer->setup.length = tendril_le16((uint16_t)len);
     xfer->buffer = data;
     xfer->length = len;
     xfer->timeout_ms = timeout_ms;
@@ -1023,7 +1053,7 @@ static void bbb_start(struct tendril_msc *msc) {
     put_le32(cbw + 8, (uint32_t)cmd->len);
     cbw[12] = cmd->in ? 0x80 : 0x00;
     cbw[13] = cmd->lun;
-    cbw[14] = cmd->cdb_len;
+    cbw[14] = (uint8_t)cmd->cdb_len;
     memcpy(cbw + 15, cmd->cdb, cmd->cdb_len);
     msc->csw_retried = false;
     submit(msc, T_CBW, msc->bulk_out, cbw, CBW_SIZE, CTRL_TIMEOUT_MS);
@@ -1031,8 +1061,11 @@ static void bbb_start(struct tendril_msc *msc) {
 
 static void cbi_start(struct tendril_msc *msc) {
     struct msc_cmd *cmd = msc->active;
-    /* CBI 1.1, 2.3.1: the device may NAK the command transport for as long as the command runs. */
-    class_request(msc, T_ADSC, REQ_ADSC, cmd->cdb, cmd->cdb_len, cmd->timeout_ms);
+    /*
+     * CBI 1.1, 2.3.1: the device may NAK the command transport for as long as
+     * the command runs.
+     */
+    class_request(msc, T_ADSC, REQ_ADSC, cmd->cdb, (uint16_t)cmd->cdb_len, cmd->timeout_ms);
 }
 
 static void transport_start(struct tendril_msc *msc) {
@@ -1043,7 +1076,10 @@ static void transport_start(struct tendril_msc *msc) {
     }
 }
 
-/* Completes the active command; a finished REQUEST SENSE completes the command it was for. */
+/*
+ * Completes the active command; a finished REQUEST SENSE completes the command
+ * it was for.
+ */
 static void transport_finish(struct tendril_msc *msc, int st) {
     struct msc_cmd *cmd = msc->active;
 
@@ -1068,7 +1104,7 @@ static void transport_finish(struct tendril_msc *msc, int st) {
          */
         if (sense_codes(orig, &key, &asc, &ascq)
          && (key == SENSE_NO_SENSE
-         || (key == SENSE_UNIT_ATTENTION && (msc->quirks & MQ_NO_RS_CLEAR_UA) && orig->cdb[0] == SCSI_INQUIRY))) {
+         || (key == SENSE_UNIT_ATTENTION && (msc->quirks & MQ_NO_RS_CLEAR_UA) != 0 && orig->cdb[0] == SCSI_INQUIRY))) {
             orig->scsi_status = STATUS_GOOD;
         }
         /* END FreeBSD sys/dev/usb/storage/umass.c */
@@ -1079,7 +1115,10 @@ static void transport_finish(struct tendril_msc *msc, int st) {
     transport_kick(msc);
 }
 
-/* Fetches sense data for the active command, which failed or whose status is unknown. */
+/*
+ * Fetches sense data for the active command, which failed or whose status is
+ * unknown.
+ */
 static void auto_sense(struct tendril_msc *msc) {
     struct msc_cmd *cmd = msc->active;
     struct msc_cmd *s = &msc->sense_cmd;
@@ -1108,7 +1147,10 @@ static void auto_sense(struct tendril_msc *msc) {
     transport_start(msc);
 }
 
-/* Bulk-Only 1.0, 5.3.4 reset recovery, or the CBI 1.1, 2.2 command block reset, then both bulk halts cleared. */
+/*
+ * Bulk-Only 1.0, 5.3.4 reset recovery, or the CBI 1.1, 2.2 command block
+ * reset, then both bulk halts cleared.
+ */
 static void start_recovery(struct tendril_msc *msc, int st) {
     msc->recover_status = st;
     LOG_DEBUG("MSC: reset recovery after %s", tendril_status_str(st));
@@ -1131,16 +1173,19 @@ static void bbb_check_csw(struct tendril_msc *msc) {
     const uint8_t *csw = msc->csw;
     uint32_t sig = get_le32(csw);
 
-    if ((msc->quirks & MQ_WRONG_CSW_SIGNATURE) && (sig == CSW_SIGNATURE_OLYMPUS || sig == CSW_SIGNATURE_AS_CBW)) {
+    if ((msc->quirks & MQ_WRONG_CSW_SIGNATURE) != 0 && (sig == CSW_SIGNATURE_OLYMPUS || sig == CSW_SIGNATURE_AS_CBW)) {
         sig = CSW_SIGNATURE;
     }
-    /* Bulk-Only 1.0, 6.3 and 6.5: an invalid CSW, or a phase error, calls for reset recovery. */
+    /*
+     * Bulk-Only 1.0, 6.3 and 6.5: an invalid CSW, or a phase error, calls for
+     * reset recovery.
+     */
     if (msc->xfer.actual != CSW_SIZE || sig != CSW_SIGNATURE || get_le32(csw + 4) != msc->tag || csw[12] > 1) {
         start_recovery(msc, TENDRIL_ERR_PROTOCOL);
         return;
     }
     uint32_t residue = get_le32(csw + 8);
-    if (!(msc->quirks & MQ_IGNORE_RESIDUE) && residue != 0) {
+    if ((msc->quirks & MQ_IGNORE_RESIDUE) == 0 && residue != 0) {
         size_t relevant = cmd->len - MIN((size_t)residue, cmd->len);
         cmd->actual = MIN(cmd->actual, relevant);
     }
@@ -1178,10 +1223,16 @@ static void cbi_check_status(struct tendril_msc *msc) {
         return;
     }
     if (msc->cmdset == CMDSET_UFI) {
-        /* CBI 1.1, 3.4.3.1.3: UFI reports ASC and ASCQ, which REQUEST SENSE and INQUIRY leave alone. */
+        /*
+         * CBI 1.1, 3.4.3.1.3: UFI reports ASC and ASCQ, which REQUEST SENSE
+         * and INQUIRY leave alone.
+         */
         failed = (b[0] != 0 || b[1] != 0) && cmd->cdb[0] != SCSI_REQUEST_SENSE && cmd->cdb[0] != SCSI_INQUIRY;
     } else if (b[0] != 0) {
-        /* Not a command completion interrupt (CBI 1.1, 3.4.3.1.1), so the status is unknown. */
+        /*
+         * Not a command completion interrupt (CBI 1.1, 3.4.3.1.1), so the
+         * status is unknown.
+         */
         if (cmd == &msc->sense_cmd) {
             cmd->scsi_status = STATUS_GOOD;
             transport_finish(msc, TENDRIL_OK);
@@ -1201,7 +1252,10 @@ static void cbi_check_status(struct tendril_msc *msc) {
         return;
     }
     if (cmd->len != 0) {
-        /* CBI 1.1, 2.4.3.1.3: the data pipe may have stalled after the last data of a failed command. */
+        /*
+         * CBI 1.1, 2.4.3.1.3: the data pipe may have stalled after the last
+         * data of a failed command.
+         */
         clear_halt(msc, T_FAIL_CLEAR, cmd->in ? msc->bulk_in : msc->bulk_out);
         return;
     }
@@ -1221,7 +1275,10 @@ static void transport_step(struct tendril_msc *msc, int st) {
     }
     switch (msc->xstep) {
         case T_CBW: {
-            /* Bulk-Only 1.0, 5.3.1: a stalled CBW also calls for reset recovery. */
+            /*
+             * Bulk-Only 1.0, 5.3.1: a stalled CBW also calls for reset
+             * recovery.
+             */
             if (st != TENDRIL_OK) {
                 start_recovery(msc, st);
             } else if (cmd->len != 0) {
@@ -1233,7 +1290,10 @@ static void transport_step(struct tendril_msc *msc, int st) {
         }
         case T_ADSC: {
             if (st == TENDRIL_ERR_STALL) {
-                /* CBI 1.1, 2.3.2.1: a stalled ADSC failed the command, and no interrupt follows. */
+                /*
+                 * CBI 1.1, 2.3.2.1: a stalled ADSC failed the command, and no
+                 * interrupt follows.
+                 */
                 auto_sense(msc);
             } else if (st != TENDRIL_OK) {
                 start_recovery(msc, st);
@@ -1247,7 +1307,10 @@ static void transport_step(struct tendril_msc *msc, int st) {
         case T_DATA: {
             cmd->actual = msc->xfer.actual;
             if (st == TENDRIL_ERR_STALL) {
-                /* The device ended the data stage early; status follows the cleared halt. */
+                /*
+                 * The device ended the data stage early; status follows the
+                 * cleared halt.
+                 */
                 clear_halt(msc, T_DATA_CLEAR, cmd->in ? msc->bulk_in : msc->bulk_out);
             } else if (st != TENDRIL_OK) {
                 start_recovery(msc, st);
@@ -1269,7 +1332,10 @@ static void transport_step(struct tendril_msc *msc, int st) {
             break;
         }
         case T_CSW: {
-            /* Bulk-Only 1.0, figure 2: one more try at the CSW after clearing a stall. */
+            /*
+             * Bulk-Only 1.0, figure 2: one more try at the CSW after clearing
+             * a stall.
+             */
             if (st == TENDRIL_ERR_STALL && !msc->csw_retried) {
                 clear_halt(msc, T_CSW_CLEAR, msc->bulk_in);
             } else if (st != TENDRIL_OK) {
@@ -1352,7 +1418,10 @@ static int uas_post(
     return st;
 }
 
-/* Records a failure and cancels the command's other transfers; completion waits for them. */
+/*
+ * Records a failure and cancels the command's other transfers; completion
+ * waits for them.
+ */
 static void uas_fail(struct msc_cmd *cmd, int st) {
     if (cmd->failed == TENDRIL_OK) {
         cmd->failed = st;
@@ -1376,7 +1445,10 @@ static void uas_complete(struct tendril_msc *msc, struct msc_cmd *cmd) {
         msc->stopped = true;
         msc->tag_busy &= ~((uint64_t)1 << tag);
     } else {
-        /* The device may still hold the command; the tag waits for an ABORT TASK. */
+        /*
+         * The device may still hold the command; the tag waits for an ABORT
+         * TASK.
+         */
         msc->abort_mask |= (uint64_t)1 << tag;
         msc->abort_lun[tag] = cmd->lun;
     }
@@ -1392,7 +1464,10 @@ static void uas_status_iu(struct tendril_msc *msc, struct msc_cmd *cmd) {
     int st;
 
     if (n < 4 || get_be16(iu + 2) != cmd->tag) {
-        /* A late IU of an aborted command, which can only come without streams. */
+        /*
+         * A late IU of an aborted command, which can only come without
+         * streams.
+         */
         st = uas_post(msc, cmd, &cmd->status_xfer, msc->status_ep, cmd->status_buf, IU_BUF_SIZE, true);
         if (st != TENDRIL_OK) {
             uas_fail(cmd, st);
@@ -1410,8 +1485,7 @@ static void uas_status_iu(struct tendril_msc *msc, struct msc_cmd *cmd) {
             } else {
                 cmd->data_posted = true;
                 st = uas_post(
-                    msc, cmd, &cmd->data_xfer, in ? msc->data_in_ep : msc->data_out_ep, cmd->data,
-                    cmd->len, false
+                    msc, cmd, &cmd->data_xfer, in ? msc->data_in_ep : msc->data_out_ep, cmd->data, cmd->len, false
                 );
             }
             if (st == TENDRIL_OK) {
@@ -1432,7 +1506,9 @@ static void uas_status_iu(struct tendril_msc *msc, struct msc_cmd *cmd) {
             size_t len = MIN((size_t)get_be16(iu + 14), n - 16);
             cmd->sense_len = (uint8_t)MIN(len, sizeof(cmd->sense));
             memcpy(cmd->sense, iu + 16, cmd->sense_len);
-            /* After a failure the device may never move the rest of the data. */
+            /*
+             * After a failure the device may never move the rest of the data.
+             */
             if (cmd->scsi_status != STATUS_GOOD) {
                 tendril_transfer_cancel(&cmd->data_xfer);
             }
@@ -1506,18 +1582,23 @@ static void uas_submit(struct tendril_msc *msc, struct msc_cmd *cmd, size_t tag)
     /* BEGIN SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
     iu[0] = IU_COMMAND;
     put_be16(iu + 2, (uint16_t)tag);
-    /* Task attribute SIMPLE, and the LUN in single level format, as SerenityOS's Structures.h lays the IU out. */
+    /*
+     * Task attribute SIMPLE, and the LUN in single level format, as
+     * SerenityOS's Structures.h lays the IU out.
+     */
     iu[9] = cmd->lun;
     memcpy(iu + 16, cmd->cdb, cmd->cdb_len);
     /* END SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
 
-    /* The status pipe, and with streams the data pipe, listen before the command goes out. */
+    /*
+     * The status pipe, and with streams the data pipe, listen before the
+     * command goes out.
+     */
     st = uas_post(msc, cmd, &cmd->status_xfer, msc->status_ep, cmd->status_buf, IU_BUF_SIZE, true);
     if (st == TENDRIL_OK && msc->streams && cmd->len != 0) {
         cmd->data_posted = true;
         st = uas_post(
-            msc, cmd, &cmd->data_xfer, cmd->in ? msc->data_in_ep : msc->data_out_ep, cmd->data, cmd->len,
-            true
+            msc, cmd, &cmd->data_xfer, cmd->in ? msc->data_in_ep : msc->data_out_ep, cmd->data, cmd->len, true
         );
     }
     if (st == TENDRIL_OK) {
@@ -1532,11 +1613,14 @@ static void uas_submit(struct tendril_msc *msc, struct msc_cmd *cmd, size_t tag)
 }
 
 static size_t uas_alloc_tag(struct tendril_msc *msc) {
-    /* Tags rotate, so that a late IU of an old command cannot pass for a new one's. */
+    /*
+     * Tags rotate, so that a late IU of an old command cannot pass for a new
+     * one's.
+     */
     for (size_t i = 0; i < msc->num_tags; i++) {
         size_t tag = msc->next_tag;
         msc->next_tag = msc->next_tag % msc->num_tags + 1;
-        if (!(msc->tag_busy & ((uint64_t)1 << tag))) {
+        if ((msc->tag_busy & ((uint64_t)1 << tag)) == 0) {
             msc->tag_busy |= (uint64_t)1 << tag;
             return tag;
         }
@@ -1547,7 +1631,10 @@ static size_t uas_alloc_tag(struct tendril_msc *msc) {
 static void uas_kick(struct tendril_msc *msc) {
     uas_tm_kick(msc);
     while (!list_empty(&msc->queue) && !msc->stopped) {
-        /* Without streams the status pipe is shared, so commands go one at a time. */
+        /*
+         * Without streams the status pipe is shared, so commands go one at a
+         * time.
+         */
         if (!msc->streams && (msc->in_flight != 0 || msc->tm_busy)) {
             break;
         }
@@ -1622,7 +1709,7 @@ static void uas_tm_kick(struct tendril_msc *msc) {
         return;
     }
     size_t target = 0;
-    while (!(msc->abort_mask & ((uint64_t)1 << target))) {
+    while ((msc->abort_mask & ((uint64_t)1 << target)) == 0) {
         target++;
     }
     uint8_t *iu = msc->tm_iu;
@@ -1768,8 +1855,8 @@ static void lun_cmd_done(struct msc_cmd *cmd);
 static void lun_next(struct tendril_msc_lun *lun);
 
 static void lun_issue(
-    struct tendril_msc_lun *lun, int step, const uint8_t *cdb, size_t cdb_len, void *data, size_t len,
-    bool in, uint32_t timeout_ms
+    struct tendril_msc_lun *lun, int step, const uint8_t *cdb, size_t cdb_len, void *data, size_t len, bool in,
+    uint32_t timeout_ms
 ) {
     struct tendril_msc *msc = lun->msc;
     struct msc_cmd *cmd = &lun->cmd;
@@ -1795,7 +1882,9 @@ static bool block_device(const struct tendril_msc_lun *lun) {
     return lun->type == TYPE_DIRECT || lun->type == TYPE_CDROM || lun->type == TYPE_OPTICAL || lun->type == TYPE_RBC;
 }
 
-/* Waits for a unit becoming ready, polling until READY_TIMEOUT_MS has passed. */
+/*
+ * Waits for a unit becoming ready, polling until READY_TIMEOUT_MS has passed.
+ */
 static bool wait_ready(struct tendril_msc_lun *lun) {
     struct tendril_hc *hc = lun->msc->hc;
     uint64_t now = tendril_now();
@@ -1827,8 +1916,8 @@ static void probe_test(struct tendril_msc_lun *lun) {
      * FreeBSD's umass.c sends START STOP UNIT in place of TEST UNIT READY with
      * MQ_NO_TEST_UNIT_READY, and takes that as done with MQ_NO_START_STOP.
      */
-    if (quirks & MQ_NO_TEST_UNIT_READY) {
-        if (quirks & MQ_NO_START_STOP) {
+    if ((quirks & MQ_NO_TEST_UNIT_READY) != 0) {
+        if ((quirks & MQ_NO_START_STOP) != 0) {
             probe_capacity(lun);
         } else {
             issue_start(lun, LUN_TEST);
@@ -1853,7 +1942,9 @@ static void probe_capacity16(struct tendril_msc_lun *lun) {
 
 static void probe_mode_sense(struct tendril_msc_lun *lun) {
     uint8_t cdb[10] = { 0 };
-    /* All pages, current values; only the header's write protect bit matters. */
+    /*
+     * All pages, current values; only the header's write protect bit matters.
+     */
     if (lun->msc->cmdset == CMDSET_SCSI) {
         cdb[0] = SCSI_MODE_SENSE6;
         cdb[2] = 0x3f;
@@ -1900,7 +1991,7 @@ static void probe_start(struct tendril_msc_lun *lun, bool initial) {
         }
         return;
     }
-    if (!(lun->msc->quirks & MQ_NO_INQUIRY)) {
+    if ((lun->msc->quirks & MQ_NO_INQUIRY) == 0) {
         probe_inquiry(lun);
         return;
     }
@@ -1935,8 +2026,8 @@ static void probe_done(struct tendril_msc_lun *lun, bool present) {
 
     if (present && (changed || !lun->attached)) {
         LOG_INFO(
-            "MSC: LUN %u: %llu blocks of %u bytes%s", lun->number, (unsigned long long)lun->blocks,
-            lun->block_size, lun->write_protected ? ", write protected" : ""
+            "MSC: LUN %u: %llu blocks of %zu bytes%s", lun->number, (unsigned long long)lun->blocks, lun->block_size,
+            lun->write_protected ? ", write protected" : ""
         );
     } else if (!present && (changed || !lun->attached) && block_device(lun)) {
         LOG_INFO("MSC: LUN %u: no medium", lun->number);
@@ -1980,8 +2071,8 @@ static void probe_result(struct tendril_msc_lun *lun, int v, int st) {
                     copy_string(lun->revision, b + 32, 4);
                 }
                 LOG_INFO(
-                    "MSC: LUN %u: \"%s\" \"%s\" \"%s\", type %02x%s", lun->number, lun->vendor,
-                    lun->product, lun->revision, lun->type, lun->removable ? ", removable" : ""
+                    "MSC: LUN %u: \"%s\" \"%s\" \"%s\", type %02x%s", lun->number, lun->vendor, lun->product,
+                    lun->revision, lun->type, lun->removable ? ", removable" : ""
                 );
                 lun->tries = 0;
                 if (block_device(lun)) {
@@ -2022,7 +2113,7 @@ static void probe_result(struct tendril_msc_lun *lun, int v, int st) {
                     break;
                 }
                 case V_START: {
-                    if (!(msc->quirks & MQ_NO_START_STOP) && !lun->started) {
+                    if ((msc->quirks & MQ_NO_START_STOP) == 0 && !lun->started) {
                         lun->started = true;
                         issue_start(lun, LUN_START);
                         return;
@@ -2039,7 +2130,10 @@ static void probe_result(struct tendril_msc_lun *lun, int v, int st) {
                     break;
                 }
                 case V_FAIL: {
-                    /* A unit rejecting TEST UNIT READY may still answer READ CAPACITY. */
+                    /*
+                     * A unit rejecting TEST UNIT READY may still answer READ
+                     * CAPACITY.
+                     */
                     if (st == TENDRIL_ERR_INVALID) {
                         probe_capacity(lun);
                         return;
@@ -2065,9 +2159,12 @@ static void probe_result(struct tendril_msc_lun *lun, int v, int st) {
                 if (lun->step == LUN_CAPACITY10) {
                     last = get_be32(b);
                     lun->block_size = get_be32(b + 4);
-                    if (msc->quirks & MQ_READ_CAP_OFF_BY_ONE) {
+                    if ((msc->quirks & MQ_READ_CAP_OFF_BY_ONE) != 0) {
                         /* BEGIN FreeBSD sys/dev/usb/storage/umass.c (and the condition above) */
-                        /* The block count in place of the last block, which FreeBSD's umass.c corrects here only. */
+                        /*
+                         * The block count in place of the last block, which
+                         * FreeBSD's umass.c corrects here only.
+                         */
                         last--;
                         /* END FreeBSD sys/dev/usb/storage/umass.c */
                     } else if (last == 0xffffffff && msc->cmdset == CMDSET_SCSI && !msc->pad12) {
@@ -2093,7 +2190,10 @@ static void probe_result(struct tendril_msc_lun *lun, int v, int st) {
                 return;
             }
             if (v == V_FAIL && lun->step == LUN_CAPACITY16 && st == TENDRIL_ERR_INVALID) {
-                /* Without READ CAPACITY (16), the first 2^32 blocks are all that can be reached. */
+                /*
+                 * Without READ CAPACITY (16), the first 2^32 blocks are all
+                 * that can be reached.
+                 */
                 lun->blocks = (uint64_t)0x100000000;
                 lun->write_protected = false;
                 probe_mode_sense(lun);
@@ -2144,7 +2244,10 @@ static void io_finish(struct tendril_msc_lun *lun, int st) {
     lun_next(lun);
 }
 
-/* Fails the current and all queued requests, which were meant for a medium that is gone. */
+/*
+ * Fails the current and all queued requests, which were meant for a medium
+ * that is gone.
+ */
 static void io_fail_all(struct tendril_msc_lun *lun, int st) {
     struct tendril_list list;
     struct tendril_msc_request *cur = lun->current;
@@ -2177,7 +2280,7 @@ static void io_issue(struct tendril_msc_lun *lun) {
     if (req->op == TENDRIL_MSC_FLUSH) {
         if (!lun->present) {
             io_finish(lun, TENDRIL_ERR_NO_MEDIUM);
-        } else if (lun->no_sync_cache || (msc->quirks & MQ_NO_SYNC_CACHE) || msc->cmdset == CMDSET_UFI
+        } else if (lun->no_sync_cache || (msc->quirks & MQ_NO_SYNC_CACHE) != 0 || msc->cmdset == CMDSET_UFI
                 || lun->write_protected) {
             io_finish(lun, TENDRIL_OK);
         } else {
@@ -2192,7 +2295,7 @@ static void io_issue(struct tendril_msc_lun *lun) {
     }
 
     bool write = req->op == TENDRIL_MSC_WRITE;
-    uint32_t left = req->count - req->internal.done_blocks;
+    size_t left = req->count - req->internal.done_blocks;
     uint32_t n = (uint32_t)MIN((size_t)left, msc->max_bytes / lun->block_size);
     uint64_t lba = req->lba + req->internal.done_blocks;
     size_t len;
@@ -2259,7 +2362,7 @@ static void io_result(struct tendril_msc_lun *lun, int v, int st) {
         }
         case V_START:
         case V_WAIT: {
-            if (v == V_START && !(msc->quirks & MQ_NO_START_STOP) && ++req->internal.retries <= MAX_RETRIES) {
+            if (v == V_START && (msc->quirks & MQ_NO_START_STOP) == 0 && ++req->internal.retries <= MAX_RETRIES) {
                 issue_start(lun, LUN_IO_START);
                 return;
             }
@@ -2297,7 +2400,10 @@ static void lun_cmd_done(struct msc_cmd *cmd) {
     int v = judge(cmd, &st);
 
     if (st == TENDRIL_ERR_NO_DEVICE) {
-        /* Gone, or its controller died: nothing more will run, though the disconnection may come later. */
+        /*
+         * Gone, or its controller died: nothing more will run, though the
+         * disconnection may come later.
+         */
         lun->msc->stopped = true;
         io_fail_all(lun, st);
         if (lun->check_done != NULL) {
@@ -2367,14 +2473,14 @@ static void setup_fail(struct tendril_msc *msc, int st, const char *what) {
 }
 
 /* BEGIN FreeBSD sys/dev/usb/storage/umass.c */
-static bool command_set(uint8_t subclass, uint32_t quirks, int *cs) {
-    if (quirks & MQ_CMD_SCSI) {
+static bool command_set(int subclass, uint32_t quirks, int *cs) {
+    if ((quirks & MQ_CMD_SCSI) != 0) {
         *cs = CMDSET_SCSI;
-    } else if (quirks & MQ_CMD_ATAPI) {
+    } else if ((quirks & MQ_CMD_ATAPI) != 0) {
         *cs = CMDSET_ATAPI;
-    } else if (quirks & MQ_CMD_UFI) {
+    } else if ((quirks & MQ_CMD_UFI) != 0) {
         *cs = CMDSET_UFI;
-    } else if (quirks & MQ_CMD_RBC) {
+    } else if ((quirks & MQ_CMD_RBC) != 0) {
         *cs = CMDSET_RBC;
     } else {
         switch (subclass) {
@@ -2405,12 +2511,12 @@ static bool command_set(uint8_t subclass, uint32_t quirks, int *cs) {
     return true;
 }
 
-static bool wire_protocol(uint8_t protocol, uint32_t quirks, int *t) {
-    if (quirks & MQ_WIRE_BBB) {
+static bool wire_protocol(int protocol, uint32_t quirks, int *t) {
+    if ((quirks & MQ_WIRE_BBB) != 0) {
         *t = TRANSPORT_BBB;
-    } else if (quirks & MQ_WIRE_CBI) {
+    } else if ((quirks & MQ_WIRE_CBI) != 0) {
         *t = TRANSPORT_CBI;
-    } else if (quirks & MQ_WIRE_CB) {
+    } else if ((quirks & MQ_WIRE_CB) != 0) {
         *t = TRANSPORT_CB;
     } else if (protocol == PROTO_BBB || protocol == PROTO_BBB_OLD) {
         *t = TRANSPORT_BBB;
@@ -2460,11 +2566,16 @@ static uint8_t pipe_id(struct tendril_interface *intf, struct tendril_endpoint *
 static size_t max_transfer(struct tendril_msc *msc) {
     bool ss = tendril_device_is_ss(msc->dev);
     if (msc->transport == TRANSPORT_UAS) {
-        /* Within a 256-TRB stream ring even when every page is mapped apart. */
+        /*
+         * Within a 256-TRB stream ring even when every page is mapped apart.
+         */
         return ss ? 512 * 1024 : 256 * 1024;
     }
     /* BEGIN FreeBSD sys/dev/usb/storage/umass.c, OpenBSD sys/dev/usb/umass.c */
-    /* What FreeBSD's umass.c allows: maxphys (1 MiB) at SuperSpeed, else CAM's 64 KiB default. */
+    /*
+     * What FreeBSD's umass.c allows: maxphys (1 MiB) at SuperSpeed, else CAM's
+     * 64 KiB default.
+     */
     return ss ? 1024 * 1024 : 64 * 1024;
     /* END FreeBSD sys/dev/usb/storage/umass.c, OpenBSD sys/dev/usb/umass.c */
 }
@@ -2545,7 +2656,7 @@ static bool uas_endpoints(struct tendril_msc *msc) {
 }
 
 static void setup_luns(struct tendril_msc *msc) {
-    if (msc->quirks & MQ_SHUTTLE_INIT) {
+    if ((msc->quirks & MQ_SHUTTLE_INIT) != 0) {
         msc->setup = SETUP_SHUTTLE;
         int st = tendril_msc_shuttle_init(
             msc->dev, msc->intf->number, &msc->ctrl, msc->ctrl_buf, sizeof(msc->ctrl_buf), &msc->async
@@ -2605,7 +2716,10 @@ static void pre_timer_work(struct tendril_work *work) {
     }
 }
 
-/* Moves on to configuration index 1, as usb_alloc_device() does past an auto-install CD-ROM. */
+/*
+ * Moves on to configuration index 1, as usb_alloc_device() does past an
+ * auto-install CD-ROM.
+ */
 static bool skip_cdrom(struct tendril_msc *msc) {
     struct tendril_device *dev = msc->dev;
 
@@ -2638,7 +2752,10 @@ static void pre_done(struct msc_cmd *cmd) {
     switch (msc->pre) {
         case PRE_CDROM: {
             bool good = cmd->status == TENDRIL_OK && cmd->scsi_status == STATUS_GOOD;
-            /* A command that failed on the device is tried again a second later, three times in all. */
+            /*
+             * A command that failed on the device is tried again a second
+             * later, three times in all.
+             */
             if (cmd->status == TENDRIL_OK && !good && ++msc->pre_tries < PRE_TRIES) {
                 hc_lock(msc->hc);
                 tendril_timer_arm(msc->hc, &msc->pre_timer, PRE_RETRY_MS * NS_PER_MS);
@@ -2675,12 +2792,18 @@ static void pre_done(struct msc_cmd *cmd) {
 }
 /* END FreeBSD sys/dev/usb/usb_msctest.c, usb_device.c */
 
-/* Bulk-Only and CBI setup past the alternate setting: endpoints, the usb_msctest.c checks, and the LUNs. */
+/*
+ * Bulk-Only and CBI setup past the alternate setting: endpoints, the
+ * usb_msctest.c checks, and the LUNs.
+ */
 static void setup_legacy(struct tendril_msc *msc) {
     /* BEGIN FreeBSD sys/dev/usb/storage/umass.c */
-    /* UFI and ATAPI commands are 12 bytes long; RBC ones only with MQ_PAD_TO_12, as in FreeBSD's umass.c. */
+    /*
+     * UFI and ATAPI commands are 12 bytes long; RBC ones only with
+     * MQ_PAD_TO_12, as in FreeBSD's umass.c.
+     */
     msc->pad12 = msc->cmdset == CMDSET_ATAPI || msc->cmdset == CMDSET_UFI
-        || (msc->cmdset == CMDSET_RBC && (msc->quirks & MQ_PAD_TO_12));
+        || (msc->cmdset == CMDSET_RBC && (msc->quirks & MQ_PAD_TO_12) != 0);
     /* END FreeBSD sys/dev/usb/storage/umass.c */
     if (!legacy_endpoints(msc)) {
         setup_fail(msc, TENDRIL_ERR_UNSUPPORTED, "finding the bulk endpoints");
@@ -2693,15 +2816,14 @@ static void setup_legacy(struct tendril_msc *msc) {
 
 static void get_max_lun(struct tendril_msc *msc) {
     msc->setup = SETUP_MAX_LUN;
-    if (msc->transport != TRANSPORT_BBB || (msc->quirks & MQ_NO_GETMAXLUN)) {
+    if (msc->transport != TRANSPORT_BBB || (msc->quirks & MQ_NO_GETMAXLUN) != 0) {
         create_luns(msc, 1);
         return;
     }
     msc->ctrl_buf[0] = 0;
     int st = tendril_control_async(
-        msc->dev, &msc->ctrl,
-        TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
-        REQ_GET_MAX_LUN, 0, msc->intf->number, msc->ctrl_buf, 1, &msc->async
+        msc->dev, &msc->ctrl, TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE, REQ_GET_MAX_LUN, 0,
+        msc->intf->number, msc->ctrl_buf, 1, &msc->async
     );
     if (st != TENDRIL_OK) {
         setup_step(msc, st);
@@ -2728,7 +2850,10 @@ static void fall_back(struct tendril_msc *msc, int st) {
 
 static void uas_ready(struct tendril_msc *msc) {
     if (msc->streams) {
-        /* Stream IDs 1 to n: one per command tag, and the last for task management. */
+        /*
+         * Stream IDs 1 to n: one per command tag, and the last for task
+         * management.
+         */
         msc->num_tags = MIN((size_t)msc->num_streams - 1, (size_t)MAX_TAGS);
         msc->tm_tag = (uint16_t)(msc->num_tags + 1);
     } else {
@@ -2801,7 +2926,9 @@ static void setup_step(struct tendril_msc *msc, int st) {
             break;
         }
         case SETUP_MAX_LUN: {
-            /* Bulk-Only 1.0, 3.2: devices with one LUN may stall the request. */
+            /*
+             * Bulk-Only 1.0, 3.2: devices with one LUN may stall the request.
+             */
             size_t max = st == TENDRIL_OK && msc->ctrl.actual == 1 ? msc->ctrl_buf[0] : 0;
             create_luns(msc, max < MAX_LUNS ? max + 1 : 1);
             break;
@@ -2823,13 +2950,16 @@ static bool msc_probe(struct tendril_interface *intf) {
         return false;
     }
     uint32_t quirks = tendril_id_quirks(msc_quirks, ARRAY_SIZE(msc_quirks), &dev->desc);
-    if (quirks & MQ_IGNORE) {
+    if ((quirks & MQ_IGNORE) != 0) {
         return false;
     }
 
-    /* The Bulk-Only or CBI setting: the current one, or alternate setting 1 with MQ_ALT_IFACE_1. */
+    /*
+     * The Bulk-Only or CBI setting: the current one, or alternate setting 1
+     * with MQ_ALT_IFACE_1.
+     */
     size_t legacy = intf->cur_alt;
-    if ((quirks & MQ_ALT_IFACE_1) && intf->num_alts > 1) {
+    if ((quirks & MQ_ALT_IFACE_1) != 0 && intf->num_alts > 1) {
         legacy = 1;
     }
     const struct tendril_interface_descriptor *ld = intf->alts[legacy];
@@ -2850,11 +2980,14 @@ static bool msc_probe(struct tendril_interface *intf) {
         }
     }
 
-    /* UAS needs high speed, and streams at SuperSpeed; forced wire protocols rule it out. */
+    /*
+     * UAS needs high speed, and streams at SuperSpeed; forced wire protocols
+     * rule it out.
+     */
     int uas = -1;
-    bool streams_ok = hc->ops->alloc_streams != NULL && !(hc->quirks & TENDRIL_HC_QUIRK_NO_STREAMS);
+    bool streams_ok = hc->ops->alloc_streams != NULL && (hc->quirks & TENDRIL_HC_QUIRK_NO_STREAMS) == 0;
     bool uas_ok = dev->speed >= TENDRIL_SPEED_HIGH && (!tendril_device_is_ss(dev) || streams_ok)
-        && !(quirks & (MQ_WIRE_BBB | MQ_WIRE_CB | MQ_WIRE_CBI));
+        && (quirks & (MQ_WIRE_BBB | MQ_WIRE_CB | MQ_WIRE_CBI)) == 0;
     for (size_t a = 0; a < intf->num_alts && uas_ok && uas < 0; a++) {
         const struct tendril_interface_descriptor *d = intf->alts[a];
         if (d->interface_class == TENDRIL_CLASS_MASS_STORAGE && d->interface_subclass == SUBCLASS_SCSI
@@ -2880,13 +3013,16 @@ static bool msc_probe(struct tendril_interface *intf) {
     tendril_async_init(&msc->async, setup_async_work);
     tendril_timer_init(&msc->pre_timer, pre_timer_work);
     /* BEGIN FreeBSD sys/dev/usb/usb_msctest.c, usb_device.c */
-    /* usb_msctest.c only checks a first interface that speaks Bulk-Only with these command sets (bbb_attach). */
+    /*
+     * usb_msctest.c only checks a first interface that speaks Bulk-Only with
+     * these command sets (bbb_attach).
+     */
     if (intf == &dev->interfaces[0] && uas < 0) {
         bool bbb = (id->interface_protocol == PROTO_BBB || id->interface_protocol == PROTO_BBB_OLD)
             && (id->interface_subclass == SUBCLASS_SCSI || id->interface_subclass == SUBCLASS_UFI
             || id->interface_subclass == SUBCLASS_MMC || id->interface_subclass == SUBCLASS_SFF8070I);
-        msc->pre_cdrom = bbb && dev->cdrom_check && dev->active_config == 0 && !(quirks & MQ_NO_INQUIRY);
-        msc->pre_eject = bbb && (quirks & MQ_SCSI_EJECT);
+        msc->pre_cdrom = bbb && dev->cdrom_check && dev->active_config == 0 && (quirks & MQ_NO_INQUIRY) == 0;
+        msc->pre_eject = bbb && (quirks & MQ_SCSI_EJECT) != 0;
     }
     /* END FreeBSD sys/dev/usb/usb_msctest.c, usb_device.c */
     if (intf == &dev->interfaces[0]) {
@@ -2958,7 +3094,10 @@ static void msc_disconnect(struct tendril_interface *intf) {
     tendril_free(msc, sizeof(struct tendril_msc));
 }
 
-/* Set up, with no command, request, or medium check outstanding: nothing is cut short by a suspend. */
+/*
+ * Set up, with no command, request, or medium check outstanding: nothing is
+ * cut short by a suspend.
+ */
 static bool msc_idle(struct tendril_msc *msc) {
     if (msc->num_luns == 0 || msc->active != NULL || !list_empty(&msc->queue) || msc->in_flight != 0
      || msc->tm_busy) {
@@ -2992,7 +3131,10 @@ static bool msc_suspend(struct tendril_interface *intf) {
 static void msc_resume(struct tendril_interface *intf) {
     struct tendril_msc *msc = tendril_interface_data(intf);
     if (msc != NULL) {
-        /* A medium swapped meanwhile shows up as a unit attention on the next command. */
+        /*
+         * A medium swapped meanwhile shows up as a unit attention on the next
+         * command.
+         */
         msc->suspended = false;
     }
 }
@@ -3020,7 +3162,7 @@ unsigned int tendril_msc_lun_number(struct tendril_msc_lun *lun) {
     return lun->number;
 }
 
-uint8_t tendril_msc_type(struct tendril_msc_lun *lun) {
+int tendril_msc_type(struct tendril_msc_lun *lun) {
     return lun->type;
 }
 
@@ -3040,7 +3182,7 @@ uint64_t tendril_msc_blocks(struct tendril_msc_lun *lun) {
     return lun->blocks;
 }
 
-uint32_t tendril_msc_block_size(struct tendril_msc_lun *lun) {
+size_t tendril_msc_block_size(struct tendril_msc_lun *lun) {
     return lun->block_size;
 }
 
@@ -3111,7 +3253,7 @@ static void sync_request_done(struct tendril_msc_request *req) {
     w->done = true;
 }
 
-static int sync_request(struct tendril_msc_lun *lun, uint8_t op, uint64_t lba, uint32_t count, void *buf) {
+static int sync_request(struct tendril_msc_lun *lun, int op, uint64_t lba, size_t count, void *buf) {
     struct tendril_hc *hc = lun->msc->hc;
     struct tendril_msc_request req;
     struct sync_wait w;
@@ -3133,11 +3275,11 @@ static int sync_request(struct tendril_msc_lun *lun, uint8_t op, uint64_t lba, u
     return w.status;
 }
 
-int tendril_msc_read(struct tendril_msc_lun *lun, uint64_t lba, uint32_t count, void *buf) {
+int tendril_msc_read(struct tendril_msc_lun *lun, uint64_t lba, size_t count, void *buf) {
     return sync_request(lun, TENDRIL_MSC_READ, lba, count, buf);
 }
 
-int tendril_msc_write(struct tendril_msc_lun *lun, uint64_t lba, uint32_t count, const void *buf) {
+int tendril_msc_write(struct tendril_msc_lun *lun, uint64_t lba, size_t count, const void *buf) {
     return sync_request(lun, TENDRIL_MSC_WRITE, lba, count, (void *)(uintptr_t)buf);
 }
 
@@ -3150,16 +3292,16 @@ int tendril_msc_flush(struct tendril_msc_lun *lun) {
 struct passthrough {
     struct msc_cmd cmd;
     uint8_t *sense;
-    void (*done)(void *ctx, int status, uint8_t scsi_status, size_t actual);
+    void (*done)(void *ctx, int status, int scsi_status, size_t actual);
     void *ctx;
 };
 
 static void passthrough_done(struct msc_cmd *cmd) {
     struct passthrough *p = CONTAINER_OF(cmd, struct passthrough, cmd);
-    void (*done)(void *, int, uint8_t, size_t) = p->done;
+    void (*done)(void *, int, int, size_t) = p->done;
     void *ctx = p->ctx;
     int st = cmd->status;
-    uint8_t scsi_status = cmd->scsi_status;
+    int scsi_status = cmd->scsi_status;
     size_t actual = cmd->actual;
 
     if (p->sense != NULL && st == TENDRIL_OK && scsi_status == STATUS_CHECK) {
@@ -3174,7 +3316,7 @@ static void passthrough_done(struct msc_cmd *cmd) {
 
 int tendril_msc_command(
     struct tendril_msc_lun *lun, const uint8_t *cdb, size_t cdb_len, void *data, size_t len, bool in, uint8_t *sense,
-    void (*done)(void *ctx, int status, uint8_t scsi_status, size_t actual), void *ctx
+    void (*done)(void *ctx, int status, int scsi_status, size_t actual), void *ctx
 ) {
     struct tendril_msc *msc = lun->msc;
 

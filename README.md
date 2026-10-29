@@ -6,8 +6,8 @@ needs no C library and asks the embedder for a small set of glue functions.
 ## Features
 
 - Host controllers: UHCI, OHCI, EHCI (with companion controllers), and xHCI
-  (with streams), all with isochronous transfers, firmware handoff, and
-  PCI quirks.
+  (with streams), all with isochronous transfers, firmware handoff, and PCI
+  quirks.
 - Hubs: USB 2.0 hubs, transaction translators included, and SuperSpeed hubs.
 - Class drivers:
   - HID: keyboards, pointing devices, and raw reports (`tendril/hid.h`).
@@ -22,11 +22,12 @@ needs no C library and asks the embedder for a small set of glue functions.
 
 ## Building
 
-Compile every `.c` file under `src/` with `include/` on the include path. The
-sources are C99 and build as C99 through C23 with GCC and Clang, freestanding;
-they use the compiler's freestanding headers and `__builtin_memcpy` and
-friends. On 32-bit targets, link the compiler's runtime library (libgcc or the
-compiler-rt builtins) for 64-bit division.
+Compile every `.c` file under `src/`; they find their own headers by relative
+paths. Code using Tendril needs `include/` on its include path. The sources are
+C99 and build as C99 through C23 with GCC and Clang, freestanding; they use the
+compiler's freestanding headers and `__builtin_memcpy` and friends. On 32-bit
+targets, link the compiler's runtime library (libgcc or the compiler-rt
+builtins) for 64-bit division.
 
 Defining `TENDRIL_NO_UHCI`, `TENDRIL_NO_OHCI`, `TENDRIL_NO_EHCI`, or
 `TENDRIL_NO_XHCI` leaves the corresponding controller driver out.
@@ -34,18 +35,18 @@ Defining `TENDRIL_NO_UHCI`, `TENDRIL_NO_OHCI`, `TENDRIL_NO_EHCI`, or
 ## Using it
 
 The embedder implements the glue functions of `tendril/glue.h`: memory, DMA
-memory, controller register and PCI configuration access, a clock, a lock,
-and logging. It then registers the class drivers it wants, adds each
-controller with `tendril_hc_add()`, and calls `tendril_hc_poll()` whenever the
-controller interrupts or the deadline the last call returned passes. Devices
-are enumerated, and every callback runs, from within `tendril_hc_poll()`.
+memory, controller register and PCI configuration access, a clock, a lock, and
+logging. It then registers the class drivers it wants, adds each controller
+with `tendril_hc_add()`, and calls `tendril_hc_poll()` whenever the controller
+interrupts or the deadline the last call returned passes. Devices are
+enumerated, and every callback runs, from within `tendril_hc_poll()`.
 
 ## Documentation
 
-- [docs/API.md](docs/API.md): writing the glue, every function of the
-  library, threading, and power management.
-- [docs/SPECIFICATIONS.md](docs/SPECIFICATIONS.md): the specifications the
-  code follows.
+- [docs/API.md](docs/API.md): writing the glue, every function of the library,
+  threading, and power management.
+- [docs/SPECIFICATIONS.md](docs/SPECIFICATIONS.md): the specifications the code
+  follows.
 - [3RDPARTY.md](3RDPARTY.md): the code and data Tendril draws on from other
   projects, with their notices.
 

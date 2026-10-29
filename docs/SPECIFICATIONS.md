@@ -25,11 +25,11 @@ and section.
 
 ## Device classes
 
-- Device Class Definition for Human Interface Devices (HID), Version 1.11;
-  HID Usage Tables, Version 1.7.
+- Device Class Definition for Human Interface Devices (HID), Version 1.11; HID
+  Usage Tables, Version 1.7.
 - USB Mass Storage Class Bulk-Only Transport, Revision 1.0; Control/Bulk/
-  Interrupt (CBI) Transport, Revision 1.1; UFI Command Specification,
-  Revision 1.0; USB Attached SCSI Protocol (UASP), Revision 1.0.
+  Interrupt (CBI) Transport, Revision 1.1; UFI Command Specification, Revision
+  1.0; USB Attached SCSI Protocol (UASP), Revision 1.0.
 - USB Class Definitions for Communications Devices, Revision 1.2 with errata
   and ECNs through April 3, 2025; CDC PSTN Subclass, Revision 1.2; CDC ECM
   Subclass, Revision 1.2; CDC NCM Subclass, Revision 1.0 (Errata 1).

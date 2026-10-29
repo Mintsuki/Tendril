@@ -25,8 +25,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_GLUE_H
-#define TENDRIL_GLUE_H
+#ifndef TENDRIL_TENDRIL_GLUE_H
+#define TENDRIL_TENDRIL_GLUE_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -65,10 +65,10 @@ void tendril_glue_dma_free(void *ctx, void *ptr, size_t size);
 
 /*
  * Makes `size` bytes at `ptr` accessible to the controller and returns how
- * many of them, from the start, are contiguous in bus address space at
- * `*dma`. A short return must end on a 4 KiB boundary of bus address space.
- * Returning 0 makes the library bounce the transfer through
- * tendril_glue_dma_alloc() memory instead.
+ * many of them, from the start, are contiguous in bus address space at `*dma`.
+ * A short return must end on a 4 KiB boundary of bus address space. Returning
+ * 0 makes the library bounce the transfer through tendril_glue_dma_alloc()
+ * memory instead.
  */
 size_t tendril_glue_dma_map(void *ctx, void *ptr, size_t size, int dir, uint64_t *dma);
 void tendril_glue_dma_unmap(void *ctx, void *ptr, size_t size, int dir, uint64_t dma);
@@ -77,9 +77,9 @@ void tendril_glue_dma_unmap(void *ctx, void *ptr, size_t size, int dir, uint64_t
 void tendril_glue_dma_barrier(void);
 
 /*
- * Controller register access, at `offset` into the register window: BAR 4
- * (I/O space) for UHCI, BAR 0 for the others. Values are in CPU byte order,
- * the registers being little-endian. Writes are ordered after earlier memory
+ * Controller register access, at `offset` into the register window: BAR 4 (I/O
+ * space) for UHCI, BAR 0 for the others. Values are in CPU byte order, the
+ * registers being little-endian. Writes are ordered after earlier memory
  * writes and reads before later memory reads.
  */
 uint16_t tendril_glue_read16(void *ctx, uint32_t offset);
