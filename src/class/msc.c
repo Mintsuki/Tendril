@@ -1,5 +1,29 @@
-#include "../internal.h"
-#include <tendril/msc.h>
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 /*
  * USB mass storage: Bulk-Only Transport 1.0, CBI Transport 1.1, and UAS as
@@ -9,6 +33,266 @@
  * unit layouts and pipe usage IDs, which T10 does not publish, follow
  * SerenityOS's Kernel/Devices/Storage/USB/UAS/Structures.h (BSD-2-Clause).
  */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/storage/umass.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 1999 MAEKAWA Masahide <bishop@rr.iij4u.or.jp>,
+ *               Nick Hibma <n_hibma@FreeBSD.org>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from SerenityOS's
+ * Kernel/Devices/Storage/USB/UAS/Structures.h (commit
+ * 7af126f893a9241482a6f22405055343c2800338):
+ *
+ * Copyright (c) 2024, Leon Albrecht <leon.a@serenityos.org>
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/quirk/usb_quirk.h
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/usb_msctest.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2008-2022 Hans Petter Selasky.
+ * Copyright (c) 2021-2022 Idwer Vollering.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/quirk/usb_quirk.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
+ * Copyright (c) 1998 Lennart Augustsson. All rights reserved.
+ * Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/usbdevs (commit
+ * dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * Copyright (c) 1998-2004 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lennart Augustsson (lennart@augustsson.net) at
+ * Carlstedt Research & Technology.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from OpenBSD's sys/dev/usb/umass.c (commit
+ * fba0a8da167d48e1d94a300389b91b0a48708155):
+ *
+ * Copyright (c) 2003 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Charles M. Hannum.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Copyright (c) 1999 MAEKAWA Masahide <bishop@rr.iij4u.or.jp>,
+ *               Nick Hibma <n_hibma@freebsd.org>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ *     $FreeBSD: src/sys/dev/usb/umass.c,v 1.13 2000/03/26 01:39:12 n_hibma Exp $
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/usb_device.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2008-2023 Hans Petter Selasky
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+#include "../internal.h"
+#include <tendril/msc.h>
 
 #define SUBCLASS_NOT_REPORTED 0x00
 #define SUBCLASS_RBC 0x01
@@ -25,15 +309,16 @@
 #define PROTO_UAS 0x62
 
 #define REQ_ADSC 0x00
-#define REQ_SHUTTLE_INIT 0x01
 #define REQ_GET_MAX_LUN 0xfe
 #define REQ_BBB_RESET 0xff
 
 #define CBW_SIGNATURE 0x43425355
 #define CSW_SIGNATURE 0x53425355
+/* BEGIN FreeBSD sys/dev/usb/storage/umass.c */
 /* Signatures some devices put in their CSWs, accepted with MQ_WRONG_CSW_SIGNATURE, as FreeBSD's umass.c does. */
 #define CSW_SIGNATURE_OLYMPUS 0x55425355
 #define CSW_SIGNATURE_AS_CBW 0x43425355
+/* END FreeBSD sys/dev/usb/storage/umass.c */
 #define CBW_SIZE 31
 #define CSW_SIZE 13
 
@@ -76,6 +361,7 @@
 #define TYPE_RBC 0x0e
 #define TYPE_NONE 0x1f
 
+/* BEGIN SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
 /* UAS information units and pipe usage IDs, as SerenityOS's Structures.h has them. */
 #define IU_COMMAND 0x01
 #define IU_SENSE 0x03
@@ -91,7 +377,9 @@
 #define PIPE_STATUS 2
 #define PIPE_DATA_IN 3
 #define PIPE_DATA_OUT 4
-#define UAS_PIPES (1u << PIPE_COMMAND | 1u << PIPE_STATUS | 1u << PIPE_DATA_IN | 1u << PIPE_DATA_OUT)
+/* END SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
+#define PIPE_BIT(id) ((uint32_t)1 << (id))
+#define UAS_PIPES (PIPE_BIT(PIPE_COMMAND) | PIPE_BIT(PIPE_STATUS) | PIPE_BIT(PIPE_DATA_IN) | PIPE_BIT(PIPE_DATA_OUT))
 /* A status IU always travels as one packet, so the largest packet holds any of them. */
 #define IU_BUF_SIZE 512
 
@@ -105,27 +393,35 @@
 #define MAX_LUNS 16
 #define MAX_TAGS 32
 
-/* FreeBSD's UQ_MSC_* quirks (sys/dev/usb/quirk/usb_quirk.h, BSD-2-Clause), handled as its umass.c does. */
-#define MQ_NO_GETMAXLUN (1u << 0)
-#define MQ_NO_TEST_UNIT_READY (1u << 1)
-#define MQ_NO_SYNC_CACHE (1u << 2)
-#define MQ_NO_INQUIRY (1u << 3)
-#define MQ_NO_START_STOP (1u << 4)
-#define MQ_IGNORE_RESIDUE (1u << 5)
-#define MQ_WRONG_CSW_SIGNATURE (1u << 6)
-#define MQ_READ_CAP_OFF_BY_ONE (1u << 7)
-#define MQ_PAD_TO_12 (1u << 8)
-#define MQ_SHUTTLE_INIT (1u << 9)
-#define MQ_ALT_IFACE_1 (1u << 10)
-#define MQ_WIRE_BBB (1u << 11)
-#define MQ_WIRE_CB (1u << 12)
-#define MQ_WIRE_CBI (1u << 13)
-#define MQ_CMD_SCSI (1u << 14)
-#define MQ_CMD_ATAPI (1u << 15)
-#define MQ_CMD_UFI (1u << 16)
-#define MQ_CMD_RBC (1u << 17)
-#define MQ_IGNORE (1u << 18)
+/* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.h, sys/dev/usb/storage/umass.c, sys/dev/usb/usb_msctest.c */
+/*
+ * FreeBSD's UQ_MSC_* quirks (sys/dev/usb/quirk/usb_quirk.h, BSD-2-Clause),
+ * handled as its umass.c, and for MQ_SCSI_EJECT its usb_msctest.c, do.
+ */
+#define MQ_NO_GETMAXLUN ((uint32_t)1 << 0)
+#define MQ_NO_TEST_UNIT_READY ((uint32_t)1 << 1)
+#define MQ_NO_SYNC_CACHE ((uint32_t)1 << 2)
+#define MQ_NO_INQUIRY ((uint32_t)1 << 3)
+#define MQ_NO_START_STOP ((uint32_t)1 << 4)
+#define MQ_IGNORE_RESIDUE ((uint32_t)1 << 5)
+#define MQ_WRONG_CSW_SIGNATURE ((uint32_t)1 << 6)
+#define MQ_READ_CAP_OFF_BY_ONE ((uint32_t)1 << 7)
+#define MQ_PAD_TO_12 ((uint32_t)1 << 8)
+#define MQ_SHUTTLE_INIT ((uint32_t)1 << 9)
+#define MQ_ALT_IFACE_1 ((uint32_t)1 << 10)
+#define MQ_WIRE_BBB ((uint32_t)1 << 11)
+#define MQ_WIRE_CB ((uint32_t)1 << 12)
+#define MQ_WIRE_CBI ((uint32_t)1 << 13)
+#define MQ_CMD_SCSI ((uint32_t)1 << 14)
+#define MQ_CMD_ATAPI ((uint32_t)1 << 15)
+#define MQ_CMD_UFI ((uint32_t)1 << 16)
+#define MQ_CMD_RBC ((uint32_t)1 << 17)
+#define MQ_IGNORE ((uint32_t)1 << 18)
+#define MQ_NO_RS_CLEAR_UA ((uint32_t)1 << 19)
+#define MQ_SCSI_EJECT ((uint32_t)1 << 20)
+/* END FreeBSD sys/dev/usb/quirk/usb_quirk.h, sys/dev/usb/storage/umass.c, sys/dev/usb/usb_msctest.c */
 
+/* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs */
 /*
  * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c (BSD-2-Clause), naming the IDs as
  * its sys/dev/usb/usbdevs (BSD-2-Clause) does.
@@ -140,11 +436,13 @@ static const struct tendril_id_quirk msc_quirks[] = {
     { 0x1005, 0xb113, 0x0000, 0xffff, MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE }, /* APACER HT202 */
     { 0x0a17, 0x0004, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY }, /* ASAHIOPTICAL OPTIO230 */
     { 0x0a17, 0x0006, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY }, /* ASAHIOPTICAL OPTIO330 */
+    { 0x0a17, 0xffff, 0x0000, 0xffff, MQ_NO_RS_CLEAR_UA }, /* ASAHIOPTICAL */
     { 0x14af, 0xaf01, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, /* ATP EUSB */
     { 0x050d, 0x0115, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* BELKIN USB2SCSI */
     { 0x07cf, 0x1001, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI | MQ_NO_INQUIRY }, /* CASIO QV_DIGICAM */
     { 0x1065, 0x2136, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* CCYU ED1064 */
-    { 0x07f7, 0x011e, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE }, /* CENTURY EX35QUAT */
+    /* CENTURY EX35QUAT */
+    { 0x07f7, 0x011e, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE },
     { 0x041e, 0x4106, 0x0001, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE }, /* CREATIVE NOMAD */
     { 0x041e, 0x3295, 0x0000, 0xffff, MQ_NO_INQUIRY }, /* CREATIVE STAGE_SE_MINI */
     { 0x04b4, 0x6830, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_SYNC_CACHE }, /* CYPRESS XX6830XX */
@@ -157,26 +455,38 @@ static const struct tendril_id_quirk msc_quirks[] = {
     { 0x090c, 0x1132, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* FEIYA 5IN1 */
     { 0x090c, 0x6200, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, /* FEIYA ELANGO */
     { 0x07ab, 0xfc01, 0x0000, 0xffff, MQ_CMD_SCSI }, /* FREECOM DVD */
-    { 0x04cb, 0x0100, 0x0000, 0xffff, MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_SYNC_CACHE }, /* FUJIPHOTO MASS0100 */
+    /* FUJIPHOTO MASS0100 */
+    { 0x04cb, 0x0100, 0x0000, 0xffff, MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_RS_CLEAR_UA | MQ_NO_SYNC_CACHE },
     { 0x091e, 0x23c0, 0x0000, 0xffff, MQ_NO_INQUIRY }, /* GARMIN DAKOTA20 */
     { 0x091e, 0x086d, 0x0000, 0xffff, MQ_NO_INQUIRY }, /* GARMIN FORERUNNER230 */
     { 0x091e, 0x2459, 0x0000, 0xffff, MQ_NO_INQUIRY }, /* GARMIN GPSMAP62S */
     { 0x091e, 0x26c8, 0x0000, 0xffff, MQ_NO_INQUIRY }, /* GARMIN EDGETOURINGPLUS */
     { 0x091e, 0x0d8a, 0x0000, 0xffff, MQ_NO_INQUIRY }, /* GARMIN INSTINCTSOLAR */
-    { 0x05e3, 0x0702, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE | MQ_NO_SYNC_CACHE }, /* GENESYS GL641USB2IDE */
-    { 0x05e3, 0x0701, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE }, /* GENESYS GL641USB2IDE_2 */
-    { 0x05e3, 0x0700, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE }, /* GENESYS GL641USB */
+    /* GENESYS GL641USB2IDE */
+    {
+        0x05e3, 0x0702, 0x0000, 0xffff,
+        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE | MQ_NO_SYNC_CACHE
+    },
+    /* GENESYS GL641USB2IDE_2 */
+    { 0x05e3, 0x0701, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE },
+    /* GENESYS GL641USB */
+    { 0x05e3, 0x0700, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE },
     { 0x05e3, 0x0760, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_WRONG_CSW_SIGNATURE }, /* GENESYS GL641USB_2 */
-    { 0x05e3, 0x0732, 0x0000, 0xffff, MQ_NO_INQUIRY }, /* GENESYS GL3220 */
+    { 0x05e3, 0x0732, 0x0000, 0xffff, MQ_NO_INQUIRY | MQ_NO_RS_CLEAR_UA }, /* GENESYS GL3220 */
     { 0x0693, 0x0005, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* HAGIWARA FG */
     { 0x0693, 0x0002, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* HAGIWARA FGSM */
     { 0x04a4, 0x0004, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI }, /* HITACHI DVDCAM_DZ_MV100A */
     { 0x04a4, 0x001e, 0x0000, 0xffff, MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_INQUIRY }, /* HITACHI DVDCAM_USB */
     { 0x03f0, 0x0307, 0x0000, 0xffff, MQ_CMD_ATAPI }, /* HP CDW4E */
-    { 0x03f0, 0x0207, 0x0000, 0xffff, MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP }, /* HP CDW8200 */
+    /* HP CDW8200 */
+    { 0x03f0, 0x0207, 0x0000, 0xffff, MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP },
     { 0x12d1, 0x1f01, 0x0000, 0xffff, MQ_NO_INQUIRY | MQ_NO_GETMAXLUN }, /* HUAWEI E3372_INIT */
     { 0x149a, 0x2107, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_WRONG_CSW_SIGNATURE }, /* IMAGINATION DBX1 */
-    { 0x05ab, 0x081a, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP | MQ_ALT_IFACE_1 }, /* INSYSTEM USBCABLE */
+    /* INSYSTEM USBCABLE */
+    {
+        0x05ab, 0x081a, 0x0000, 0xffff,
+        MQ_WIRE_CB | MQ_CMD_ATAPI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP | MQ_ALT_IFACE_1
+    },
     { 0x05ab, 0x0031, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC }, /* INSYSTEM ATAPI */
     { 0x05ab, 0x5701, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC }, /* INSYSTEM STORAGE_V2 */
     { 0x04bb, 0x0204, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* IODATA IU_CD2 */
@@ -198,8 +508,10 @@ static const struct tendril_id_quirk msc_quirks[] = {
     { 0x0789, 0x0033, 0x0000, 0xffff, MQ_CMD_SCSI }, /* LOGITEC LDR_H443SU2 */
     { 0x0789, 0x00b3, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* LOGITEC LDR_H443U2 */
     { 0x0492, 0x0140, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY | MQ_NO_SYNC_CACHE }, /* MEIZU M6_SL */
-    { 0x0411, 0x001c, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE }, /* MELCO DUBPXXG */
-    { 0x07af, 0x0006, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP }, /* MICROTECH DPCM */
+    /* MELCO DUBPXXG */
+    { 0x0411, 0x001c, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE },
+    /* MICROTECH DPCM */
+    { 0x07af, 0x0006, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP },
     { 0x0634, 0x0655, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, /* MICRON REALSSD */
     { 0x07af, 0x0004, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* MICROTECH SCSIDB25 */
     { 0x07af, 0x0005, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* MICROTECH SCSIHD50 */
@@ -208,7 +520,11 @@ static const struct tendril_id_quirk msc_quirks[] = {
     { 0x03ee, 0x0000, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI }, /* MITSUMI CDRRW */
     { 0x22b8, 0x4810, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN }, /* MOTOROLA2 E398 */
     { 0x1cae, 0xffff, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, /* MPMAN */
-    { 0x08ec, 0x0010, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE | MQ_NO_GETMAXLUN }, /* MSYSTEMS DISKONKEY */
+    /* MSYSTEMS DISKONKEY */
+    {
+        0x08ec, 0x0010, 0x0000, 0xffff,
+        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE | MQ_NO_GETMAXLUN | MQ_NO_RS_CLEAR_UA
+    },
     { 0x08ec, 0x0011, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI }, /* MSYSTEMS DISKONKEY2 */
     { 0x04cf, 0x8818, 0x0000, 0xffff, MQ_IGNORE_RESIDUE | MQ_NO_SYNC_CACHE }, /* MYSON HEDEN */
     { 0x0aec, 0x3260, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* NEODIO ND3260 */
@@ -217,14 +533,18 @@ static const struct tendril_id_quirk msc_quirks[] = {
     { 0x0525, 0xa140, 0x0000, 0xffff, MQ_CMD_ATAPI | MQ_NO_INQUIRY }, /* NETCHIP CLIK_40 */
     { 0x0525, 0xa4a5, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, /* NETCHIP POCKETBOOK */
     { 0x04b0, 0x041a, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* NIKON D300 */
-    { 0x2537, 0x1081, 0x0000, 0xffff, MQ_NO_INQUIRY }, /* NORELSYS NS1081 */
+    { 0x2537, 0x1081, 0x0000, 0xffff, MQ_NO_RS_CLEAR_UA | MQ_NO_INQUIRY }, /* NORELSYS NS1081 */
     { 0x07b4, 0x0102, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_WRONG_CSW_SIGNATURE }, /* OLYMPUS C1 */
     { 0x07b4, 0x0105, 0x0000, 0xffff, MQ_NO_GETMAXLUN }, /* OLYMPUS C700 */
     { 0x07b4, 0x0102, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE }, /* OLYMPUS E_1 */
-    { 0x07b4, 0x0118, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE | MQ_NO_START_STOP }, /* OLYMPUS E_330 */
-    { 0x07b4, 0x012c, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE | MQ_NO_START_STOP }, /* OLYMPUS E_PM1 */
-    { 0x07b4, 0x012e, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE | MQ_NO_START_STOP }, /* OLYMPUS E_M1 */
-    { 0x07c4, 0x0400, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN | MQ_NO_SYNC_CACHE }, /* ONSPEC SDS_HOTFIND_D */
+    /* OLYMPUS E_330 */
+    { 0x07b4, 0x0118, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE | MQ_NO_START_STOP },
+    /* OLYMPUS E_PM1 */
+    { 0x07b4, 0x012c, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE | MQ_NO_START_STOP },
+    /* OLYMPUS E_M1 */
+    { 0x07b4, 0x012e, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE | MQ_NO_START_STOP },
+    /* ONSPEC SDS_HOTFIND_D */
+    { 0x07c4, 0x0400, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN | MQ_NO_SYNC_CACHE },
     { 0x07c4, 0xa001, 0x0000, 0xffff, MQ_CMD_SCSI }, /* ONSPEC CFMS_RW */
     { 0x07c4, 0xa109, 0x0000, 0xffff, MQ_CMD_SCSI }, /* ONSPEC CFSM_COMBO */
     { 0x07c4, 0xa005, 0x0000, 0xffff, MQ_CMD_SCSI }, /* ONSPEC CFSM_READER */
@@ -232,22 +552,26 @@ static const struct tendril_id_quirk msc_quirks[] = {
     { 0x07c4, 0xa000, 0x0000, 0xffff, MQ_CMD_SCSI }, /* ONSPEC MDCFE_B_CF_READER */
     { 0x07c4, 0xa103, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_NO_INQUIRY }, /* ONSPEC MDSM_B_READER */
     { 0x07c4, 0xa003, 0x0000, 0xffff, MQ_CMD_SCSI }, /* ONSPEC READER */
-    { 0x07c4, 0xa400, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_NO_INQUIRY | MQ_NO_GETMAXLUN }, /* ONSPEC UCF100 */
+    /* ONSPEC UCF100 */
+    { 0x07c4, 0xa400, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_NO_INQUIRY | MQ_NO_GETMAXLUN },
     { 0x55aa, 0xa103, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_NO_GETMAXLUN }, /* ONSPEC2 IMAGEMATE_SDDR55 */
     { 0x04da, 0x0d01, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_NO_GETMAXLUN }, /* PANASONIC KXL840AN */
     { 0x04da, 0x0d0a, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* PANASONIC KXLCB20AN */
     { 0x04da, 0x0d0e, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI }, /* PANASONIC KXLCB35AN */
     { 0x04da, 0x0901, 0x0000, 0xffff, MQ_CMD_UFI }, /* PANASONIC LS120CAM */
     { 0x093b, 0x0011, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_TEST_UNIT_READY }, /* PLEXTOR 40_12_40U */
-    { 0x154b, 0x0010, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE | MQ_NO_START_STOP }, /* PNY ATTACHE2 */
+    /* PNY ATTACHE2 */
+    { 0x154b, 0x0010, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE | MQ_NO_START_STOP },
     { 0x067b, 0x2506, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, /* PROLIFIC PL2506 */
     { 0x19d2, 0x1420, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_INQUIRY }, /* QUALCOMMINC ZTE_MF730M */
     { 0x148f, 0x2878, 0x0001, 0x0001, MQ_IGNORE }, /* RALINK RT_STOR */
+    { 0x0bda, 0x1a2b, 0x0000, 0xffff, MQ_SCSI_EJECT }, /* REALTEK RTW8821CU_CD */
     { 0x0839, 0x000a, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY }, /* SAMSUNG_TECHWIN DIGIMAX_410 */
     { 0x0781, 0x0001, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE }, /* SANDISK SDDR05A */
     { 0x0781, 0x0200, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE | MQ_NO_GETMAXLUN }, /* SANDISK SDDR09 */
     { 0x0781, 0x0100, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE }, /* SANDISK SDDR12 */
-    { 0x0781, 0x7100, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE | MQ_NO_SYNC_CACHE }, /* SANDISK SDCZ2_128 */
+    /* SANDISK SDCZ2_128 */
+    { 0x0781, 0x7100, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE | MQ_NO_SYNC_CACHE },
     { 0x0781, 0x7104, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE }, /* SANDISK SDCZ2_256 */
     { 0x0781, 0x7112, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE }, /* SANDISK SDCZ4_128 */
     { 0x0781, 0x7113, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE }, /* SANDISK SDCZ4_256 */
@@ -255,7 +579,11 @@ static const struct tendril_id_quirk msc_quirks[] = {
     { 0x0781, 0x0002, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE }, /* SANDISK SDDR31 */
     { 0x0781, 0xb6ba, 0x0000, 0xffff, MQ_NO_SYNC_CACHE | MQ_NO_GETMAXLUN }, /* SANDISK IMAGEMATE_SDDR289 */
     { 0x04ce, 0x0002, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_NO_INQUIRY }, /* SCANLOGIC SL11R */
-    { 0x04e6, 0x0001, 0x0000, 0xffff, MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP | MQ_SHUTTLE_INIT }, /* SHUTTLE EUSB */
+    /* SHUTTLE EUSB */
+    {
+        0x04e6, 0x0001, 0x0000, 0xffff,
+        MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP | MQ_SHUTTLE_INIT
+    },
     { 0x04e6, 0x0101, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI }, /* SHUTTLE CDRW */
     { 0x04e6, 0x000a, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI }, /* SHUTTLE CF */
     { 0x04e6, 0x0009, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI }, /* SHUTTLE EUSBATAPI */
@@ -298,8 +626,10 @@ static const struct tendril_id_quirk msc_quirks[] = {
     { 0x2109, 0x0700, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, /* VIALABS USB30SATABRIDGE */
     { 0x2109, 0x0701, 0x0000, 0xffff, MQ_NO_INQUIRY }, /* VIALABS VL701 */
     { 0x0636, 0x0003, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY }, /* VIVITAR 35XX */
-    { 0x1058, 0x0200, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE }, /* WESTERN COMBO */
-    { 0x1058, 0x0400, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE }, /* WESTERN EXTHDD */
+    /* WESTERN COMBO */
+    { 0x1058, 0x0200, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE },
+    /* WESTERN EXTHDD */
+    { 0x1058, 0x0400, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE },
     { 0x1058, 0x0901, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_SYNC_CACHE }, /* WESTERN MYBOOK */
     { 0x1058, 0x0746, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, /* WESTERN MYPASSPORT_01 */
     { 0x1058, 0x0748, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, /* WESTERN MYPASSPORT_02 */
@@ -324,27 +654,27 @@ static const struct tendril_id_quirk msc_quirks[] = {
     { 0x1058, 0x07a2, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, /* WESTERN MYPASSPORTES_09 */
     { 0x1058, 0x0743, 0x0000, 0xffff, MQ_NO_TEST_UNIT_READY }, /* WESTERN MYPASSPORTUL_00 */
     { 0x0ed1, 0x6660, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_NO_INQUIRY | MQ_CMD_SCSI }, /* WINMAXGROUP FLASH64MC */
-    { 0x094f, 0x05fc, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE }, /* YANO FW800HD */
+    /* YANO FW800HD */
+    { 0x094f, 0x05fc, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE },
     { 0x094f, 0x0101, 0x0000, 0xffff, MQ_WIRE_CBI | MQ_CMD_ATAPI }, /* YANO U640MO */
-    { 0x057b, 0x0000, 0x0000, 0x007f, MQ_WIRE_CB | MQ_CMD_UFI | MQ_NO_TEST_UNIT_READY }, /* YEDATA FLASHBUSTERU */
-    { 0x057b, 0x0000, 0x0080, 0x0080, MQ_WIRE_CBI | MQ_CMD_UFI | MQ_NO_TEST_UNIT_READY }, /* YEDATA FLASHBUSTERU */
-    { 0x057b, 0x0000, 0x0081, 0xffff, MQ_WIRE_CBI | MQ_CMD_UFI }, /* YEDATA FLASHBUSTERU */
+    /* YEDATA FLASHBUSTERU */
+    { 0x057b, 0x0000, 0x0000, 0x007f, MQ_WIRE_CB | MQ_CMD_UFI | MQ_NO_RS_CLEAR_UA | MQ_NO_TEST_UNIT_READY },
+    /* YEDATA FLASHBUSTERU */
+    { 0x057b, 0x0000, 0x0080, 0x0080, MQ_WIRE_CBI | MQ_CMD_UFI | MQ_NO_RS_CLEAR_UA | MQ_NO_TEST_UNIT_READY },
+    { 0x057b, 0x0000, 0x0081, 0xffff, MQ_WIRE_CBI | MQ_CMD_UFI | MQ_NO_RS_CLEAR_UA }, /* YEDATA FLASHBUSTERU */
     { 0x0595, 0x4343, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI }, /* ZORAN EX20DSC */
 };
+/* END FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs */
 
-enum transport {
-    TRANSPORT_BBB,
-    TRANSPORT_CBI,
-    TRANSPORT_CB,
-    TRANSPORT_UAS
-};
+#define TRANSPORT_BBB 0
+#define TRANSPORT_CBI 1
+#define TRANSPORT_CB 2
+#define TRANSPORT_UAS 3
 
-enum command_set {
-    CMDSET_SCSI,
-    CMDSET_RBC,
-    CMDSET_ATAPI,
-    CMDSET_UFI
-};
+#define CMDSET_SCSI 0
+#define CMDSET_RBC 1
+#define CMDSET_ATAPI 2
+#define CMDSET_UFI 3
 
 struct tendril_msc;
 
@@ -361,17 +691,17 @@ struct msc_cmd {
     void (*done)(struct msc_cmd *cmd);
     void *ctx;
     /* The transport status; the SCSI status and sense data count only when it is TENDRIL_OK. */
-    enum tendril_status status;
+    int status;
     uint8_t scsi_status;
     size_t actual;
     uint8_t sense[32];
     uint8_t sense_len;
     /* UAS */
     uint16_t tag;
-    unsigned pending;
+    size_t pending;
     bool have_status;
     bool data_posted;
-    enum tendril_status failed;
+    int failed;
     struct tendril_transfer iu_xfer;
     struct tendril_transfer status_xfer;
     struct tendril_transfer data_xfer;
@@ -379,17 +709,15 @@ struct msc_cmd {
     uint8_t status_buf[IU_BUF_SIZE];
 };
 
-enum lun_step {
-    LUN_INQUIRY,
-    LUN_TEST,
-    LUN_START,
-    LUN_CAPACITY10,
-    LUN_CAPACITY16,
-    LUN_MODE_SENSE,
-    LUN_IO,
-    LUN_IO_START,
-    LUN_FLUSH
-};
+#define LUN_INQUIRY 0
+#define LUN_TEST 1
+#define LUN_START 2
+#define LUN_CAPACITY10 3
+#define LUN_CAPACITY16 4
+#define LUN_MODE_SENSE 5
+#define LUN_IO 6
+#define LUN_IO_START 7
+#define LUN_FLUSH 8
 
 struct tendril_msc_lun {
     struct tendril_msc *msc;
@@ -410,8 +738,8 @@ struct tendril_msc_lun {
     /* One command at a time: a probe of the medium, or a chunk of the current request. */
     struct msc_cmd cmd;
     uint8_t buf[192];
-    enum lun_step step;
-    unsigned tries;
+    int step;
+    unsigned int tries;
     bool busy;
     bool started;
     bool probe_pending;
@@ -424,56 +752,69 @@ struct tendril_msc_lun {
     struct tendril_timer timer;
     struct tendril_list requests;
     struct tendril_msc_request *current;
-    void (*check_done)(void *ctx, enum tendril_status status);
+    void (*check_done)(void *ctx, int status);
     void *check_ctx;
 };
 
-enum setup_step {
-    SETUP_ALT,
-    SETUP_STREAMS,
-    SETUP_FALLBACK,
-    SETUP_SHUTTLE,
-    SETUP_MAX_LUN
-};
+#define SETUP_ALT 0
+#define SETUP_STREAMS 1
+#define SETUP_FALLBACK 2
+#define SETUP_SHUTTLE 3
+#define SETUP_MAX_LUN 4
 
-enum transport_step {
-    T_IDLE,
-    T_CBW,
-    T_DATA,
-    T_DATA_CLEAR,
-    T_CSW,
-    T_CSW_CLEAR,
-    T_ADSC,
-    T_INTR,
-    T_INTR_CLEAR,
-    T_FAIL_CLEAR,
-    T_RESET,
-    T_RESET_CLEAR_IN,
-    T_RESET_CLEAR_OUT
-};
+/* BEGIN FreeBSD sys/dev/usb/usb_msctest.c */
+/*
+ * The checks FreeBSD's sys/dev/usb/usb_msctest.c (BSD-2-Clause) makes of a
+ * device's first interface before any driver uses it: for an auto-install
+ * CD-ROM (usb_iface_is_cdrom), and the MQ_SCSI_EJECT one (usb_msc_eject with
+ * MSC_EJECT_STOPUNIT). Their data and status stages get the two seconds
+ * that its bbb_command_start() gives the data stage of these commands.
+ */
+#define PRE_NONE 0
+#define PRE_CDROM 1
+#define PRE_EJECT_TEST 2
+#define PRE_EJECT_STOP 3
+#define PRE_TIMEOUT_MS 2000
+#define PRE_TRIES 3
+#define PRE_RETRY_MS 1000
+/* END FreeBSD sys/dev/usb/usb_msctest.c */
+
+#define T_IDLE 0
+#define T_CBW 1
+#define T_DATA 2
+#define T_DATA_CLEAR 3
+#define T_CSW 4
+#define T_CSW_CLEAR 5
+#define T_ADSC 6
+#define T_INTR 7
+#define T_INTR_CLEAR 8
+#define T_FAIL_CLEAR 9
+#define T_RESET 10
+#define T_RESET_CLEAR_IN 11
+#define T_RESET_CLEAR_OUT 12
 
 struct tendril_msc {
     struct tendril_interface *intf;
     struct tendril_device *dev;
     struct tendril_hc *hc;
-    enum transport transport;
-    enum command_set cmdset;
+    int transport;
+    int cmdset;
     uint32_t quirks;
     bool pad12;
     bool stopped;
     bool broken;
     bool suspended;
     size_t max_bytes;
-    unsigned alt;
+    size_t alt;
     /* The Bulk-Only or CBI setting to fall back to when UAS cannot be set up, or -1. */
     int fallback_alt;
-    enum transport fallback_transport;
-    enum command_set fallback_cmdset;
-    enum setup_step setup;
+    int fallback_transport;
+    int fallback_cmdset;
+    int setup;
     struct tendril_async async;
     uint8_t ctrl_buf[16];
     struct tendril_transfer ctrl;
-    unsigned num_luns;
+    size_t num_luns;
     struct tendril_msc_lun *luns[MAX_LUNS];
     struct tendril_list queue;
     /* Bulk-Only and CBI: one command at a time, with automatic REQUEST SENSE. */
@@ -482,11 +823,10 @@ struct tendril_msc {
     struct tendril_endpoint *intr_in;
     struct msc_cmd *active;
     struct msc_cmd *sensing;
-    bool sense_unknown;
-    enum transport_step xstep;
+    int xstep;
     uint32_t tag;
     bool csw_retried;
-    enum tendril_status recover_status;
+    int recover_status;
     uint8_t cbw[CBW_SIZE];
     uint8_t csw[CSW_SIZE];
     uint8_t intr_buf[2];
@@ -498,23 +838,31 @@ struct tendril_msc {
     struct tendril_endpoint *data_in_ep;
     struct tendril_endpoint *data_out_ep;
     bool streams;
-    unsigned num_streams;
-    unsigned num_tags;
-    unsigned next_tag;
+    unsigned int num_streams;
+    size_t num_tags;
+    size_t next_tag;
     /* Tags in use, including those of failed commands that wait for an ABORT TASK. */
     uint64_t tag_busy;
     uint64_t abort_mask;
     uint8_t abort_lun[MAX_TAGS + 1];
-    unsigned in_flight;
+    size_t in_flight;
     uint16_t tm_tag;
     uint16_t tm_target;
     bool tm_busy;
     bool tm_ok;
-    unsigned tm_pending;
+    size_t tm_pending;
     struct tendril_transfer tm_xfer;
     struct tendril_transfer tm_status;
     uint8_t tm_iu[16];
     uint8_t tm_buf[IU_BUF_SIZE];
+    /* The usb_msctest.c checks: the one running, and those still to come. */
+    int pre;
+    bool pre_cdrom;
+    bool pre_eject;
+    unsigned int pre_tries;
+    struct msc_cmd pre_cmd;
+    uint8_t pre_buf[36];
+    struct tendril_timer pre_timer;
 };
 
 static const struct tendril_msc_callbacks *callbacks;
@@ -560,9 +908,9 @@ static uint32_t get_le32(const uint8_t *p) {
 }
 
 /* Sense key, ASC, and ASCQ from fixed or descriptor format sense data; false without sense data. */
-static bool sense_codes(const struct msc_cmd *cmd, unsigned *key, unsigned *asc, unsigned *ascq) {
+static bool sense_codes(const struct msc_cmd *cmd, uint8_t *key, uint8_t *asc, uint8_t *ascq) {
     const uint8_t *s = cmd->sense;
-    unsigned code = s[0] & 0x7f;
+    uint8_t code = s[0] & 0x7f;
 
     *asc = 0;
     *ascq = 0;
@@ -599,7 +947,7 @@ static void cmd_queue(struct tendril_msc *msc, struct msc_cmd *cmd) {
         return;
     }
     if (msc->pad12 && cmd->cdb_len < 12) {
-        memset(cmd->cdb + cmd->cdb_len, 0, 12u - cmd->cdb_len);
+        memset(cmd->cdb + cmd->cdb_len, 0, (uint32_t)12 - cmd->cdb_len);
         cmd->cdb_len = 12;
     }
     list_add_tail(&msc->queue, &cmd->node);
@@ -608,18 +956,20 @@ static void cmd_queue(struct tendril_msc *msc, struct msc_cmd *cmd) {
 
 /* Bulk-Only and CBI */
 
-static void transport_step(struct tendril_msc *msc, enum tendril_status st);
+static void transport_step(struct tendril_msc *msc, int st);
 
 static void xfer_done(struct tendril_transfer *xfer) {
     transport_step(xfer->context, xfer->status);
 }
 
-static void op_done(void *ctx, enum tendril_status st) {
+static void op_done(void *ctx, int st) {
     transport_step(ctx, st);
 }
 
-static void submit(struct tendril_msc *msc, enum transport_step step, struct tendril_endpoint *ep, void *buf,
-                   size_t len, uint32_t timeout_ms) {
+static void submit(
+    struct tendril_msc *msc, int step, struct tendril_endpoint *ep, void *buf, size_t len,
+    uint32_t timeout_ms
+) {
     struct tendril_transfer *xfer = &msc->xfer;
     msc->xstep = step;
     tendril_transfer_init(xfer, ep);
@@ -628,22 +978,23 @@ static void submit(struct tendril_msc *msc, enum transport_step step, struct ten
     xfer->timeout_ms = timeout_ms;
     xfer->callback = xfer_done;
     xfer->context = msc;
-    enum tendril_status st = tendril_transfer_submit(xfer);
+    int st = tendril_transfer_submit(xfer);
     if (st != TENDRIL_OK) {
         transport_step(msc, st);
     }
 }
 
-static void clear_halt(struct tendril_msc *msc, enum transport_step step, struct tendril_endpoint *ep) {
+static void clear_halt(struct tendril_msc *msc, int step, struct tendril_endpoint *ep) {
     msc->xstep = step;
-    enum tendril_status st = tendril_endpoint_clear_halt(ep, op_done, msc);
+    int st = tendril_endpoint_clear_halt(ep, op_done, msc);
     if (st != TENDRIL_OK) {
         transport_step(msc, st);
     }
 }
 
-static void class_request(struct tendril_msc *msc, enum transport_step step, uint8_t request, void *data,
-                          uint16_t len, uint32_t timeout_ms) {
+static void class_request(
+    struct tendril_msc *msc, int step, uint8_t request, void *data, uint16_t len, uint32_t timeout_ms
+) {
     struct tendril_transfer *xfer = &msc->ctrl;
     msc->xstep = step;
     tendril_transfer_init(xfer, tendril_device_ep0(msc->dev));
@@ -656,7 +1007,7 @@ static void class_request(struct tendril_msc *msc, enum transport_step step, uin
     xfer->timeout_ms = timeout_ms;
     xfer->callback = xfer_done;
     xfer->context = msc;
-    enum tendril_status st = tendril_transfer_submit(xfer);
+    int st = tendril_transfer_submit(xfer);
     if (st != TENDRIL_OK) {
         transport_step(msc, st);
     }
@@ -693,7 +1044,7 @@ static void transport_start(struct tendril_msc *msc) {
 }
 
 /* Completes the active command; a finished REQUEST SENSE completes the command it was for. */
-static void transport_finish(struct tendril_msc *msc, enum tendril_status st) {
+static void transport_finish(struct tendril_msc *msc, int st) {
     struct msc_cmd *cmd = msc->active;
 
     msc->active = NULL;
@@ -701,17 +1052,26 @@ static void transport_finish(struct tendril_msc *msc, enum tendril_status st) {
     cmd->status = st;
     if (cmd == &msc->sense_cmd) {
         struct msc_cmd *orig = msc->sensing;
-        unsigned key, asc, ascq;
+        uint8_t key, asc, ascq;
         msc->sensing = NULL;
         orig->sense_len = 0;
         if (st == TENDRIL_OK && cmd->scsi_status == STATUS_GOOD) {
             orig->sense_len = (uint8_t)MIN(cmd->actual, sizeof(orig->sense));
         }
         orig->scsi_status = STATUS_CHECK;
-        /* Without status from the device, NO SENSE means the command passed, as FreeBSD's umass_cam_sense_cb takes it. */
-        if (msc->sense_unknown && sense_codes(orig, &key, &asc, &ascq) && key == SENSE_NO_SENSE) {
+        /* BEGIN FreeBSD sys/dev/usb/storage/umass.c */
+        /*
+         * As FreeBSD's umass.c (umass_cam_sense_cb) takes them, NO SENSE means
+         * the command passed, which is all a CB device without status says,
+         * and so does UNIT ATTENTION on an INQUIRY of an MQ_NO_RS_CLEAR_UA
+         * device, which REQUEST SENSE leaves in that condition.
+         */
+        if (sense_codes(orig, &key, &asc, &ascq)
+         && (key == SENSE_NO_SENSE
+         || (key == SENSE_UNIT_ATTENTION && (msc->quirks & MQ_NO_RS_CLEAR_UA) && orig->cdb[0] == SCSI_INQUIRY))) {
             orig->scsi_status = STATUS_GOOD;
         }
+        /* END FreeBSD sys/dev/usb/storage/umass.c */
         orig->status = st == TENDRIL_ERR_NO_DEVICE ? st : TENDRIL_OK;
         cmd = orig;
     }
@@ -720,7 +1080,7 @@ static void transport_finish(struct tendril_msc *msc, enum tendril_status st) {
 }
 
 /* Fetches sense data for the active command, which failed or whose status is unknown. */
-static void auto_sense(struct tendril_msc *msc, bool unknown) {
+static void auto_sense(struct tendril_msc *msc) {
     struct msc_cmd *cmd = msc->active;
     struct msc_cmd *s = &msc->sense_cmd;
 
@@ -730,7 +1090,6 @@ static void auto_sense(struct tendril_msc *msc, bool unknown) {
         return;
     }
     msc->sensing = cmd;
-    msc->sense_unknown = unknown;
     memset(s->cdb, 0, sizeof(s->cdb));
     s->cdb[0] = SCSI_REQUEST_SENSE;
     s->cdb[1] = msc->cmdset == CMDSET_UFI ? (uint8_t)(cmd->lun << 5) : 0;
@@ -750,9 +1109,9 @@ static void auto_sense(struct tendril_msc *msc, bool unknown) {
 }
 
 /* Bulk-Only 1.0, 5.3.4 reset recovery, or the CBI 1.1, 2.2 command block reset, then both bulk halts cleared. */
-static void start_recovery(struct tendril_msc *msc, enum tendril_status st) {
+static void start_recovery(struct tendril_msc *msc, int st) {
     msc->recover_status = st;
-    LOG_DEBUG("tendril: MSC: reset recovery after %s", tendril_status_str(st));
+    LOG_DEBUG("MSC: reset recovery after %s", tendril_status_str(st));
     if (msc->transport == TRANSPORT_BBB) {
         class_request(msc, T_RESET, REQ_BBB_RESET, NULL, 0, CTRL_TIMEOUT_MS);
         return;
@@ -786,13 +1145,14 @@ static void bbb_check_csw(struct tendril_msc *msc) {
         cmd->actual = MIN(cmd->actual, relevant);
     }
     if (csw[12] == 1) {
-        auto_sense(msc, false);
+        auto_sense(msc);
         return;
     }
     cmd->scsi_status = STATUS_GOOD;
     transport_finish(msc, TENDRIL_OK);
 }
 
+/* BEGIN FreeBSD sys/dev/usb/storage/umass.c */
 static void cbi_status(struct tendril_msc *msc) {
     struct msc_cmd *cmd = msc->active;
     if (msc->transport == TRANSPORT_CBI) {
@@ -804,8 +1164,9 @@ static void cbi_status(struct tendril_msc *msc) {
         transport_finish(msc, TENDRIL_OK);
         return;
     }
-    auto_sense(msc, true);
+    auto_sense(msc);
 }
+/* END FreeBSD sys/dev/usb/storage/umass.c */
 
 static void cbi_check_status(struct tendril_msc *msc) {
     struct msc_cmd *cmd = msc->active;
@@ -825,7 +1186,7 @@ static void cbi_check_status(struct tendril_msc *msc) {
             cmd->scsi_status = STATUS_GOOD;
             transport_finish(msc, TENDRIL_OK);
         } else {
-            auto_sense(msc, true);
+            auto_sense(msc);
         }
         return;
     } else if ((b[1] & 3) == 2) {
@@ -844,10 +1205,10 @@ static void cbi_check_status(struct tendril_msc *msc) {
         clear_halt(msc, T_FAIL_CLEAR, cmd->in ? msc->bulk_in : msc->bulk_out);
         return;
     }
-    auto_sense(msc, false);
+    auto_sense(msc);
 }
 
-static void transport_step(struct tendril_msc *msc, enum tendril_status st) {
+static void transport_step(struct tendril_msc *msc, int st) {
     struct msc_cmd *cmd = msc->active;
 
     if (cmd == NULL) {
@@ -873,7 +1234,7 @@ static void transport_step(struct tendril_msc *msc, enum tendril_status st) {
         case T_ADSC: {
             if (st == TENDRIL_ERR_STALL) {
                 /* CBI 1.1, 2.3.2.1: a stalled ADSC failed the command, and no interrupt follows. */
-                auto_sense(msc, false);
+                auto_sense(msc);
             } else if (st != TENDRIL_OK) {
                 start_recovery(msc, st);
             } else if (cmd->len != 0) {
@@ -941,12 +1302,12 @@ static void transport_step(struct tendril_msc *msc, enum tendril_status st) {
             if (st != TENDRIL_OK) {
                 start_recovery(msc, st);
             } else {
-                auto_sense(msc, false);
+                auto_sense(msc);
             }
             break;
         }
         case T_FAIL_CLEAR: {
-            auto_sense(msc, false);
+            auto_sense(msc);
             break;
         }
         case T_RESET: {
@@ -973,8 +1334,10 @@ static void transport_step(struct tendril_msc *msc, enum tendril_status st) {
 static void uas_xfer_done(struct tendril_transfer *xfer);
 static void uas_tm_kick(struct tendril_msc *msc);
 
-static enum tendril_status uas_post(struct tendril_msc *msc, struct msc_cmd *cmd, struct tendril_transfer *xfer,
-                                   struct tendril_endpoint *ep, void *buf, size_t len, bool stream) {
+static int uas_post(
+    struct tendril_msc *msc, struct msc_cmd *cmd, struct tendril_transfer *xfer, struct tendril_endpoint *ep,
+    void *buf, size_t len, bool stream
+) {
     tendril_transfer_init(xfer, ep);
     xfer->buffer = buf;
     xfer->length = len;
@@ -982,7 +1345,7 @@ static enum tendril_status uas_post(struct tendril_msc *msc, struct msc_cmd *cmd
     xfer->timeout_ms = cmd->timeout_ms;
     xfer->callback = uas_xfer_done;
     xfer->context = cmd;
-    enum tendril_status st = tendril_transfer_submit(xfer);
+    int st = tendril_transfer_submit(xfer);
     if (st == TENDRIL_OK) {
         cmd->pending++;
     }
@@ -990,7 +1353,7 @@ static enum tendril_status uas_post(struct tendril_msc *msc, struct msc_cmd *cmd
 }
 
 /* Records a failure and cancels the command's other transfers; completion waits for them. */
-static void uas_fail(struct msc_cmd *cmd, enum tendril_status st) {
+static void uas_fail(struct msc_cmd *cmd, int st) {
     if (cmd->failed == TENDRIL_OK) {
         cmd->failed = st;
     }
@@ -1000,21 +1363,21 @@ static void uas_fail(struct msc_cmd *cmd, enum tendril_status st) {
 }
 
 static void uas_complete(struct tendril_msc *msc, struct msc_cmd *cmd) {
-    unsigned tag = cmd->tag;
-    enum tendril_status st = cmd->failed;
+    size_t tag = cmd->tag;
+    int st = cmd->failed;
 
     if (st == TENDRIL_OK && !cmd->have_status) {
         st = TENDRIL_ERR_PROTOCOL;
     }
     msc->in_flight--;
     if (st == TENDRIL_OK) {
-        msc->tag_busy &= ~(1ull << tag);
+        msc->tag_busy &= ~((uint64_t)1 << tag);
     } else if (st == TENDRIL_ERR_NO_DEVICE) {
         msc->stopped = true;
-        msc->tag_busy &= ~(1ull << tag);
+        msc->tag_busy &= ~((uint64_t)1 << tag);
     } else {
         /* The device may still hold the command; the tag waits for an ABORT TASK. */
-        msc->abort_mask |= 1ull << tag;
+        msc->abort_mask |= (uint64_t)1 << tag;
         msc->abort_lun[tag] = cmd->lun;
     }
     cmd->status = st;
@@ -1022,10 +1385,11 @@ static void uas_complete(struct tendril_msc *msc, struct msc_cmd *cmd) {
     transport_kick(msc);
 }
 
+/* BEGIN SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
 static void uas_status_iu(struct tendril_msc *msc, struct msc_cmd *cmd) {
     const uint8_t *iu = cmd->status_buf;
     size_t n = cmd->status_xfer.actual;
-    enum tendril_status st;
+    int st;
 
     if (n < 4 || get_be16(iu + 2) != cmd->tag) {
         /* A late IU of an aborted command, which can only come without streams. */
@@ -1045,8 +1409,10 @@ static void uas_status_iu(struct tendril_msc *msc, struct msc_cmd *cmd) {
                 st = TENDRIL_ERR_PROTOCOL;
             } else {
                 cmd->data_posted = true;
-                st = uas_post(msc, cmd, &cmd->data_xfer, in ? msc->data_in_ep : msc->data_out_ep, cmd->data,
-                              cmd->len, false);
+                st = uas_post(
+                    msc, cmd, &cmd->data_xfer, in ? msc->data_in_ep : msc->data_out_ep, cmd->data,
+                    cmd->len, false
+                );
             }
             if (st == TENDRIL_OK) {
                 st = uas_post(msc, cmd, &cmd->status_xfer, msc->status_ep, cmd->status_buf, IU_BUF_SIZE, true);
@@ -1079,8 +1445,9 @@ static void uas_status_iu(struct tendril_msc *msc, struct msc_cmd *cmd) {
         }
     }
 }
+/* END SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
 
-static void uas_halt_done(void *ctx, enum tendril_status st) {
+static void uas_halt_done(void *ctx, int st) {
     struct msc_cmd *cmd = ctx;
     (void)st;
     if (--cmd->pending == 0) {
@@ -1091,7 +1458,7 @@ static void uas_halt_done(void *ctx, enum tendril_status st) {
 static void uas_xfer_done(struct tendril_transfer *xfer) {
     struct msc_cmd *cmd = xfer->context;
     struct tendril_msc *msc = cmd->msc;
-    enum tendril_status st = xfer->status;
+    int st = xfer->status;
 
     cmd->pending--;
     if (st == TENDRIL_ERR_CANCELLED && (cmd->failed != TENDRIL_OK || cmd->have_status)) {
@@ -1124,9 +1491,9 @@ static void uas_xfer_done(struct tendril_transfer *xfer) {
     }
 }
 
-static void uas_submit(struct tendril_msc *msc, struct msc_cmd *cmd, unsigned tag) {
+static void uas_submit(struct tendril_msc *msc, struct msc_cmd *cmd, size_t tag) {
     uint8_t *iu = cmd->iu;
-    enum tendril_status st;
+    int st;
 
     cmd->tag = (uint16_t)tag;
     cmd->pending = 0;
@@ -1136,18 +1503,22 @@ static void uas_submit(struct tendril_msc *msc, struct msc_cmd *cmd, unsigned ta
     msc->in_flight++;
 
     memset(iu, 0, sizeof(cmd->iu));
+    /* BEGIN SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
     iu[0] = IU_COMMAND;
     put_be16(iu + 2, (uint16_t)tag);
     /* Task attribute SIMPLE, and the LUN in single level format, as SerenityOS's Structures.h lays the IU out. */
     iu[9] = cmd->lun;
     memcpy(iu + 16, cmd->cdb, cmd->cdb_len);
+    /* END SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
 
     /* The status pipe, and with streams the data pipe, listen before the command goes out. */
     st = uas_post(msc, cmd, &cmd->status_xfer, msc->status_ep, cmd->status_buf, IU_BUF_SIZE, true);
     if (st == TENDRIL_OK && msc->streams && cmd->len != 0) {
         cmd->data_posted = true;
-        st = uas_post(msc, cmd, &cmd->data_xfer, cmd->in ? msc->data_in_ep : msc->data_out_ep, cmd->data, cmd->len,
-                      true);
+        st = uas_post(
+            msc, cmd, &cmd->data_xfer, cmd->in ? msc->data_in_ep : msc->data_out_ep, cmd->data, cmd->len,
+            true
+        );
     }
     if (st == TENDRIL_OK) {
         st = uas_post(msc, cmd, &cmd->iu_xfer, msc->cmd_ep, iu, sizeof(cmd->iu), false);
@@ -1160,13 +1531,13 @@ static void uas_submit(struct tendril_msc *msc, struct msc_cmd *cmd, unsigned ta
     }
 }
 
-static unsigned uas_alloc_tag(struct tendril_msc *msc) {
+static size_t uas_alloc_tag(struct tendril_msc *msc) {
     /* Tags rotate, so that a late IU of an old command cannot pass for a new one's. */
-    for (unsigned i = 0; i < msc->num_tags; i++) {
-        unsigned tag = msc->next_tag;
+    for (size_t i = 0; i < msc->num_tags; i++) {
+        size_t tag = msc->next_tag;
         msc->next_tag = msc->next_tag % msc->num_tags + 1;
-        if (!(msc->tag_busy & (1ull << tag))) {
-            msc->tag_busy |= 1ull << tag;
+        if (!(msc->tag_busy & ((uint64_t)1 << tag))) {
+            msc->tag_busy |= (uint64_t)1 << tag;
             return tag;
         }
     }
@@ -1180,7 +1551,7 @@ static void uas_kick(struct tendril_msc *msc) {
         if (!msc->streams && (msc->in_flight != 0 || msc->tm_busy)) {
             break;
         }
-        unsigned tag = uas_alloc_tag(msc);
+        size_t tag = uas_alloc_tag(msc);
         if (tag == 0) {
             break;
         }
@@ -1190,7 +1561,7 @@ static void uas_kick(struct tendril_msc *msc) {
     }
 }
 
-static void uas_fail_queue(struct tendril_msc *msc, enum tendril_status st) {
+static void uas_fail_queue(struct tendril_msc *msc, int st) {
     while (!list_empty(&msc->queue)) {
         struct msc_cmd *cmd = CONTAINER_OF(msc->queue.next, struct msc_cmd, node);
         list_del(&cmd->node);
@@ -1200,14 +1571,14 @@ static void uas_fail_queue(struct tendril_msc *msc, enum tendril_status st) {
 }
 
 static void uas_tm_finish(struct tendril_msc *msc) {
-    uint64_t bit = 1ull << msc->tm_target;
+    uint64_t bit = (uint64_t)1 << msc->tm_target;
 
     msc->tm_busy = false;
     if (msc->tm_ok) {
         msc->abort_mask &= ~bit;
         msc->tag_busy &= ~bit;
     } else if (!msc->stopped) {
-        LOG_ERROR("tendril: MSC: UAS ABORT TASK failed, giving up on the device");
+        LOG_ERROR("MSC: UAS ABORT TASK failed, giving up on the device");
         msc->broken = true;
         msc->abort_mask = 0;
         uas_fail_queue(msc, TENDRIL_ERR_IO);
@@ -1217,7 +1588,7 @@ static void uas_tm_finish(struct tendril_msc *msc) {
 
 static void uas_tm_done(struct tendril_transfer *xfer) {
     struct tendril_msc *msc = xfer->context;
-    enum tendril_status st = xfer->status;
+    int st = xfer->status;
 
     msc->tm_pending--;
     if (st == TENDRIL_ERR_NO_DEVICE) {
@@ -1228,7 +1599,9 @@ static void uas_tm_done(struct tendril_transfer *xfer) {
         if (st != TENDRIL_OK) {
             tendril_transfer_cancel(&msc->tm_xfer);
         } else if (xfer->actual >= 8 && iu[0] == IU_RESPONSE && get_be16(iu + 2) == msc->tm_tag) {
+            /* BEGIN SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h (and the condition above) */
             msc->tm_ok = iu[7] == RC_TM_COMPLETE || iu[7] == RC_TM_SUCCEEDED;
+            /* END SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
         } else if (tendril_transfer_submit(xfer) == TENDRIL_OK) {
             /* Some other command's late IU. */
             msc->tm_pending++;
@@ -1248,7 +1621,10 @@ static void uas_tm_kick(struct tendril_msc *msc) {
     if (!msc->streams && msc->in_flight != 0) {
         return;
     }
-    unsigned target = (unsigned)__builtin_ctzll(msc->abort_mask);
+    size_t target = 0;
+    while (!(msc->abort_mask & ((uint64_t)1 << target))) {
+        target++;
+    }
     uint8_t *iu = msc->tm_iu;
 
     msc->tm_target = (uint16_t)target;
@@ -1256,12 +1632,14 @@ static void uas_tm_kick(struct tendril_msc *msc) {
     msc->tm_ok = false;
     msc->tm_pending = 0;
     memset(iu, 0, sizeof(msc->tm_iu));
+    /* BEGIN SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
     iu[0] = IU_TASK_MGMT;
     put_be16(iu + 2, msc->tm_tag);
     iu[4] = TM_ABORT_TASK;
     put_be16(iu + 6, (uint16_t)target);
     iu[9] = msc->abort_lun[target];
-    LOG_DEBUG("tendril: MSC: aborting UAS tag %u", target);
+    /* END SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
+    LOG_DEBUG("MSC: aborting UAS tag %zu", target);
 
     struct tendril_transfer *xfer = &msc->tm_status;
     tendril_transfer_init(xfer, msc->status_ep);
@@ -1271,7 +1649,7 @@ static void uas_tm_kick(struct tendril_msc *msc) {
     xfer->timeout_ms = CTRL_TIMEOUT_MS;
     xfer->callback = uas_tm_done;
     xfer->context = msc;
-    enum tendril_status st = tendril_transfer_submit(xfer);
+    int st = tendril_transfer_submit(xfer);
     if (st == TENDRIL_OK) {
         msc->tm_pending++;
         xfer = &msc->tm_xfer;
@@ -1311,20 +1689,18 @@ static void transport_kick(struct tendril_msc *msc) {
 
 /* Logical units */
 
-enum verdict {
-    V_OK,
-    /* Unit attention, aborted command, or a transport error: try again. */
-    V_RETRY,
-    /* Becoming ready or busy: try again later. */
-    V_WAIT,
-    V_START,
-    V_NO_MEDIUM,
-    V_CHANGED,
-    V_FAIL
-};
+#define V_OK 0
+/* Unit attention, aborted command, or a transport error: try again. */
+#define V_RETRY 1
+/* Becoming ready or busy: try again later. */
+#define V_WAIT 2
+#define V_START 3
+#define V_NO_MEDIUM 4
+#define V_CHANGED 5
+#define V_FAIL 6
 
-static enum verdict judge(const struct msc_cmd *cmd, enum tendril_status *st) {
-    unsigned key, asc, ascq;
+static int judge(const struct msc_cmd *cmd, int *st) {
+    uint8_t key, asc, ascq;
 
     *st = cmd->status;
     if (cmd->status != TENDRIL_OK) {
@@ -1391,8 +1767,10 @@ static enum verdict judge(const struct msc_cmd *cmd, enum tendril_status *st) {
 static void lun_cmd_done(struct msc_cmd *cmd);
 static void lun_next(struct tendril_msc_lun *lun);
 
-static void lun_issue(struct tendril_msc_lun *lun, enum lun_step step, const uint8_t *cdb, unsigned cdb_len,
-                      void *data, size_t len, bool in, uint32_t timeout_ms) {
+static void lun_issue(
+    struct tendril_msc_lun *lun, int step, const uint8_t *cdb, size_t cdb_len, void *data, size_t len,
+    bool in, uint32_t timeout_ms
+) {
     struct tendril_msc *msc = lun->msc;
     struct msc_cmd *cmd = &lun->cmd;
 
@@ -1436,18 +1814,29 @@ static bool wait_ready(struct tendril_msc_lun *lun) {
 static void probe_capacity(struct tendril_msc_lun *lun);
 static void probe_done(struct tendril_msc_lun *lun, bool present);
 
-static void probe_test(struct tendril_msc_lun *lun) {
-    static const uint8_t cdb[6] = { SCSI_TEST_UNIT_READY, 0, 0, 0, 0, 0 };
-    if (lun->msc->quirks & MQ_NO_TEST_UNIT_READY) {
-        probe_capacity(lun);
-        return;
-    }
-    lun_issue(lun, LUN_TEST, cdb, sizeof(cdb), NULL, 0, false, CMD_TIMEOUT_MS);
-}
-
-static void issue_start(struct tendril_msc_lun *lun, enum lun_step step) {
+static void issue_start(struct tendril_msc_lun *lun, int step) {
     static const uint8_t cdb[6] = { SCSI_START_STOP_UNIT, 0, 0, 0, 0x01, 0 };
     lun_issue(lun, step, cdb, sizeof(cdb), NULL, 0, false, LONG_TIMEOUT_MS);
+}
+
+static void probe_test(struct tendril_msc_lun *lun) {
+    static const uint8_t cdb[6] = { SCSI_TEST_UNIT_READY, 0, 0, 0, 0, 0 };
+    uint32_t quirks = lun->msc->quirks;
+    /* BEGIN FreeBSD sys/dev/usb/storage/umass.c */
+    /*
+     * FreeBSD's umass.c sends START STOP UNIT in place of TEST UNIT READY with
+     * MQ_NO_TEST_UNIT_READY, and takes that as done with MQ_NO_START_STOP.
+     */
+    if (quirks & MQ_NO_TEST_UNIT_READY) {
+        if (quirks & MQ_NO_START_STOP) {
+            probe_capacity(lun);
+        } else {
+            issue_start(lun, LUN_TEST);
+        }
+        return;
+    }
+    /* END FreeBSD sys/dev/usb/storage/umass.c */
+    lun_issue(lun, LUN_TEST, cdb, sizeof(cdb), NULL, 0, false, CMD_TIMEOUT_MS);
 }
 
 static void probe_capacity(struct tendril_msc_lun *lun) {
@@ -1456,7 +1845,9 @@ static void probe_capacity(struct tendril_msc_lun *lun) {
 }
 
 static void probe_capacity16(struct tendril_msc_lun *lun) {
-    static const uint8_t cdb[16] = { SCSI_SERVICE_ACTION_IN16, SA_READ_CAPACITY16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32 };
+    static const uint8_t cdb[16] = {
+        SCSI_SERVICE_ACTION_IN16, SA_READ_CAPACITY16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32
+    };
     lun_issue(lun, LUN_CAPACITY16, cdb, sizeof(cdb), lun->buf, 32, true, CMD_TIMEOUT_MS);
 }
 
@@ -1524,7 +1915,7 @@ static void lun_free(struct tendril_msc_lun *lun) {
     tendril_timer_cancel(msc->hc, &lun->timer);
     hc_unlock(msc->hc);
     msc->luns[lun->number] = NULL;
-    tendril_free(lun, sizeof(*lun));
+    tendril_free(lun, sizeof(struct tendril_msc_lun));
 }
 
 static void probe_done(struct tendril_msc_lun *lun, bool present) {
@@ -1536,17 +1927,19 @@ static void probe_done(struct tendril_msc_lun *lun, bool present) {
         lun->write_protected = false;
     }
     lun->present = present;
-    bool changed = lun->changed || present != lun->old_present || lun->blocks != lun->old_blocks ||
-                   lun->block_size != lun->old_block_size || lun->write_protected != lun->old_write_protected;
+    bool changed = lun->changed || present != lun->old_present || lun->blocks != lun->old_blocks
+        || lun->block_size != lun->old_block_size || lun->write_protected != lun->old_write_protected;
     lun->changed = false;
     lun->busy = false;
     lun->ready_deadline = 0;
 
     if (present && (changed || !lun->attached)) {
-        LOG_INFO("tendril: MSC: LUN %u: %llu blocks of %u bytes%s", lun->number, (unsigned long long)lun->blocks,
-                 lun->block_size, lun->write_protected ? ", write protected" : "");
+        LOG_INFO(
+            "MSC: LUN %u: %llu blocks of %u bytes%s", lun->number, (unsigned long long)lun->blocks,
+            lun->block_size, lun->write_protected ? ", write protected" : ""
+        );
     } else if (!present && (changed || !lun->attached) && block_device(lun)) {
-        LOG_INFO("tendril: MSC: LUN %u: no medium", lun->number);
+        LOG_INFO("MSC: LUN %u: no medium", lun->number);
     }
     if (!lun->attached) {
         lun->attached = true;
@@ -1557,7 +1950,7 @@ static void probe_done(struct tendril_msc_lun *lun, bool present) {
         callbacks->medium_changed(lun);
     }
     if (lun->check_done != NULL) {
-        void (*done)(void *, enum tendril_status) = lun->check_done;
+        void (*done)(void *, int) = lun->check_done;
         lun->check_done = NULL;
         done(lun->check_ctx, TENDRIL_OK);
     }
@@ -1566,7 +1959,7 @@ static void probe_done(struct tendril_msc_lun *lun, bool present) {
     }
 }
 
-static void probe_result(struct tendril_msc_lun *lun, enum verdict v, enum tendril_status st) {
+static void probe_result(struct tendril_msc_lun *lun, int v, int st) {
     struct msc_cmd *cmd = &lun->cmd;
     struct tendril_msc *msc = lun->msc;
 
@@ -1586,8 +1979,10 @@ static void probe_result(struct tendril_msc_lun *lun, enum verdict v, enum tendr
                     copy_string(lun->product, b + 16, 16);
                     copy_string(lun->revision, b + 32, 4);
                 }
-                LOG_INFO("tendril: MSC: LUN %u: \"%s\" \"%s\" \"%s\", type %02x%s", lun->number, lun->vendor,
-                         lun->product, lun->revision, lun->type, lun->removable ? ", removable" : "");
+                LOG_INFO(
+                    "MSC: LUN %u: \"%s\" \"%s\" \"%s\", type %02x%s", lun->number, lun->vendor,
+                    lun->product, lun->revision, lun->type, lun->removable ? ", removable" : ""
+                );
                 lun->tries = 0;
                 if (block_device(lun)) {
                     probe_test(lun);
@@ -1600,7 +1995,7 @@ static void probe_result(struct tendril_msc_lun *lun, enum verdict v, enum tendr
                 probe_inquiry(lun);
                 return;
             }
-            LOG_WARN("tendril: MSC: LUN %u: INQUIRY failed: %s", lun->number, tendril_status_str(st));
+            LOG_WARN("MSC: LUN %u: INQUIRY failed: %s", lun->number, tendril_status_str(st));
             lun_free(lun);
             return;
         }
@@ -1664,13 +2059,18 @@ static void probe_result(struct tendril_msc_lun *lun, enum verdict v, enum tendr
         }
         case LUN_CAPACITY10:
         case LUN_CAPACITY16: {
-            if (v == V_OK && cmd->actual >= (lun->step == LUN_CAPACITY10 ? 8u : 12u)) {
+            if (v == V_OK && cmd->actual >= (size_t)(lun->step == LUN_CAPACITY10 ? 8 : 12)) {
                 const uint8_t *b = lun->buf;
                 uint64_t last;
                 if (lun->step == LUN_CAPACITY10) {
                     last = get_be32(b);
                     lun->block_size = get_be32(b + 4);
-                    if (last == 0xffffffff && msc->cmdset == CMDSET_SCSI && !msc->pad12) {
+                    if (msc->quirks & MQ_READ_CAP_OFF_BY_ONE) {
+                        /* BEGIN FreeBSD sys/dev/usb/storage/umass.c (and the condition above) */
+                        /* The block count in place of the last block, which FreeBSD's umass.c corrects here only. */
+                        last--;
+                        /* END FreeBSD sys/dev/usb/storage/umass.c */
+                    } else if (last == 0xffffffff && msc->cmdset == CMDSET_SCSI && !msc->pad12) {
                         probe_capacity16(lun);
                         return;
                     }
@@ -1678,7 +2078,7 @@ static void probe_result(struct tendril_msc_lun *lun, enum verdict v, enum tendr
                     last = get_be64(b);
                     lun->block_size = get_be32(b + 8);
                 }
-                lun->blocks = (msc->quirks & MQ_READ_CAP_OFF_BY_ONE) ? last : last + 1;
+                lun->blocks = last + 1;
                 if (lun->block_size == 0 || lun->block_size > 0x10000 || lun->blocks == 0) {
                     probe_done(lun, false);
                     return;
@@ -1694,7 +2094,7 @@ static void probe_result(struct tendril_msc_lun *lun, enum verdict v, enum tendr
             }
             if (v == V_FAIL && lun->step == LUN_CAPACITY16 && st == TENDRIL_ERR_INVALID) {
                 /* Without READ CAPACITY (16), the first 2^32 blocks are all that can be reached. */
-                lun->blocks = 0x100000000ull;
+                lun->blocks = (uint64_t)0x100000000;
                 lun->write_protected = false;
                 probe_mode_sense(lun);
                 return;
@@ -1714,7 +2114,7 @@ static void probe_result(struct tendril_msc_lun *lun, enum verdict v, enum tendr
         }
         case LUN_MODE_SENSE: {
             if (v == V_OK) {
-                unsigned off = msc->cmdset == CMDSET_SCSI ? 2u : 3u;
+                size_t off = msc->cmdset == CMDSET_SCSI ? 2 : 3;
                 lun->write_protected = cmd->actual > off && (lun->buf[off] & 0x80) != 0;
             } else if ((v == V_RETRY || v == V_CHANGED) && ++lun->tries < 2) {
                 probe_mode_sense(lun);
@@ -1735,7 +2135,7 @@ static void probe_result(struct tendril_msc_lun *lun, enum verdict v, enum tendr
 
 static void io_issue(struct tendril_msc_lun *lun);
 
-static void io_finish(struct tendril_msc_lun *lun, enum tendril_status st) {
+static void io_finish(struct tendril_msc_lun *lun, int st) {
     struct tendril_msc_request *req = lun->current;
     lun->current = NULL;
     lun->busy = false;
@@ -1745,7 +2145,7 @@ static void io_finish(struct tendril_msc_lun *lun, enum tendril_status st) {
 }
 
 /* Fails the current and all queued requests, which were meant for a medium that is gone. */
-static void io_fail_all(struct tendril_msc_lun *lun, enum tendril_status st) {
+static void io_fail_all(struct tendril_msc_lun *lun, int st) {
     struct tendril_list list;
     struct tendril_msc_request *cur = lun->current;
 
@@ -1777,8 +2177,8 @@ static void io_issue(struct tendril_msc_lun *lun) {
     if (req->op == TENDRIL_MSC_FLUSH) {
         if (!lun->present) {
             io_finish(lun, TENDRIL_ERR_NO_MEDIUM);
-        } else if (lun->no_sync_cache || (msc->quirks & MQ_NO_SYNC_CACHE) || msc->cmdset == CMDSET_UFI ||
-                   lun->write_protected) {
+        } else if (lun->no_sync_cache || (msc->quirks & MQ_NO_SYNC_CACHE) || msc->cmdset == CMDSET_UFI
+                || lun->write_protected) {
             io_finish(lun, TENDRIL_OK);
         } else {
             cdb[0] = SCSI_SYNC_CACHE10;
@@ -1795,18 +2195,18 @@ static void io_issue(struct tendril_msc_lun *lun) {
     uint32_t left = req->count - req->internal.done_blocks;
     uint32_t n = (uint32_t)MIN((size_t)left, msc->max_bytes / lun->block_size);
     uint64_t lba = req->lba + req->internal.done_blocks;
-    unsigned len;
+    size_t len;
     if (n == 0) {
         n = 1;
     }
-    if (lba + n > 0x100000000ull && msc->cmdset == CMDSET_SCSI && !msc->pad12) {
+    if (lba + n > (uint64_t)0x100000000 && msc->cmdset == CMDSET_SCSI && !msc->pad12) {
         cdb[0] = write ? SCSI_WRITE16 : SCSI_READ16;
         put_be64(cdb + 2, lba);
         put_be32(cdb + 10, n);
         len = 16;
     } else {
-        n = MIN(n, 0xffffu);
-        if (lba + n > 0x100000000ull) {
+        n = MIN(n, (uint32_t)0xffff);
+        if (lba + n > (uint64_t)0x100000000) {
             io_finish(lun, TENDRIL_ERR_INVALID);
             return;
         }
@@ -1820,7 +2220,7 @@ static void io_issue(struct tendril_msc_lun *lun) {
     lun_issue(lun, LUN_IO, cdb, len, data, (size_t)n * lun->block_size, !write, CMD_TIMEOUT_MS);
 }
 
-static void io_result(struct tendril_msc_lun *lun, enum verdict v, enum tendril_status st) {
+static void io_result(struct tendril_msc_lun *lun, int v, int st) {
     struct tendril_msc_request *req = lun->current;
     struct msc_cmd *cmd = &lun->cmd;
     struct tendril_msc *msc = lun->msc;
@@ -1893,15 +2293,15 @@ static void io_result(struct tendril_msc_lun *lun, enum verdict v, enum tendril_
 
 static void lun_cmd_done(struct msc_cmd *cmd) {
     struct tendril_msc_lun *lun = cmd->ctx;
-    enum tendril_status st;
-    enum verdict v = judge(cmd, &st);
+    int st;
+    int v = judge(cmd, &st);
 
     if (st == TENDRIL_ERR_NO_DEVICE) {
         /* Gone, or its controller died: nothing more will run, though the disconnection may come later. */
         lun->msc->stopped = true;
         io_fail_all(lun, st);
         if (lun->check_done != NULL) {
-            void (*done)(void *, enum tendril_status) = lun->check_done;
+            void (*done)(void *, int) = lun->check_done;
             lun->check_done = NULL;
             done(lun->check_ctx, st);
         }
@@ -1947,10 +2347,10 @@ static void lun_next(struct tendril_msc_lun *lun) {
 
 /* Setup */
 
-static void setup_step(struct tendril_msc *msc, enum tendril_status st);
+static void setup_step(struct tendril_msc *msc, int st);
 static void get_max_lun(struct tendril_msc *msc);
 
-static void setup_done(void *ctx, enum tendril_status st) {
+static void setup_done(void *ctx, int st) {
     setup_step(ctx, st);
 }
 
@@ -1959,14 +2359,15 @@ static void setup_async_work(struct tendril_work *work) {
     setup_step(msc, msc->async.status);
 }
 
-static void setup_fail(struct tendril_msc *msc, enum tendril_status st, const char *what) {
+static void setup_fail(struct tendril_msc *msc, int st, const char *what) {
     if (st != TENDRIL_ERR_NO_DEVICE) {
-        LOG_WARN("tendril: MSC: %s failed: %s", what, tendril_status_str(st));
+        LOG_WARN("MSC: %s failed: %s", what, tendril_status_str(st));
     }
     msc->stopped = true;
 }
 
-static bool command_set(uint8_t subclass, uint32_t quirks, enum command_set *cs) {
+/* BEGIN FreeBSD sys/dev/usb/storage/umass.c */
+static bool command_set(uint8_t subclass, uint32_t quirks, int *cs) {
     if (quirks & MQ_CMD_SCSI) {
         *cs = CMDSET_SCSI;
     } else if (quirks & MQ_CMD_ATAPI) {
@@ -2004,7 +2405,7 @@ static bool command_set(uint8_t subclass, uint32_t quirks, enum command_set *cs)
     return true;
 }
 
-static bool wire_protocol(uint8_t protocol, uint32_t quirks, enum transport *t) {
+static bool wire_protocol(uint8_t protocol, uint32_t quirks, int *t) {
     if (quirks & MQ_WIRE_BBB) {
         *t = TRANSPORT_BBB;
     } else if (quirks & MQ_WIRE_CBI) {
@@ -2022,26 +2423,29 @@ static bool wire_protocol(uint8_t protocol, uint32_t quirks, enum transport *t) 
     }
     return true;
 }
+/* END FreeBSD sys/dev/usb/storage/umass.c */
 
 /* The pipe usage IDs found in an alternate setting, as a mask. */
-static unsigned alt_pipes(struct tendril_interface *intf, unsigned alt) {
+/* BEGIN SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
+static uint32_t alt_pipes(struct tendril_interface *intf, size_t alt) {
     const uint8_t *p = (const uint8_t *)intf->alts[alt];
     const uint8_t *end = p + intf->alt_sizes[alt];
-    unsigned mask = 0;
+    uint32_t mask = 0;
     for (p = tendril_desc_next(p, end); p != NULL; p = tendril_desc_next(p, end)) {
         if (p[1] == DT_PIPE_USAGE && p[0] >= 4 && p[2] >= PIPE_COMMAND && p[2] <= PIPE_DATA_OUT) {
-            mask |= 1u << p[2];
+            mask |= PIPE_BIT(p[2]);
         }
     }
     return mask;
 }
 
 /* The pipe usage ID following an endpoint's descriptor, or 0. */
-static unsigned pipe_id(struct tendril_interface *intf, struct tendril_endpoint *ep) {
+static uint8_t pipe_id(struct tendril_interface *intf, struct tendril_endpoint *ep) {
     size_t size;
     const uint8_t *start = tendril_interface_descriptors(intf, &size);
     const uint8_t *end = start + size;
-    for (const uint8_t *p = tendril_desc_next((const uint8_t *)ep->desc, end); p != NULL; p = tendril_desc_next(p, end)) {
+    const uint8_t *first = tendril_desc_next((const uint8_t *)ep->desc, end);
+    for (const uint8_t *p = first; p != NULL; p = tendril_desc_next(p, end)) {
         if (p[1] == TENDRIL_DT_ENDPOINT || p[1] == TENDRIL_DT_INTERFACE) {
             break;
         }
@@ -2051,6 +2455,7 @@ static unsigned pipe_id(struct tendril_interface *intf, struct tendril_endpoint 
     }
     return 0;
 }
+/* END SerenityOS Kernel/Devices/Storage/USB/UAS/Structures.h */
 
 static size_t max_transfer(struct tendril_msc *msc) {
     bool ss = tendril_device_is_ss(msc->dev);
@@ -2058,20 +2463,22 @@ static size_t max_transfer(struct tendril_msc *msc) {
         /* Within a 256-TRB stream ring even when every page is mapped apart. */
         return ss ? 512 * 1024 : 256 * 1024;
     }
+    /* BEGIN FreeBSD sys/dev/usb/storage/umass.c, OpenBSD sys/dev/usb/umass.c */
     /* What FreeBSD's umass.c allows: maxphys (1 MiB) at SuperSpeed, else CAM's 64 KiB default. */
     return ss ? 1024 * 1024 : 64 * 1024;
+    /* END FreeBSD sys/dev/usb/storage/umass.c, OpenBSD sys/dev/usb/umass.c */
 }
 
-static void create_luns(struct tendril_msc *msc, unsigned count) {
+static void create_luns(struct tendril_msc *msc, size_t count) {
     msc->max_bytes = max_transfer(msc);
     msc->num_luns = count;
-    LOG_INFO("tendril: MSC: interface %u: %s, %u LUN%s", msc->intf->number,
-             msc->transport == TRANSPORT_UAS ? (msc->streams ? "UAS with streams" : "UAS") :
-             msc->transport == TRANSPORT_BBB ? "Bulk-Only" :
-             msc->transport == TRANSPORT_CBI ? "CBI" : "CB",
-             count, count == 1 ? "" : "s");
-    for (unsigned i = 0; i < count; i++) {
-        struct tendril_msc_lun *lun = tendril_zalloc(sizeof(*lun));
+    const char *transport = msc->transport == TRANSPORT_UAS ? (msc->streams ? "UAS with streams" : "UAS")
+        : msc->transport == TRANSPORT_BBB ? "Bulk-Only"
+        : msc->transport == TRANSPORT_CBI ? "CBI"
+        : "CB";
+    LOG_INFO("MSC: interface %u: %s, %zu LUN%s", msc->intf->number, transport, count, count == 1 ? "" : "s");
+    for (size_t i = 0; i < count; i++) {
+        struct tendril_msc_lun *lun = tendril_zalloc(sizeof(struct tendril_msc_lun));
         if (lun == NULL) {
             break;
         }
@@ -2082,7 +2489,7 @@ static void create_luns(struct tendril_msc *msc, unsigned count) {
         tendril_timer_init(&lun->timer, lun_timer_work);
         msc->luns[i] = lun;
     }
-    for (unsigned i = 0; i < count && !msc->stopped; i++) {
+    for (size_t i = 0; i < count && !msc->stopped; i++) {
         if (msc->luns[i] != NULL) {
             probe_start(msc->luns[i], true);
         }
@@ -2106,7 +2513,7 @@ static bool uas_endpoints(struct tendril_msc *msc) {
     msc->status_ep = NULL;
     msc->data_in_ep = NULL;
     msc->data_out_ep = NULL;
-    for (unsigned e = 0; e < intf->num_endpoints; e++) {
+    for (size_t e = 0; e < intf->num_endpoints; e++) {
         struct tendril_endpoint *ep = &intf->endpoints[e];
         bool in = (ep->address & TENDRIL_ENDPOINT_DIR_MASK) != 0;
         if (ep->type != TENDRIL_ENDPOINT_XFER_BULK) {
@@ -2137,29 +2544,151 @@ static bool uas_endpoints(struct tendril_msc *msc) {
     return msc->cmd_ep != NULL && msc->status_ep != NULL && msc->data_in_ep != NULL && msc->data_out_ep != NULL;
 }
 
-/* Bulk-Only and CBI setup past the alternate setting: endpoints, Shuttle init, and the LUN count. */
-static void setup_legacy(struct tendril_msc *msc) {
-    struct tendril_interface *intf = msc->intf;
-    enum tendril_status st;
-
-    /* UFI and ATAPI commands are 12 bytes long; RBC ones only with MQ_PAD_TO_12, as in FreeBSD's umass.c. */
-    msc->pad12 = msc->cmdset == CMDSET_ATAPI || msc->cmdset == CMDSET_UFI ||
-                 (msc->cmdset == CMDSET_RBC && (msc->quirks & MQ_PAD_TO_12));
-    if (!legacy_endpoints(msc)) {
-        setup_fail(msc, TENDRIL_ERR_UNSUPPORTED, "finding the bulk endpoints");
-        return;
-    }
+static void setup_luns(struct tendril_msc *msc) {
     if (msc->quirks & MQ_SHUTTLE_INIT) {
-        /* FreeBSD's umass_init_shuttle: a vendor request whose purpose nobody knows. */
         msc->setup = SETUP_SHUTTLE;
-        st = tendril_control_async(msc->dev, &msc->ctrl, TENDRIL_DIR_IN | TENDRIL_TYPE_VENDOR | TENDRIL_RECIP_DEVICE,
-                                  REQ_SHUTTLE_INIT, 0, intf->number, msc->ctrl_buf, 2, &msc->async);
+        int st = tendril_msc_shuttle_init(
+            msc->dev, msc->intf->number, &msc->ctrl, msc->ctrl_buf, sizeof(msc->ctrl_buf), &msc->async
+        );
         if (st != TENDRIL_OK) {
             setup_step(msc, st);
         }
         return;
     }
     get_max_lun(msc);
+}
+
+/* BEGIN FreeBSD sys/dev/usb/usb_msctest.c, usb_device.c */
+static const uint8_t pre_inquiry_cdb[6] = { SCSI_INQUIRY, 0, 0, 0, 36, 0 };
+
+static void pre_done(struct msc_cmd *cmd);
+
+static void pre_issue(struct tendril_msc *msc, int step, const uint8_t *cdb, void *data, size_t len) {
+    struct msc_cmd *cmd = &msc->pre_cmd;
+
+    msc->pre = step;
+    memset(cmd->cdb, 0, sizeof(cmd->cdb));
+    memcpy(cmd->cdb, cdb, 6);
+    cmd->cdb_len = 6;
+    cmd->lun = 0;
+    cmd->in = len != 0;
+    cmd->data = data;
+    cmd->len = len;
+    cmd->timeout_ms = PRE_TIMEOUT_MS;
+    cmd->done = pre_done;
+    cmd->ctx = msc;
+    cmd_queue(msc, cmd);
+}
+
+/* Starts the next usb_msctest.c check; false once none is left. */
+static bool pre_start(struct tendril_msc *msc) {
+    static const uint8_t test_cdb[6] = { SCSI_TEST_UNIT_READY, 0, 0, 0, 0, 0 };
+
+    if (msc->pre_cdrom) {
+        msc->pre_cdrom = false;
+        msc->pre_tries = 0;
+        pre_issue(msc, PRE_CDROM, pre_inquiry_cdb, msc->pre_buf, sizeof(msc->pre_buf));
+        return true;
+    }
+    if (msc->pre_eject) {
+        msc->pre_eject = false;
+        pre_issue(msc, PRE_EJECT_TEST, test_cdb, NULL, 0);
+        return true;
+    }
+    return false;
+}
+
+static void pre_timer_work(struct tendril_work *work) {
+    struct tendril_msc *msc = CONTAINER_OF(work, struct tendril_msc, pre_timer.work);
+    if (!msc->stopped) {
+        pre_issue(msc, PRE_CDROM, pre_inquiry_cdb, msc->pre_buf, sizeof(msc->pre_buf));
+    }
+}
+
+/* Moves on to configuration index 1, as usb_alloc_device() does past an auto-install CD-ROM. */
+static bool skip_cdrom(struct tendril_msc *msc) {
+    struct tendril_device *dev = msc->dev;
+
+    if (dev->num_configs < 2 || dev->configs[1] == NULL) {
+        return false;
+    }
+    const struct tendril_config_descriptor *cd = (const void *)dev->configs[1];
+    int st = tendril_device_set_configuration(dev, cd->configuration_value, NULL, NULL);
+    if (st != TENDRIL_OK) {
+        LOG_WARN("MSC: leaving the auto-install CD-ROM configuration failed: %s", tendril_status_str(st));
+        return false;
+    }
+    LOG_INFO(
+        "MSC: interface %u looks like an auto-install CD-ROM; trying configuration %u", msc->intf->number,
+        cd->configuration_value
+    );
+    msc->stopped = true;
+    return true;
+}
+
+static void pre_done(struct msc_cmd *cmd) {
+    static const uint8_t stop_cdb[6] = { SCSI_START_STOP_UNIT, 0, 0, 0, 0x02, 0 };
+    struct tendril_msc *msc = cmd->ctx;
+    struct tendril_device *dev = msc->dev;
+
+    if (cmd->status == TENDRIL_ERR_NO_DEVICE || msc->stopped || dev->gone) {
+        msc->stopped = true;
+        return;
+    }
+    switch (msc->pre) {
+        case PRE_CDROM: {
+            bool good = cmd->status == TENDRIL_OK && cmd->scsi_status == STATUS_GOOD;
+            /* A command that failed on the device is tried again a second later, three times in all. */
+            if (cmd->status == TENDRIL_OK && !good && ++msc->pre_tries < PRE_TRIES) {
+                hc_lock(msc->hc);
+                tendril_timer_arm(msc->hc, &msc->pre_timer, PRE_RETRY_MS * NS_PER_MS);
+                hc_unlock(msc->hc);
+                return;
+            }
+            if (good && cmd->actual > 0 && (msc->pre_buf[0] & 0x1f) == TYPE_CDROM && skip_cdrom(msc)) {
+                return;
+            }
+            break;
+        }
+        case PRE_EJECT_TEST: {
+            /* What either command comes to does not matter. */
+            pre_issue(msc, PRE_EJECT_STOP, stop_cdb, NULL, 0);
+            return;
+        }
+        case PRE_EJECT_STOP: {
+            LOG_INFO("MSC: interface %u: ejected, for the device to come back in its other mode", msc->intf->number);
+            msc->stopped = true;
+            int st = tendril_device_set_configuration(dev, 0, NULL, NULL);
+            if (st != TENDRIL_OK) {
+                LOG_WARN("MSC: unconfiguring the ejected device failed: %s", tendril_status_str(st));
+            }
+            return;
+        }
+        default: {
+            return;
+        }
+    }
+    msc->pre = PRE_NONE;
+    if (!pre_start(msc)) {
+        setup_luns(msc);
+    }
+}
+/* END FreeBSD sys/dev/usb/usb_msctest.c, usb_device.c */
+
+/* Bulk-Only and CBI setup past the alternate setting: endpoints, the usb_msctest.c checks, and the LUNs. */
+static void setup_legacy(struct tendril_msc *msc) {
+    /* BEGIN FreeBSD sys/dev/usb/storage/umass.c */
+    /* UFI and ATAPI commands are 12 bytes long; RBC ones only with MQ_PAD_TO_12, as in FreeBSD's umass.c. */
+    msc->pad12 = msc->cmdset == CMDSET_ATAPI || msc->cmdset == CMDSET_UFI
+        || (msc->cmdset == CMDSET_RBC && (msc->quirks & MQ_PAD_TO_12));
+    /* END FreeBSD sys/dev/usb/storage/umass.c */
+    if (!legacy_endpoints(msc)) {
+        setup_fail(msc, TENDRIL_ERR_UNSUPPORTED, "finding the bulk endpoints");
+        return;
+    }
+    if (msc->transport != TRANSPORT_BBB || !pre_start(msc)) {
+        setup_luns(msc);
+    }
 }
 
 static void get_max_lun(struct tendril_msc *msc) {
@@ -2169,23 +2698,25 @@ static void get_max_lun(struct tendril_msc *msc) {
         return;
     }
     msc->ctrl_buf[0] = 0;
-    enum tendril_status st = tendril_control_async(msc->dev, &msc->ctrl,
-                                                 TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
-                                                 REQ_GET_MAX_LUN, 0, msc->intf->number, msc->ctrl_buf, 1, &msc->async);
+    int st = tendril_control_async(
+        msc->dev, &msc->ctrl,
+        TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
+        REQ_GET_MAX_LUN, 0, msc->intf->number, msc->ctrl_buf, 1, &msc->async
+    );
     if (st != TENDRIL_OK) {
         setup_step(msc, st);
     }
 }
 
-static void fall_back(struct tendril_msc *msc, enum tendril_status st) {
+static void fall_back(struct tendril_msc *msc, int st) {
     if (msc->fallback_alt < 0) {
         setup_fail(msc, st, "UAS setup");
         return;
     }
-    LOG_INFO("tendril: MSC: UAS setup failed (%s), using Bulk-Only", tendril_status_str(st));
+    LOG_INFO("MSC: UAS setup failed (%s), using Bulk-Only", tendril_status_str(st));
     msc->transport = msc->fallback_transport;
     msc->cmdset = msc->fallback_cmdset;
-    msc->alt = (unsigned)msc->fallback_alt;
+    msc->alt = (size_t)msc->fallback_alt;
     msc->fallback_alt = -1;
     msc->streams = false;
     msc->setup = SETUP_FALLBACK;
@@ -2198,7 +2729,7 @@ static void fall_back(struct tendril_msc *msc, enum tendril_status st) {
 static void uas_ready(struct tendril_msc *msc) {
     if (msc->streams) {
         /* Stream IDs 1 to n: one per command tag, and the last for task management. */
-        msc->num_tags = MIN(msc->num_streams - 1, (unsigned)MAX_TAGS);
+        msc->num_tags = MIN((size_t)msc->num_streams - 1, (size_t)MAX_TAGS);
         msc->tm_tag = (uint16_t)(msc->num_tags + 1);
     } else {
         msc->num_tags = MAX_TAGS;
@@ -2208,7 +2739,7 @@ static void uas_ready(struct tendril_msc *msc) {
     create_luns(msc, 1);
 }
 
-static void setup_step(struct tendril_msc *msc, enum tendril_status st) {
+static void setup_step(struct tendril_msc *msc, int st) {
     struct tendril_interface *intf = msc->intf;
 
     if (msc->stopped) {
@@ -2266,13 +2797,12 @@ static void setup_step(struct tendril_msc *msc, enum tendril_status st) {
             break;
         }
         case SETUP_SHUTTLE: {
-            /* Nobody knows what this request does; its answer is ignored. */
             get_max_lun(msc);
             break;
         }
         case SETUP_MAX_LUN: {
             /* Bulk-Only 1.0, 3.2: devices with one LUN may stall the request. */
-            unsigned max = st == TENDRIL_OK && msc->ctrl.actual == 1 ? msc->ctrl_buf[0] : 0;
+            size_t max = st == TENDRIL_OK && msc->ctrl.actual == 1 ? msc->ctrl_buf[0] : 0;
             create_luns(msc, max < MAX_LUNS ? max + 1 : 1);
             break;
         }
@@ -2298,22 +2828,22 @@ static bool msc_probe(struct tendril_interface *intf) {
     }
 
     /* The Bulk-Only or CBI setting: the current one, or alternate setting 1 with MQ_ALT_IFACE_1. */
-    unsigned legacy = intf->cur_alt;
+    size_t legacy = intf->cur_alt;
     if ((quirks & MQ_ALT_IFACE_1) && intf->num_alts > 1) {
         legacy = 1;
     }
     const struct tendril_interface_descriptor *ld = intf->alts[legacy];
-    enum transport wire = TRANSPORT_BBB;
-    enum command_set cmdset = CMDSET_SCSI;
-    bool have_legacy = ld->interface_class == TENDRIL_CLASS_MASS_STORAGE &&
-                       wire_protocol(ld->interface_protocol, quirks, &wire) &&
-                       command_set(ld->interface_subclass, quirks, &cmdset);
+    int wire = TRANSPORT_BBB;
+    int cmdset = CMDSET_SCSI;
+    bool have_legacy = ld->interface_class == TENDRIL_CLASS_MASS_STORAGE
+        && wire_protocol(ld->interface_protocol, quirks, &wire)
+        && command_set(ld->interface_subclass, quirks, &cmdset);
     if (!have_legacy) {
         /* Failing that, any alternate setting speaking Bulk-Only or CBI. */
-        for (unsigned a = 0; a < intf->num_alts && !have_legacy; a++) {
+        for (size_t a = 0; a < intf->num_alts && !have_legacy; a++) {
             const struct tendril_interface_descriptor *d = intf->alts[a];
-            if (d->interface_class == TENDRIL_CLASS_MASS_STORAGE && wire_protocol(d->interface_protocol, 0, &wire) &&
-                command_set(d->interface_subclass, quirks, &cmdset)) {
+            if (d->interface_class == TENDRIL_CLASS_MASS_STORAGE && wire_protocol(d->interface_protocol, 0, &wire)
+             && command_set(d->interface_subclass, quirks, &cmdset)) {
                 legacy = a;
                 have_legacy = true;
             }
@@ -2323,12 +2853,12 @@ static bool msc_probe(struct tendril_interface *intf) {
     /* UAS needs high speed, and streams at SuperSpeed; forced wire protocols rule it out. */
     int uas = -1;
     bool streams_ok = hc->ops->alloc_streams != NULL && !(hc->quirks & TENDRIL_HC_QUIRK_NO_STREAMS);
-    bool uas_ok = dev->speed >= TENDRIL_SPEED_HIGH && (!tendril_device_is_ss(dev) || streams_ok) &&
-                  !(quirks & (MQ_WIRE_BBB | MQ_WIRE_CB | MQ_WIRE_CBI));
-    for (unsigned a = 0; a < intf->num_alts && uas_ok && uas < 0; a++) {
+    bool uas_ok = dev->speed >= TENDRIL_SPEED_HIGH && (!tendril_device_is_ss(dev) || streams_ok)
+        && !(quirks & (MQ_WIRE_BBB | MQ_WIRE_CB | MQ_WIRE_CBI));
+    for (size_t a = 0; a < intf->num_alts && uas_ok && uas < 0; a++) {
         const struct tendril_interface_descriptor *d = intf->alts[a];
-        if (d->interface_class == TENDRIL_CLASS_MASS_STORAGE && d->interface_subclass == SUBCLASS_SCSI &&
-            d->interface_protocol == PROTO_UAS && alt_pipes(intf, a) == UAS_PIPES) {
+        if (d->interface_class == TENDRIL_CLASS_MASS_STORAGE && d->interface_subclass == SUBCLASS_SCSI
+         && d->interface_protocol == PROTO_UAS && alt_pipes(intf, a) == UAS_PIPES) {
             uas = (int)a;
         }
     }
@@ -2336,7 +2866,7 @@ static bool msc_probe(struct tendril_interface *intf) {
         return false;
     }
 
-    struct tendril_msc *msc = tendril_zalloc(sizeof(*msc));
+    struct tendril_msc *msc = tendril_zalloc(sizeof(struct tendril_msc));
     if (msc == NULL) {
         return false;
     }
@@ -2346,11 +2876,26 @@ static bool msc_probe(struct tendril_interface *intf) {
     msc->quirks = quirks;
     msc->fallback_alt = -1;
     list_init(&msc->queue);
+    list_init(&msc->pre_cmd.node);
     tendril_async_init(&msc->async, setup_async_work);
+    tendril_timer_init(&msc->pre_timer, pre_timer_work);
+    /* BEGIN FreeBSD sys/dev/usb/usb_msctest.c, usb_device.c */
+    /* usb_msctest.c only checks a first interface that speaks Bulk-Only with these command sets (bbb_attach). */
+    if (intf == &dev->interfaces[0] && uas < 0) {
+        bool bbb = (id->interface_protocol == PROTO_BBB || id->interface_protocol == PROTO_BBB_OLD)
+            && (id->interface_subclass == SUBCLASS_SCSI || id->interface_subclass == SUBCLASS_UFI
+            || id->interface_subclass == SUBCLASS_MMC || id->interface_subclass == SUBCLASS_SFF8070I);
+        msc->pre_cdrom = bbb && dev->cdrom_check && dev->active_config == 0 && !(quirks & MQ_NO_INQUIRY);
+        msc->pre_eject = bbb && (quirks & MQ_SCSI_EJECT);
+    }
+    /* END FreeBSD sys/dev/usb/usb_msctest.c, usb_device.c */
+    if (intf == &dev->interfaces[0]) {
+        dev->cdrom_check = false;
+    }
     if (uas >= 0) {
         msc->transport = TRANSPORT_UAS;
         msc->cmdset = CMDSET_SCSI;
-        msc->alt = (unsigned)uas;
+        msc->alt = (size_t)uas;
         if (have_legacy) {
             msc->fallback_alt = (int)legacy;
             msc->fallback_transport = wire;
@@ -2368,7 +2913,7 @@ static bool msc_probe(struct tendril_interface *intf) {
         setup_step(msc, TENDRIL_OK);
         return true;
     }
-    enum tendril_status st = tendril_interface_set_alt(intf, intf->alts[msc->alt]->alternate_setting, setup_done, msc);
+    int st = tendril_interface_set_alt(intf, intf->alts[msc->alt]->alternate_setting, setup_done, msc);
     if (st != TENDRIL_OK) {
         setup_step(msc, st);
     }
@@ -2381,13 +2926,16 @@ static void msc_disconnect(struct tendril_interface *intf) {
         return;
     }
     msc->stopped = true;
+    hc_lock(msc->hc);
+    tendril_timer_cancel(msc->hc, &msc->pre_timer);
+    hc_unlock(msc->hc);
     while (!list_empty(&msc->queue)) {
         struct msc_cmd *cmd = CONTAINER_OF(msc->queue.next, struct msc_cmd, node);
         list_del(&cmd->node);
         cmd->status = TENDRIL_ERR_NO_DEVICE;
         cmd->done(cmd);
     }
-    for (unsigned i = 0; i < msc->num_luns; i++) {
+    for (size_t i = 0; i < msc->num_luns; i++) {
         struct tendril_msc_lun *lun = msc->luns[i];
         if (lun == NULL) {
             continue;
@@ -2403,23 +2951,23 @@ static void msc_disconnect(struct tendril_interface *intf) {
         if (lun->attached && callbacks->detach != NULL) {
             callbacks->detach(lun);
         }
-        tendril_free(lun, sizeof(*lun));
+        tendril_free(lun, sizeof(struct tendril_msc_lun));
         msc->luns[i] = NULL;
     }
     tendril_interface_set_data(intf, NULL);
-    tendril_free(msc, sizeof(*msc));
+    tendril_free(msc, sizeof(struct tendril_msc));
 }
 
 /* Set up, with no command, request, or medium check outstanding: nothing is cut short by a suspend. */
 static bool msc_idle(struct tendril_msc *msc) {
-    if (msc->num_luns == 0 || msc->active != NULL || !list_empty(&msc->queue) || msc->in_flight != 0 ||
-        msc->tm_busy) {
+    if (msc->num_luns == 0 || msc->active != NULL || !list_empty(&msc->queue) || msc->in_flight != 0
+     || msc->tm_busy) {
         return false;
     }
-    for (unsigned i = 0; i < msc->num_luns; i++) {
+    for (size_t i = 0; i < msc->num_luns; i++) {
         struct tendril_msc_lun *lun = msc->luns[i];
-        if (lun != NULL && (lun->busy || lun->probe_pending || lun->current != NULL || !list_empty(&lun->requests) ||
-                            lun->check_done != NULL || tendril_timer_armed(&lun->timer))) {
+        if (lun != NULL && (lun->busy || lun->probe_pending || lun->current != NULL || !list_empty(&lun->requests)
+         || lun->check_done != NULL || tendril_timer_armed(&lun->timer))) {
             return false;
         }
     }
@@ -2468,7 +3016,7 @@ struct tendril_device *tendril_msc_device(struct tendril_msc_lun *lun) {
     return lun->msc->dev;
 }
 
-unsigned tendril_msc_lun_number(struct tendril_msc_lun *lun) {
+unsigned int tendril_msc_lun_number(struct tendril_msc_lun *lun) {
     return lun->number;
 }
 
@@ -2518,7 +3066,7 @@ void *tendril_msc_user(struct tendril_msc_lun *lun) {
 
 /* Requests */
 
-enum tendril_status tendril_msc_submit(struct tendril_msc_lun *lun, struct tendril_msc_request *req) {
+int tendril_msc_submit(struct tendril_msc_lun *lun, struct tendril_msc_request *req) {
     struct tendril_msc *msc = lun->msc;
 
     if (msc->stopped) {
@@ -2534,8 +3082,8 @@ enum tendril_status tendril_msc_submit(struct tendril_msc_lun *lun, struct tendr
         if (!lun->present) {
             return TENDRIL_ERR_NO_MEDIUM;
         }
-        if (req->count == 0 || req->buffer == NULL || req->lba >= lun->blocks ||
-            req->count > lun->blocks - req->lba) {
+        if (req->count == 0 || req->buffer == NULL || req->lba >= lun->blocks
+         || req->count > lun->blocks - req->lba) {
             return TENDRIL_ERR_INVALID;
         }
         if (req->op == TENDRIL_MSC_WRITE && lun->write_protected) {
@@ -2554,7 +3102,7 @@ enum tendril_status tendril_msc_submit(struct tendril_msc_lun *lun, struct tendr
 
 struct sync_wait {
     volatile bool done;
-    enum tendril_status status;
+    int status;
 };
 
 static void sync_request_done(struct tendril_msc_request *req) {
@@ -2563,13 +3111,12 @@ static void sync_request_done(struct tendril_msc_request *req) {
     w->done = true;
 }
 
-static enum tendril_status sync_request(struct tendril_msc_lun *lun, uint8_t op, uint64_t lba, uint32_t count,
-                                       void *buf) {
+static int sync_request(struct tendril_msc_lun *lun, uint8_t op, uint64_t lba, uint32_t count, void *buf) {
     struct tendril_hc *hc = lun->msc->hc;
     struct tendril_msc_request req;
     struct sync_wait w;
 
-    memset(&req, 0, sizeof(req));
+    memset(&req, 0, sizeof(struct tendril_msc_request));
     w.done = false;
     w.status = TENDRIL_OK;
     req.op = op;
@@ -2578,7 +3125,7 @@ static enum tendril_status sync_request(struct tendril_msc_lun *lun, uint8_t op,
     req.buffer = buf;
     req.done = sync_request_done;
     req.context = &w;
-    enum tendril_status st = tendril_msc_submit(lun, &req);
+    int st = tendril_msc_submit(lun, &req);
     if (st != TENDRIL_OK) {
         return st;
     }
@@ -2586,15 +3133,15 @@ static enum tendril_status sync_request(struct tendril_msc_lun *lun, uint8_t op,
     return w.status;
 }
 
-enum tendril_status tendril_msc_read(struct tendril_msc_lun *lun, uint64_t lba, uint32_t count, void *buf) {
+int tendril_msc_read(struct tendril_msc_lun *lun, uint64_t lba, uint32_t count, void *buf) {
     return sync_request(lun, TENDRIL_MSC_READ, lba, count, buf);
 }
 
-enum tendril_status tendril_msc_write(struct tendril_msc_lun *lun, uint64_t lba, uint32_t count, const void *buf) {
+int tendril_msc_write(struct tendril_msc_lun *lun, uint64_t lba, uint32_t count, const void *buf) {
     return sync_request(lun, TENDRIL_MSC_WRITE, lba, count, (void *)(uintptr_t)buf);
 }
 
-enum tendril_status tendril_msc_flush(struct tendril_msc_lun *lun) {
+int tendril_msc_flush(struct tendril_msc_lun *lun) {
     return sync_request(lun, TENDRIL_MSC_FLUSH, 0, 0, NULL);
 }
 
@@ -2603,15 +3150,15 @@ enum tendril_status tendril_msc_flush(struct tendril_msc_lun *lun) {
 struct passthrough {
     struct msc_cmd cmd;
     uint8_t *sense;
-    void (*done)(void *ctx, enum tendril_status status, uint8_t scsi_status, size_t actual);
+    void (*done)(void *ctx, int status, uint8_t scsi_status, size_t actual);
     void *ctx;
 };
 
 static void passthrough_done(struct msc_cmd *cmd) {
     struct passthrough *p = CONTAINER_OF(cmd, struct passthrough, cmd);
-    void (*done)(void *, enum tendril_status, uint8_t, size_t) = p->done;
+    void (*done)(void *, int, uint8_t, size_t) = p->done;
     void *ctx = p->ctx;
-    enum tendril_status st = cmd->status;
+    int st = cmd->status;
     uint8_t scsi_status = cmd->scsi_status;
     size_t actual = cmd->actual;
 
@@ -2619,16 +3166,16 @@ static void passthrough_done(struct msc_cmd *cmd) {
         memset(p->sense, 0, sizeof(cmd->sense));
         memcpy(p->sense, cmd->sense, cmd->sense_len);
     }
-    tendril_free(p, sizeof(*p));
+    tendril_free(p, sizeof(struct passthrough));
     if (done != NULL) {
         done(ctx, st, scsi_status, actual);
     }
 }
 
-enum tendril_status tendril_msc_command(
-    struct tendril_msc_lun *lun, const uint8_t *cdb, unsigned cdb_len, void *data, size_t len, bool in,
-    uint8_t *sense, void (*done)(void *ctx, enum tendril_status status, uint8_t scsi_status, size_t actual),
-    void *ctx) {
+int tendril_msc_command(
+    struct tendril_msc_lun *lun, const uint8_t *cdb, size_t cdb_len, void *data, size_t len, bool in, uint8_t *sense,
+    void (*done)(void *ctx, int status, uint8_t scsi_status, size_t actual), void *ctx
+) {
     struct tendril_msc *msc = lun->msc;
 
     if (cdb_len == 0 || cdb_len > 16 || (len != 0 && data == NULL)) {
@@ -2640,7 +3187,7 @@ enum tendril_status tendril_msc_command(
     if (msc->suspended) {
         return TENDRIL_ERR_SUSPENDED;
     }
-    struct passthrough *p = tendril_zalloc(sizeof(*p));
+    struct passthrough *p = tendril_zalloc(sizeof(struct passthrough));
     if (p == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
@@ -2663,8 +3210,7 @@ enum tendril_status tendril_msc_command(
     return TENDRIL_OK;
 }
 
-enum tendril_status tendril_msc_check_medium(struct tendril_msc_lun *lun,
-                                           void (*done)(void *ctx, enum tendril_status status), void *ctx) {
+int tendril_msc_check_medium(struct tendril_msc_lun *lun, void (*done)(void *ctx, int status), void *ctx) {
     if (lun->msc->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
     }

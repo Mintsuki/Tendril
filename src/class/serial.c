@@ -1,4 +1,29 @@
-#include "serial_internal.h"
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 /*
  * Serial ports. CDC ACM follows the CDC PSTN subclass specification revision
@@ -9,24 +34,373 @@
  * handled in serial_ftdi.c and serial_pl2303.c.
  */
 
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uslcom.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * Copyright (c) 2006 Jonathan Gray <jsg@openbsd.org>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uftdi.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2000 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lennart Augustsson (lennart@augustsson.net).
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/quirk/usb_quirk.h
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/serial/umodem.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * Copyright (c) 2003 M. Warner Losh <imp@FreeBSD.org>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Copyright (c) 1998 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lennart Augustsson (lennart@augustsson.net) at
+ * Carlstedt Research & Technology.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uchcom.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2007, Takanori Watanabe
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Copyright (c) 2007 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Takuya SHIOZAKI (tshiozak@netbsd.org).
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uplcom.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2001-2003, 2005 Shunsuke Akiyama <akiyama@jp.FreeBSD.org>.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Copyright (c) 2001 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Ichiro FUKUHARA (ichiro@ichiro.org).
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/usbdevs (commit
+ * dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * Copyright (c) 1998-2004 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lennart Augustsson (lennart@augustsson.net) at
+ * Carlstedt Research & Technology.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/quirk/usb_quirk.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
+ * Copyright (c) 1998 Lennart Augustsson. All rights reserved.
+ * Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+#include "serial_internal.h"
+
 #define CTRL_TIMEOUT_MS 5000
 #define RETRY_MS 20
 #define MAX_ERRORS 50
+/* BEGIN FreeBSD sys/dev/usb/serial/uslcom.c */
 /* CP210x parts have no status endpoint; FreeBSD's uslcom.c (ISC) asks them four times a second. */
 #define CP210X_POLL_MS 250
+/* END FreeBSD sys/dev/usb/serial/uslcom.c */
+/* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
 #define SKIP_BY_NAME 0xff
+/* END FreeBSD sys/dev/usb/serial/uftdi.c */
 
 #define LINE_STATES (TENDRIL_SERIAL_DCD | TENDRIL_SERIAL_DSR | TENDRIL_SERIAL_RI | TENDRIL_SERIAL_CTS)
 
-/* CDC PSTN 1.2 */
+/* CDC 1.2 and CDC PSTN 1.2 */
 #define CDC_SUBCLASS_ACM 0x02
+#define CDC_PROTOCOL_NONE 0x00
+#define CDC_PROTOCOL_AT 0x01
+#define CDC_CALL_MANAGEMENT 0x01
+#define CDC_ACM 0x02
 #define CDC_UNION 0x06
+#define CM_HANDLES 0x01
+#define CM_OVER_DATA 0x02
+#define ACM_COMM_FEATURE 0x01
+#define ACM_BREAK 0x04
+#define ACM_SET_COMM_FEATURE 0x02
 #define ACM_SET_LINE_CODING 0x20
 #define ACM_SET_CONTROL_LINE_STATE 0x22
 #define ACM_SEND_BREAK 0x23
 #define ACM_SERIAL_STATE 0x20
+#define ACM_ABSTRACT_STATE 0x01
+#define ACM_DATA_MULTIPLEXED 0x0002
+#define ANY 0xffff
+
+/* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.h, sys/dev/usb/serial/umodem.c */
+/*
+ * FreeBSD's UQ_ASSUME_CM_OVER_DATA and UQ_IGNORE_CDC_CM
+ * (sys/dev/usb/quirk/usb_quirk.h, BSD-2-Clause), handled as its
+ * sys/dev/usb/serial/umodem.c (BSD-2-Clause) does.
+ */
+#define SQ_ASSUME_CM_OVER_DATA ((uint32_t)1 << 0)
+#define SQ_IGNORE_CDC_CM ((uint32_t)1 << 1)
+/* END FreeBSD sys/dev/usb/quirk/usb_quirk.h, sys/dev/usb/serial/umodem.c */
 
 /* CH34x */
+/* BEGIN FreeBSD sys/dev/usb/serial/uchcom.c */
 #define CH_GET_VERSION 0x5f
 #define CH_READ_REG 0x95
 #define CH_WRITE_REG 0x9a
@@ -56,11 +430,10 @@
 #define CH_VERSION_20 0x20
 #define CH_INTR_STAT 2
 #define CH_INTR_MIN 4
+/* END FreeBSD sys/dev/usb/serial/uchcom.c */
 
-enum ch_chip {
-    CH_341,
-    CH_343
-};
+#define CH_341 0
+#define CH_343 1
 
 /* CP210x */
 #define CP_IFC_ENABLE 0x00
@@ -79,10 +452,13 @@ struct serial_id {
     uint16_t vendor;
     uint16_t product;
     uint8_t kind;
+    /* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
     /* FTDI interfaces left for JTAG use, one bit each, or SKIP_BY_NAME, as in FreeBSD's uftdi.c. */
     uint8_t skip;
+    /* END FreeBSD sys/dev/usb/serial/uftdi.c */
 };
 
+/* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c, uplcom.c, uchcom.c, uslcom.c, sys/dev/usb/usbdevs */
 /*
  * From the ID tables of FreeBSD's sys/dev/usb/serial/uftdi.c, uplcom.c, and
  * uchcom.c (BSD-2-Clause) and uslcom.c (ISC license), naming the IDs as its
@@ -953,6 +1329,59 @@ static const struct serial_id serial_ids[] = {
     { 0xdeee, 0x0302, TENDRIL_SERIAL_FTDI, 0 }, /* EVOLUTION HYBRID */
     { 0xdeee, 0x0303, TENDRIL_SERIAL_FTDI, 0 }, /* EVOLUTION RCM4 */
 };
+/* END FreeBSD sys/dev/usb/serial/uftdi.c, uplcom.c, uchcom.c, uslcom.c, sys/dev/usb/usbdevs */
+
+/* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs */
+/*
+ * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c (BSD-2-Clause), naming the IDs as
+ * its sys/dev/usb/usbdevs (BSD-2-Clause) does.
+ */
+static const struct tendril_id_quirk serial_quirks[] = {
+    { 0x0870, 0x0001, 0x0100, 0x0100, SQ_ASSUME_CM_OVER_DATA }, /* METRICOM RICOCHET_GS */
+    { 0x0474, 0x0701, 0x0000, 0x0000, SQ_ASSUME_CM_OVER_DATA }, /* SANYO SCP4900 */
+    { 0x22b8, 0x2822, 0x0001, 0x0001, SQ_ASSUME_CM_OVER_DATA }, /* MOTOROLA2 T720C */
+    { 0x0734, 0x4905, 0x0100, 0x0100, SQ_ASSUME_CM_OVER_DATA }, /* EICON DIVA852 */
+    { 0x0681, 0x0034, 0x0000, 0x0000, SQ_ASSUME_CM_OVER_DATA }, /* SIEMENS2 ES75 */
+    { 0x1004, 0x6000, 0x0000, 0xffff, SQ_ASSUME_CM_OVER_DATA }, /* QUALCOMM CDMA_MSM */
+    { 0x05c6, 0x3196, 0x0000, 0xffff, SQ_ASSUME_CM_OVER_DATA }, /* QUALCOMM2 CDMA_MSM */
+    { 0x106c, 0x3711, 0x0000, 0xffff, SQ_ASSUME_CM_OVER_DATA }, /* CURITEL UM150 */
+    { 0x106c, 0x3714, 0x0000, 0xffff, SQ_ASSUME_CM_OVER_DATA }, /* CURITEL UM175 */
+    { 0x1fe7, 0x0100, 0x0000, 0xffff, SQ_ASSUME_CM_OVER_DATA }, /* VERTEX VW110L */
+    { 0x13ad, 0xf019, 0x0000, 0xffff, SQ_IGNORE_CDC_CM }, /* BALTECH SMARTCARDREADER */
+};
+/* END FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs */
+
+struct acm_id {
+    uint16_t vendor;
+    uint16_t product;
+    uint16_t class;
+    uint16_t subclass;
+    uint16_t protocol;
+};
+
+/* BEGIN FreeBSD sys/dev/usb/serial/umodem.c, sys/dev/usb/usbdevs */
+/*
+ * The interfaces FreeBSD's umodem.c drives (umodem_dual_devs[] and
+ * umodem_host_devs[]), ANY matching every value, naming the IDs as its
+ * usbdevs does. Left out is its Huawei match for the vendor-specific CDC ACM
+ * protocol, which its sys/dev/usb/net/if_urndis.c (ISC license) wins.
+ */
+static const struct acm_id acm_ids[] = {
+    { ANY, ANY, TENDRIL_CLASS_CDC, CDC_SUBCLASS_ACM, CDC_PROTOCOL_AT },
+    { ANY, ANY, TENDRIL_CLASS_CDC, CDC_SUBCLASS_ACM, CDC_PROTOCOL_NONE },
+    { 0x12d1, ANY, TENDRIL_CLASS_VENDOR, 0x02, 0x01 }, /* HUAWEI */
+    { 0x12d1, ANY, TENDRIL_CLASS_VENDOR, 0x02, 0x02 }, /* HUAWEI */
+    { 0x12d1, ANY, TENDRIL_CLASS_VENDOR, 0x02, 0x10 }, /* HUAWEI */
+    { 0x12d1, ANY, TENDRIL_CLASS_VENDOR, 0x02, 0x12 }, /* HUAWEI */
+    { 0x12d1, ANY, TENDRIL_CLASS_VENDOR, 0x02, 0x61 }, /* HUAWEI */
+    { 0x12d1, ANY, TENDRIL_CLASS_VENDOR, 0x02, 0x62 }, /* HUAWEI */
+    { 0x12d1, ANY, TENDRIL_CLASS_VENDOR, 0x0f, 0xff }, /* HUAWEI */
+    { 0x0482, 0x0203, ANY, ANY, ANY }, /* KYOCERA AHK3001V */
+    { 0x1199, 0x0218, ANY, ANY, ANY }, /* SIERRA MC5720 */
+    { 0x106c, 0x3701, ANY, ANY, ANY }, /* CURITEL PC5740 */
+    { 0x0416, 0x5011, ANY, ANY, ANY }, /* WINBOND CDC */
+};
+/* END FreeBSD sys/dev/usb/serial/umodem.c, sys/dev/usb/usbdevs */
 
 static const struct tendril_serial_callbacks *callbacks;
 
@@ -982,8 +1411,8 @@ void serial_deliver(struct tendril_serial *port, const uint8_t *data, size_t len
     }
 }
 
-static struct serial_op *op_new(void (*done)(void *, enum tendril_status), void *ctx) {
-    struct serial_op *op = tendril_zalloc(sizeof(*op));
+static struct serial_op *op_new(void (*done)(void *, int), void *ctx) {
+    struct serial_op *op = tendril_zalloc(sizeof(struct serial_op));
     if (op != NULL) {
         op->done = done;
         op->ctx = ctx;
@@ -991,8 +1420,10 @@ static struct serial_op *op_new(void (*done)(void *, enum tendril_status), void 
     return op;
 }
 
-void serial_op_add(struct serial_op *op, uint8_t type, uint8_t request, uint16_t value, uint16_t index,
-                   const void *data, uint16_t length) {
+void serial_op_add(
+    struct serial_op *op, uint8_t type, uint8_t request, uint16_t value, uint16_t index, const void *data,
+    uint16_t length
+) {
     if (op->count >= MAX_REQS || length > sizeof(op->reqs[0].data)) {
         op->status = TENDRIL_ERR_INVALID;
         return;
@@ -1010,7 +1441,7 @@ void serial_op_add(struct serial_op *op, uint8_t type, uint8_t request, uint16_t
 
 static void op_kick(struct tendril_serial *port);
 
-static void op_request_done(struct tendril_serial *port, enum tendril_status st) {
+static void op_request_done(struct tendril_serial *port, int st) {
     struct serial_op *op = port->op;
     if (st == TENDRIL_ERR_SHORT) {
         st = TENDRIL_OK;
@@ -1061,7 +1492,7 @@ static void op_kick(struct tendril_serial *port) {
             xfer->timeout_ms = CTRL_TIMEOUT_MS;
             xfer->callback = ctrl_done;
             xfer->context = port;
-            enum tendril_status st = tendril_transfer_submit(xfer);
+            int st = tendril_transfer_submit(xfer);
             if (st == TENDRIL_OK) {
                 break;
             }
@@ -1069,10 +1500,10 @@ static void op_kick(struct tendril_serial *port) {
             continue;
         }
         port->op = NULL;
-        enum tendril_status st = port->stopped ? TENDRIL_ERR_NO_DEVICE : op->status;
-        void (*done)(void *, enum tendril_status) = op->done;
+        int st = port->stopped ? TENDRIL_ERR_NO_DEVICE : op->status;
+        void (*done)(void *, int) = op->done;
         void *ctx = op->ctx;
-        tendril_free(op, sizeof(*op));
+        tendril_free(op, sizeof(struct serial_op));
         if (done != NULL) {
             done(ctx, st);
         }
@@ -1080,10 +1511,10 @@ static void op_kick(struct tendril_serial *port) {
     port->in_kick = false;
 }
 
-static enum tendril_status op_queue(struct tendril_serial *port, struct serial_op *op) {
-    enum tendril_status st = op->status;
+static int op_queue(struct tendril_serial *port, struct serial_op *op) {
+    int st = op->status;
     if (st != TENDRIL_OK) {
-        tendril_free(op, sizeof(*op));
+        tendril_free(op, sizeof(struct serial_op));
         return st;
     }
     list_add_tail(&port->ops, &op->node);
@@ -1104,20 +1535,33 @@ static void acm_line(struct tendril_serial *port, struct serial_op *op) {
 }
 
 static void acm_lines(struct tendril_serial *port, struct serial_op *op) {
-    serial_op_add(op, REQ_CLASS_OUT, ACM_SET_CONTROL_LINE_STATE, (uint16_t)((port->dtr ? 1 : 0) | (port->rts ? 2 : 0)),
-           port->ctrl_intf->number, NULL, 0);
+    serial_op_add(
+        op, REQ_CLASS_OUT, ACM_SET_CONTROL_LINE_STATE, (uint16_t)((port->dtr ? 1 : 0) | (port->rts ? 2 : 0)),
+        port->ctrl_intf->number, NULL, 0
+    );
 }
 
 static void acm_break(struct tendril_serial *port, struct serial_op *op) {
+    /* BEGIN FreeBSD sys/dev/usb/serial/umodem.c */
+    /* FreeBSD's umodem.c sends no break to a device without SendBreak in its capabilities. */
+    if (!(port->acm_caps & ACM_BREAK)) {
+        op->status = TENDRIL_ERR_UNSUPPORTED;
+        return;
+    }
+    /* END FreeBSD sys/dev/usb/serial/umodem.c */
     serial_op_add(op, REQ_CLASS_OUT, ACM_SEND_BREAK, port->in_break ? 0xffff : 0, port->ctrl_intf->number, NULL, 0);
 }
 
 /* CH34x */
 
-static void ch_write_reg(struct tendril_serial *port, struct serial_op *op, uint8_t reg1, uint8_t val1, uint8_t reg2,
-                         uint8_t val2) {
-    serial_op_add(op, REQ_VENDOR_OUT, port->chip == CH_343 ? CH343_WRITE_REG : CH_WRITE_REG, (uint16_t)(reg1 | reg2 << 8),
-           (uint16_t)(val1 | val2 << 8), NULL, 0);
+/* BEGIN FreeBSD sys/dev/usb/serial/uchcom.c */
+static void ch_write_reg(
+    struct tendril_serial *port, struct serial_op *op, uint8_t reg1, uint8_t val1, uint8_t reg2, uint8_t val2
+) {
+    serial_op_add(
+        op, REQ_VENDOR_OUT, port->chip == CH_343 ? CH343_WRITE_REG : CH_WRITE_REG, (uint16_t)(reg1 | reg2 << 8),
+        (uint16_t)(val1 | val2 << 8), NULL, 0
+    );
 }
 
 static void ch_line(struct tendril_serial *port, struct serial_op *op) {
@@ -1173,7 +1617,7 @@ static void ch_lines(struct tendril_serial *port, struct serial_op *op) {
     }
 }
 
-static void ch_break_after(struct tendril_serial *port, struct serial_op *op, unsigned index, enum tendril_status st) {
+static void ch_break_after(struct tendril_serial *port, struct serial_op *op, size_t index, int st) {
     if (index != 0 || st != TENDRIL_OK) {
         return;
     }
@@ -1198,9 +1642,11 @@ static void ch_break(struct tendril_serial *port, struct serial_op *op) {
     serial_op_add(op, REQ_VENDOR_IN, CH_READ_REG, CH_REG_BREAK1 | CH_REG_LCR1 << 8, 0, NULL, 8);
     op->after = ch_break_after;
 }
+/* END FreeBSD sys/dev/usb/serial/uchcom.c */
 
 /* CP210x */
 
+/* BEGIN FreeBSD sys/dev/usb/serial/uslcom.c */
 static void cp_line(struct tendril_serial *port, struct serial_op *op) {
     const struct tendril_serial_config *c = &port->config;
     uint8_t rate[4];
@@ -1209,8 +1655,10 @@ static void cp_line(struct tendril_serial *port, struct serial_op *op) {
 
     put_le32(rate, c->baud);
     serial_op_add(op, REQ_VENDOR_IFACE_OUT, CP_SET_BAUDRATE, 0, iface, rate, sizeof(rate));
-    serial_op_add(op, REQ_VENDOR_IFACE_OUT, CP_SET_LINE_CTL, (uint16_t)(c->stop_bits | c->parity << 4 | c->data_bits << 8),
-           iface, NULL, 0);
+    serial_op_add(
+        op, REQ_VENDOR_IFACE_OUT, CP_SET_LINE_CTL, (uint16_t)(c->stop_bits | c->parity << 4 | c->data_bits << 8),
+        iface, NULL, 0
+    );
     /* AN571 revision 0.4, table 9: the handshake word and the flow replacement word, then thresholds left at zero. */
     put_le32(flow, (port->dtr ? CP_DTR_ACTIVE : 0) | (c->rtscts ? CP_CTS_HANDSHAKE : 0));
     put_le32(flow + 4, c->rtscts ? CP_RTS_HANDSHAKE : (port->rts ? CP_RTS_ACTIVE : 0));
@@ -1230,15 +1678,17 @@ static void cp_break(struct tendril_serial *port, struct serial_op *op) {
     serial_op_add(op, REQ_VENDOR_IFACE_OUT, CP_SET_BREAK, port->in_break ? 1 : 0, port->intf->number, NULL, 0);
 }
 
-static void cp_status_after(struct tendril_serial *port, struct serial_op *op, unsigned index, enum tendril_status st) {
+static void cp_status_after(struct tendril_serial *port, struct serial_op *op, size_t index, int st) {
     (void)index;
     port->poll_queued = false;
     if (st == TENDRIL_OK) {
         uint8_t m = op->reqs[0].data[0];
-        serial_status_update(port, ((m & 0x10) ? TENDRIL_SERIAL_CTS : 0) | ((m & 0x20) ? TENDRIL_SERIAL_DSR : 0) |
-                                ((m & 0x40) ? TENDRIL_SERIAL_RI : 0) | ((m & 0x80) ? TENDRIL_SERIAL_DCD : 0));
+        uint32_t status = ((m & 0x10) ? TENDRIL_SERIAL_CTS : 0) | ((m & 0x20) ? TENDRIL_SERIAL_DSR : 0)
+            | ((m & 0x40) ? TENDRIL_SERIAL_RI : 0) | ((m & 0x80) ? TENDRIL_SERIAL_DCD : 0);
+        serial_status_update(port, status);
     }
 }
+/* END FreeBSD sys/dev/usb/serial/uslcom.c */
 
 /* Line settings by kind */
 
@@ -1319,7 +1769,7 @@ static void build_break(struct tendril_serial *port, struct serial_op *op) {
 
 /* Receiving */
 
-static void rx_submit(struct tendril_serial *port, unsigned i);
+static void rx_submit(struct tendril_serial *port, size_t i);
 
 static void schedule_retry(struct tendril_serial *port) {
     hc_lock(port->hc);
@@ -1329,8 +1779,8 @@ static void schedule_retry(struct tendril_serial *port) {
 
 static void rx_done(struct tendril_transfer *xfer) {
     struct tendril_serial *port = xfer->context;
-    unsigned i = (unsigned)(xfer - port->rx);
-    enum tendril_status st = xfer->status;
+    size_t i = (size_t)(xfer - port->rx);
+    int st = xfer->status;
 
     if (port->stopped || st == TENDRIL_ERR_NO_DEVICE || st == TENDRIL_ERR_CANCELLED) {
         return;
@@ -1350,28 +1800,28 @@ static void rx_done(struct tendril_transfer *xfer) {
         return;
     }
     if (++port->rx_errors > MAX_ERRORS) {
-        LOG_WARN("tendril: serial: receiving keeps failing (%s), giving up", tendril_status_str(st));
+        LOG_WARN("serial: receiving keeps failing (%s), giving up", tendril_status_str(st));
         return;
     }
     if (st == TENDRIL_ERR_STALL) {
         tendril_endpoint_clear_halt(port->in_ep, NULL, NULL);
     }
-    port->rx_idle |= 1u << i;
+    port->rx_idle |= (uint32_t)1 << i;
     schedule_retry(port);
 }
 
-static void rx_submit(struct tendril_serial *port, unsigned i) {
+static void rx_submit(struct tendril_serial *port, size_t i) {
     struct tendril_transfer *xfer = &port->rx[i];
     tendril_transfer_init(xfer, port->in_ep);
     xfer->buffer = port->rx_buf[i];
     xfer->length = port->rx_size;
     xfer->callback = rx_done;
     xfer->context = port;
-    enum tendril_status st = tendril_transfer_submit(xfer);
+    int st = tendril_transfer_submit(xfer);
     if (st == TENDRIL_ERR_NO_DEVICE) {
         port->stopped = true;
     } else if (st != TENDRIL_OK) {
-        port->rx_idle |= 1u << i;
+        port->rx_idle |= (uint32_t)1 << i;
         schedule_retry(port);
     }
 }
@@ -1382,7 +1832,7 @@ static void intr_submit(struct tendril_serial *port);
 
 static void intr_done(struct tendril_transfer *xfer) {
     struct tendril_serial *port = xfer->context;
-    enum tendril_status st = xfer->status;
+    int st = xfer->status;
     const uint8_t *b = port->intr_buf;
     size_t n = xfer->actual;
 
@@ -1404,7 +1854,7 @@ static void intr_done(struct tendril_transfer *xfer) {
         case TENDRIL_SERIAL_ACM: {
             /* A notification header, then for SerialState two bytes laid out as the status bits here. */
             if (n >= 10 && b[1] == ACM_SERIAL_STATE) {
-                serial_status_update(port, b[8] & 0x7fu);
+                serial_status_update(port, b[8] & (uint32_t)0x7f);
             }
             break;
         }
@@ -1413,12 +1863,15 @@ static void intr_done(struct tendril_transfer *xfer) {
             break;
         }
         case TENDRIL_SERIAL_CH34X: {
+            /* BEGIN FreeBSD sys/dev/usb/serial/uchcom.c */
             if (n >= CH_INTR_MIN) {
                 /* Active-low CTS, DSR, RI, and DCD in the low nibble. */
                 uint8_t s = (uint8_t)~b[port->chip == CH_343 ? n - 1 : CH_INTR_STAT];
-                serial_status_update(port, ((s & 1) ? TENDRIL_SERIAL_CTS : 0) | ((s & 2) ? TENDRIL_SERIAL_DSR : 0) |
-                                        ((s & 4) ? TENDRIL_SERIAL_RI : 0) | ((s & 8) ? TENDRIL_SERIAL_DCD : 0));
+                uint32_t status = ((s & 1) ? TENDRIL_SERIAL_CTS : 0) | ((s & 2) ? TENDRIL_SERIAL_DSR : 0)
+                    | ((s & 4) ? TENDRIL_SERIAL_RI : 0) | ((s & 8) ? TENDRIL_SERIAL_DCD : 0);
+                serial_status_update(port, status);
             }
+            /* END FreeBSD sys/dev/usb/serial/uchcom.c */
             break;
         }
         default: {
@@ -1437,7 +1890,7 @@ static void intr_submit(struct tendril_serial *port) {
     xfer->length = MIN((size_t)port->intr_ep->max_packet, sizeof(port->intr_buf));
     xfer->callback = intr_done;
     xfer->context = port;
-    enum tendril_status st = tendril_transfer_submit(xfer);
+    int st = tendril_transfer_submit(xfer);
     if (st == TENDRIL_ERR_NO_DEVICE) {
         port->stopped = true;
     } else if (st != TENDRIL_OK) {
@@ -1451,9 +1904,9 @@ static void timer_work(struct tendril_work *work) {
     if (port->stopped || !port->attached || port->suspended) {
         return;
     }
-    for (unsigned i = 0; i < RX_BUFS; i++) {
-        if (port->rx_idle & (1u << i)) {
-            port->rx_idle &= ~(1u << i);
+    for (size_t i = 0; i < RX_BUFS; i++) {
+        if (port->rx_idle & ((uint32_t)1 << i)) {
+            port->rx_idle &= ~((uint32_t)1 << i);
             rx_submit(port, i);
         }
     }
@@ -1461,6 +1914,7 @@ static void timer_work(struct tendril_work *work) {
         port->intr_idle = false;
         intr_submit(port);
     }
+    /* BEGIN FreeBSD sys/dev/usb/serial/uslcom.c */
     if (port->kind == TENDRIL_SERIAL_CP210X && !port->poll_queued && !port->stopped) {
         struct serial_op *op = op_new(NULL, NULL);
         if (op != NULL) {
@@ -1475,6 +1929,7 @@ static void timer_work(struct tendril_work *work) {
         }
         hc_unlock(port->hc);
     }
+    /* END FreeBSD sys/dev/usb/serial/uslcom.c */
 }
 
 /* Writing */
@@ -1484,7 +1939,7 @@ static void tx_kick(struct tendril_serial *port);
 static void tx_done(struct tendril_transfer *xfer) {
     struct tendril_serial *port = xfer->context;
     struct serial_write *w = port->writing;
-    enum tendril_status st = xfer->status;
+    int st = xfer->status;
 
     port->writing = NULL;
     if (st == TENDRIL_ERR_STALL) {
@@ -1493,7 +1948,7 @@ static void tx_done(struct tendril_transfer *xfer) {
     if (w->done != NULL) {
         w->done(w->ctx, st);
     }
-    tendril_free(w, sizeof(*w));
+    tendril_free(w, sizeof(struct serial_write));
     tx_kick(port);
 }
 
@@ -1501,7 +1956,7 @@ static void tx_kick(struct tendril_serial *port) {
     while (port->writing == NULL && !list_empty(&port->writes) && (!port->suspended || port->stopped)) {
         struct serial_write *w = CONTAINER_OF(port->writes.next, struct serial_write, node);
         list_del(&w->node);
-        enum tendril_status st = port->stopped ? TENDRIL_ERR_NO_DEVICE : TENDRIL_OK;
+        int st = port->stopped ? TENDRIL_ERR_NO_DEVICE : TENDRIL_OK;
         if (st == TENDRIL_OK) {
             struct tendril_transfer *xfer = &port->tx;
             port->writing = w;
@@ -1519,7 +1974,7 @@ static void tx_kick(struct tendril_serial *port) {
         if (w->done != NULL) {
             w->done(w->ctx, st);
         }
-        tendril_free(w, sizeof(*w));
+        tendril_free(w, sizeof(struct serial_write));
     }
 }
 
@@ -1527,24 +1982,25 @@ static void tx_kick(struct tendril_serial *port) {
 
 static struct tendril_driver serial_driver;
 
-static void port_ready(void *ctx, enum tendril_status st) {
+static void port_ready(void *ctx, int st) {
     struct tendril_serial *port = ctx;
     if (port->stopped || st == TENDRIL_ERR_NO_DEVICE) {
         return;
     }
     if (st != TENDRIL_OK) {
-        LOG_WARN("tendril: serial: setting up interface %u failed: %s", port->intf->number, tendril_status_str(st));
+        LOG_WARN("serial: setting up interface %u failed: %s", port->intf->number, tendril_status_str(st));
     }
     port->attached = true;
-    LOG_INFO("tendril: serial: interface %u ready (%s)", port->intf->number,
-             port->kind == TENDRIL_SERIAL_ACM ? "CDC ACM" :
-             port->kind == TENDRIL_SERIAL_FTDI ? "FTDI" :
-             port->kind == TENDRIL_SERIAL_PL2303 ? "PL2303" :
-             port->kind == TENDRIL_SERIAL_CH34X ? "CH34x" : "CP210x");
+    const char *kind = port->kind == TENDRIL_SERIAL_ACM ? "CDC ACM"
+        : port->kind == TENDRIL_SERIAL_FTDI ? "FTDI"
+        : port->kind == TENDRIL_SERIAL_PL2303 ? "PL2303"
+        : port->kind == TENDRIL_SERIAL_CH34X ? "CH34x"
+        : "CP210x";
+    LOG_INFO("serial: interface %u ready (%s)", port->intf->number, kind);
     if (callbacks->attach != NULL) {
         callbacks->attach(port);
     }
-    for (unsigned i = 0; i < RX_BUFS && !port->stopped; i++) {
+    for (size_t i = 0; i < RX_BUFS && !port->stopped; i++) {
         rx_submit(port, i);
     }
     if (port->intr_ep != NULL && !port->stopped) {
@@ -1558,7 +2014,8 @@ static void port_ready(void *ctx, enum tendril_status st) {
     tx_kick(port);
 }
 
-static void ch_version_after(struct tendril_serial *port, struct serial_op *op, unsigned index, enum tendril_status st) {
+/* BEGIN FreeBSD sys/dev/usb/serial/uchcom.c */
+static void ch_version_after(struct tendril_serial *port, struct serial_op *op, size_t index, int st) {
     if (index != 0) {
         return;
     }
@@ -1572,8 +2029,9 @@ static void ch_version_after(struct tendril_serial *port, struct serial_op *op, 
     ch_line(port, op);
     ch_lines(port, op);
 }
+/* END FreeBSD sys/dev/usb/serial/uchcom.c */
 
-static enum tendril_status port_setup(struct tendril_serial *port) {
+static int port_setup(struct tendril_serial *port) {
     struct serial_op *op = op_new(port_ready, port);
     if (op == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
@@ -1581,6 +2039,17 @@ static enum tendril_status port_setup(struct tendril_serial *port) {
     op->tolerant = true;
     switch (port->kind) {
         case TENDRIL_SERIAL_ACM: {
+            /* BEGIN FreeBSD sys/dev/usb/serial/umodem.c */
+            /* Call management multiplexed over the data interface (CDC PSTN 1.2, 6.3.1), as umodem.c asks for. */
+            if (!(port->quirks & SQ_ASSUME_CM_OVER_DATA) && (port->cm_caps & CM_OVER_DATA)
+             && (port->acm_caps & ACM_COMM_FEATURE)) {
+                static const uint8_t state[2] = { ACM_DATA_MULTIPLEXED & 0xff, ACM_DATA_MULTIPLEXED >> 8 };
+                serial_op_add(
+                    op, REQ_CLASS_OUT, ACM_SET_COMM_FEATURE, ACM_ABSTRACT_STATE, port->ctrl_intf->number, state,
+                    sizeof(state)
+                );
+            }
+            /* END FreeBSD sys/dev/usb/serial/umodem.c */
             acm_line(port, op);
             acm_lines(port, op);
             break;
@@ -1594,8 +2063,10 @@ static enum tendril_status port_setup(struct tendril_serial *port) {
             break;
         }
         case TENDRIL_SERIAL_CH34X: {
+            /* BEGIN FreeBSD sys/dev/usb/serial/uchcom.c */
             serial_op_add(op, REQ_VENDOR_IN, CH_GET_VERSION, 0, 0, NULL, 8);
             op->after = ch_version_after;
+            /* END FreeBSD sys/dev/usb/serial/uchcom.c */
             break;
         }
         default: {
@@ -1619,19 +2090,69 @@ static const struct serial_id *lookup_id(struct tendril_device *dev) {
     return NULL;
 }
 
-/* The data interface a CDC union names, or failing that the next one. */
-static struct tendril_interface *acm_data_interface(struct tendril_interface *intf) {
-    struct tendril_device *dev = intf->dev;
+static bool acm_match(struct tendril_device *dev, const struct tendril_interface_descriptor *id) {
+    uint16_t vendor = tendril_le16(dev->desc.vendor_id);
+    uint16_t product = tendril_le16(dev->desc.product_id);
+    for (size_t i = 0; i < ARRAY_SIZE(acm_ids); i++) {
+        const struct acm_id *a = &acm_ids[i];
+        if ((a->vendor == ANY || a->vendor == vendor) && (a->product == ANY || a->product == product)
+         && (a->class == ANY || a->class == id->interface_class)
+         && (a->subclass == ANY || a->subclass == id->interface_subclass)
+         && (a->protocol == ANY || a->protocol == id->interface_protocol)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* The interface's first CDC functional descriptor of a subtype, if at least `length` bytes long. */
+static const uint8_t *cdc_descriptor(struct tendril_interface *intf, uint8_t subtype, uint8_t length) {
     size_t size;
     const uint8_t *p = tendril_interface_descriptors(intf, &size);
     const uint8_t *end = p + size;
     for (const uint8_t *q = tendril_desc_next(p, end); q != NULL; q = tendril_desc_next(q, end)) {
-        if (q[1] == TENDRIL_DT_CS_INTERFACE && q[0] >= 5 && q[2] == CDC_UNION) {
-            return tendril_device_find_interface(dev, q[4]);
+        if (q[1] == TENDRIL_DT_CS_INTERFACE && q[0] >= 3 && q[2] == subtype) {
+            return q[0] >= length ? q : NULL;
         }
     }
-    return tendril_device_find_interface(dev, (uint8_t)(intf->number + 1));
+    return NULL;
 }
+
+/* BEGIN FreeBSD sys/dev/usb/serial/umodem.c */
+/*
+ * The data interface, as FreeBSD's umodem.c finds it: the one the Call
+ * Management functional descriptor names, else the first subordinate of the
+ * Union one (CDC PSTN 1.2, 5.3.1; CDC 1.2, 5.2.3.2), else a neighbour, the
+ * one after winning unless only the one before is a CDC data interface.
+ */
+static struct tendril_interface *acm_data_interface(struct tendril_interface *intf, uint32_t quirks) {
+    struct tendril_device *dev = intf->dev;
+    const uint8_t *cm = (quirks & SQ_IGNORE_CDC_CM) ? NULL : cdc_descriptor(intf, CDC_CALL_MANAGEMENT, 5);
+    if (cm != NULL) {
+        return tendril_device_find_interface(dev, cm[4]);
+    }
+    const uint8_t *un = cdc_descriptor(intf, CDC_UNION, 5);
+    if (un != NULL) {
+        return tendril_device_find_interface(dev, un[4]);
+    }
+    size_t index = (size_t)(intf - dev->interfaces);
+    struct tendril_interface *found = NULL;
+    bool found_data = false;
+    for (size_t k = 0; k < 2; k++) {
+        if ((k == 0 && index == 0) || (k == 1 && index + 1 >= dev->num_interfaces)) {
+            continue;
+        }
+        struct tendril_interface *n = &dev->interfaces[k == 0 ? index - 1 : index + 1];
+        const struct tendril_interface_descriptor *nd = tendril_interface_descriptor(n);
+        bool data = nd->interface_class == TENDRIL_CLASS_CDC_DATA && nd->interface_subclass == 0;
+        if (data || !found_data) {
+            found = n;
+            found_data = found_data || data;
+        }
+    }
+    return found;
+}
+/* END FreeBSD sys/dev/usb/serial/umodem.c */
 
 static bool data_endpoints(struct tendril_serial *port) {
     port->in_ep = tendril_interface_find_endpoint(port->intf, TENDRIL_ENDPOINT_XFER_BULK, TENDRIL_DIR_IN);
@@ -1640,17 +2161,17 @@ static bool data_endpoints(struct tendril_serial *port) {
 }
 
 static void port_free(struct tendril_serial *port) {
-    for (unsigned i = 0; i < RX_BUFS; i++) {
+    for (size_t i = 0; i < RX_BUFS; i++) {
         tendril_free(port->rx_buf[i], port->rx_size);
     }
-    tendril_free(port, sizeof(*port));
+    tendril_free(port, sizeof(struct tendril_serial));
 }
 
-static void alt_done(void *ctx, enum tendril_status st) {
+static void alt_done(void *ctx, int st) {
     struct tendril_serial *port = ctx;
     if (port->stopped || st != TENDRIL_OK || !data_endpoints(port)) {
         if (st != TENDRIL_ERR_NO_DEVICE && !port->stopped) {
-            LOG_WARN("tendril: serial: no data endpoints on interface %u", port->intf->number);
+            LOG_WARN("serial: no data endpoints on interface %u", port->intf->number);
         }
         port->stopped = true;
         return;
@@ -1663,36 +2184,34 @@ static bool serial_probe(struct tendril_interface *intf) {
     struct tendril_device *dev = intf->dev;
     const struct serial_id *e = lookup_id(dev);
     struct tendril_interface *data = intf;
-    enum tendril_serial_kind kind;
+    uint32_t quirks = 0;
+    int kind;
 
     if (e != NULL) {
-        kind = (enum tendril_serial_kind)e->kind;
+        kind = (int)e->kind;
+        /* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
         if (kind == TENDRIL_SERIAL_FTDI && intf->number < 8) {
-            bool skip = e->skip != SKIP_BY_NAME ? (e->skip & (1u << intf->number)) != 0
-                                                : intf->number == 0 && dev->product != NULL &&
-                                                      tendril_strlen(dev->product) >= 7 &&
-                                                      memcmp(dev->product, "XDS100V", 7) == 0;
+            bool skip = e->skip != SKIP_BY_NAME ? (e->skip & ((uint32_t)1 << intf->number)) != 0
+                : intf->number == 0 && dev->product != NULL && tendril_strlen(dev->product) >= 7
+                && memcmp(dev->product, "XDS100V", 7) == 0;
             if (skip) {
                 /* A JTAG interface, left for whoever drives JTAG. */
                 return false;
             }
         }
-    } else if (id->interface_class == TENDRIL_CLASS_CDC && id->interface_subclass == CDC_SUBCLASS_ACM &&
-               id->interface_protocol != 0xff) {
-        /*
-         * The vendor-specific protocol is RNDIS's, as FreeBSD's sys/dev/usb/serial/umodem.c and
-         * net/if_urndis.c (BSD-2-Clause and ISC licenses) divide them.
-         */
+        /* END FreeBSD sys/dev/usb/serial/uftdi.c */
+    } else if (acm_match(dev, id)) {
         kind = TENDRIL_SERIAL_ACM;
-        data = acm_data_interface(intf);
-        if (data == NULL || data == intf || !tendril_interface_claim(data, &serial_driver)) {
+        quirks = tendril_id_quirks(serial_quirks, ARRAY_SIZE(serial_quirks), &dev->desc);
+        data = acm_data_interface(intf, quirks);
+        if (data == NULL || (data != intf && !tendril_interface_claim(data, &serial_driver))) {
             return false;
         }
     } else {
         return false;
     }
 
-    struct tendril_serial *port = tendril_zalloc(sizeof(*port));
+    struct tendril_serial *port = tendril_zalloc(sizeof(struct tendril_serial));
     if (port == NULL) {
         return false;
     }
@@ -1701,6 +2220,7 @@ static bool serial_probe(struct tendril_interface *intf) {
     port->dev = dev;
     port->hc = dev->hc;
     port->kind = kind;
+    port->quirks = quirks;
     port->config.baud = 115200;
     port->config.data_bits = 8;
     port->config.parity = TENDRIL_SERIAL_PARITY_NONE;
@@ -1714,7 +2234,7 @@ static bool serial_probe(struct tendril_interface *intf) {
     switch (kind) {
         case TENDRIL_SERIAL_FTDI: {
             if (!serial_ftdi_init(port)) {
-                tendril_free(port, sizeof(*port));
+                tendril_free(port, sizeof(struct tendril_serial));
                 return false;
             }
             break;
@@ -1722,6 +2242,7 @@ static bool serial_probe(struct tendril_interface *intf) {
         case TENDRIL_SERIAL_PL2303: {
             serial_pl2303_init(port);
             port->intr_ep = tendril_interface_find_endpoint(intf, TENDRIL_ENDPOINT_XFER_INT, TENDRIL_DIR_IN);
+            /* BEGIN FreeBSD sys/dev/usb/serial/uplcom.c */
             if (!data_endpoints(port) && dev->num_interfaces > 1) {
                 /* Some carry the data on a second interface, as FreeBSD's uplcom.c (BSD-2-Clause) handles. */
                 struct tendril_interface *second = &dev->interfaces[1];
@@ -1729,9 +2250,11 @@ static bool serial_probe(struct tendril_interface *intf) {
                     port->intf = second;
                 }
             }
+            /* END FreeBSD sys/dev/usb/serial/uplcom.c */
             break;
         }
         case TENDRIL_SERIAL_CH34X: {
+            /* BEGIN FreeBSD sys/dev/usb/serial/uchcom.c */
             /* The CH343 and CH9102 put the data on a second interface; FreeBSD's uchcom.c tells them apart by that. */
             port->chip = CH_341;
             port->intr_ep = tendril_interface_find_endpoint(intf, TENDRIL_ENDPOINT_XFER_INT, TENDRIL_DIR_IN);
@@ -1742,9 +2265,17 @@ static bool serial_probe(struct tendril_interface *intf) {
                     port->chip = CH_343;
                 }
             }
+            /* END FreeBSD sys/dev/usb/serial/uchcom.c */
             break;
         }
         case TENDRIL_SERIAL_ACM: {
+            /* BEGIN FreeBSD sys/dev/usb/serial/umodem.c */
+            /* With no Call Management descriptor, umodem.c takes call management over the data interface as given. */
+            const uint8_t *cm = cdc_descriptor(intf, CDC_CALL_MANAGEMENT, 5);
+            const uint8_t *acm = cdc_descriptor(intf, CDC_ACM, 4);
+            port->cm_caps = cm != NULL ? cm[3] : CM_HANDLES | CM_OVER_DATA;
+            port->acm_caps = acm != NULL ? acm[3] : 0;
+            /* END FreeBSD sys/dev/usb/serial/umodem.c */
             port->intr_ep = tendril_interface_find_endpoint(intf, TENDRIL_ENDPOINT_XFER_INT, TENDRIL_DIR_IN);
             break;
         }
@@ -1757,7 +2288,7 @@ static bool serial_probe(struct tendril_interface *intf) {
     bool have = data_endpoints(port);
     size_t mps = have ? port->in_ep->max_packet : 64;
     port->rx_size = MAX(mps, (size_t)64) * 4;
-    for (unsigned i = 0; i < RX_BUFS; i++) {
+    for (size_t i = 0; i < RX_BUFS; i++) {
         port->rx_buf[i] = tendril_zalloc(port->rx_size);
         if (port->rx_buf[i] == NULL) {
             tendril_interface_set_data(intf, NULL);
@@ -1768,9 +2299,9 @@ static bool serial_probe(struct tendril_interface *intf) {
     if (!have && kind == TENDRIL_SERIAL_ACM) {
         /* CDC data interfaces may keep their endpoints in alternate setting 1. */
         struct tendril_interface *d = port->intf;
-        for (unsigned a = 0; a < d->num_alts; a++) {
+        for (size_t a = 0; a < d->num_alts; a++) {
             if (d->alts[a]->num_endpoints >= 2) {
-                enum tendril_status st = tendril_interface_set_alt(d, d->alts[a]->alternate_setting, alt_done, port);
+                int st = tendril_interface_set_alt(d, d->alts[a]->alternate_setting, alt_done, port);
                 if (st != TENDRIL_OK) {
                     port->stopped = true;
                 }
@@ -1779,7 +2310,7 @@ static bool serial_probe(struct tendril_interface *intf) {
         }
     }
     if (!have) {
-        LOG_WARN("tendril: serial: no data endpoints on interface %u", port->intf->number);
+        LOG_WARN("serial: no data endpoints on interface %u", port->intf->number);
         port->stopped = true;
         return true;
     }
@@ -1795,8 +2326,8 @@ static bool serial_suspend(struct tendril_interface *intf) {
         return true;
     }
     /* Still being set up, writing, or changing settings; the modem status poll may finish on its own. */
-    if (!port->attached || port->writing != NULL || !list_empty(&port->writes) || !list_empty(&port->ops) ||
-        (port->op != NULL && !port->poll_queued)) {
+    if (!port->attached || port->writing != NULL || !list_empty(&port->writes) || !list_empty(&port->ops)
+     || (port->op != NULL && !port->poll_queued)) {
         return false;
     }
     port->suspended = true;
@@ -1817,7 +2348,7 @@ static void serial_resume(struct tendril_interface *intf) {
     }
     port->rx_idle = 0;
     port->intr_idle = false;
-    for (unsigned i = 0; i < RX_BUFS && !port->stopped; i++) {
+    for (size_t i = 0; i < RX_BUFS && !port->stopped; i++) {
         rx_submit(port, i);
     }
     if (port->intr_ep != NULL && !port->stopped) {
@@ -1847,7 +2378,7 @@ static void serial_disconnect(struct tendril_interface *intf) {
         if (w->done != NULL) {
             w->done(w->ctx, TENDRIL_ERR_NO_DEVICE);
         }
-        tendril_free(w, sizeof(*w));
+        tendril_free(w, sizeof(struct serial_write));
     }
     op_kick(port);
     if (port->attached && callbacks->detach != NULL) {
@@ -1873,12 +2404,14 @@ void tendril_serial_register(const struct tendril_serial_callbacks *cb) {
 /* Operations */
 
 static bool config_valid(const struct tendril_serial_config *c) {
-    return c->baud != 0 && c->data_bits >= 5 && c->data_bits <= 8 && c->parity <= TENDRIL_SERIAL_PARITY_SPACE &&
-           c->stop_bits <= TENDRIL_SERIAL_STOP_2;
+    return c->baud != 0 && c->data_bits >= 5 && c->data_bits <= 8 && c->parity <= TENDRIL_SERIAL_PARITY_SPACE
+        && c->stop_bits <= TENDRIL_SERIAL_STOP_2;
 }
 
-enum tendril_status tendril_serial_configure(struct tendril_serial *port, const struct tendril_serial_config *config,
-                                           void (*done)(void *ctx, enum tendril_status status), void *ctx) {
+int tendril_serial_configure(
+    struct tendril_serial *port, const struct tendril_serial_config *config, void (*done)(void *ctx, int status),
+    void *ctx
+) {
     if (port->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
     }
@@ -1896,15 +2429,16 @@ enum tendril_status tendril_serial_configure(struct tendril_serial *port, const 
         /* Leaving handshake mode, RTS goes back to what was asked for. */
         cp_lines(port, op);
     }
-    enum tendril_status st = op_queue(port, op);
+    int st = op_queue(port, op);
     if (st != TENDRIL_OK) {
         port->config = old;
     }
     return st;
 }
 
-enum tendril_status tendril_serial_set_lines(struct tendril_serial *port, bool dtr, bool rts,
-                                           void (*done)(void *ctx, enum tendril_status status), void *ctx) {
+int tendril_serial_set_lines(
+    struct tendril_serial *port, bool dtr, bool rts, void (*done)(void *ctx, int status), void *ctx
+) {
     if (port->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
     }
@@ -1918,8 +2452,7 @@ enum tendril_status tendril_serial_set_lines(struct tendril_serial *port, bool d
     return op_queue(port, op);
 }
 
-enum tendril_status tendril_serial_set_break(struct tendril_serial *port, bool on,
-                                           void (*done)(void *ctx, enum tendril_status status), void *ctx) {
+int tendril_serial_set_break(struct tendril_serial *port, bool on, void (*done)(void *ctx, int status), void *ctx) {
     if (port->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
     }
@@ -1932,15 +2465,16 @@ enum tendril_status tendril_serial_set_break(struct tendril_serial *port, bool o
     return op_queue(port, op);
 }
 
-enum tendril_status tendril_serial_write(struct tendril_serial *port, const void *data, size_t len,
-                                       void (*done)(void *ctx, enum tendril_status status), void *ctx) {
+int tendril_serial_write(
+    struct tendril_serial *port, const void *data, size_t len, void (*done)(void *ctx, int status), void *ctx
+) {
     if (port->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
     }
     if (len == 0 || data == NULL) {
         return TENDRIL_ERR_INVALID;
     }
-    struct serial_write *w = tendril_zalloc(sizeof(*w));
+    struct serial_write *w = tendril_zalloc(sizeof(struct serial_write));
     if (w == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
@@ -1957,19 +2491,19 @@ enum tendril_status tendril_serial_write(struct tendril_serial *port, const void
 
 struct sync_wait {
     volatile bool done;
-    enum tendril_status status;
+    int status;
 };
 
-static void sync_done(void *ctx, enum tendril_status st) {
+static void sync_done(void *ctx, int st) {
     struct sync_wait *w = ctx;
     w->status = st;
     w->done = true;
 }
 
-enum tendril_status tendril_serial_configure_sync(struct tendril_serial *port, const struct tendril_serial_config *config) {
+int tendril_serial_configure_sync(struct tendril_serial *port, const struct tendril_serial_config *config) {
     struct tendril_hc *hc = port->hc;
     struct sync_wait w = { false, TENDRIL_OK };
-    enum tendril_status st = tendril_serial_configure(port, config, sync_done, &w);
+    int st = tendril_serial_configure(port, config, sync_done, &w);
     if (st != TENDRIL_OK) {
         return st;
     }
@@ -1977,10 +2511,10 @@ enum tendril_status tendril_serial_configure_sync(struct tendril_serial *port, c
     return w.status;
 }
 
-enum tendril_status tendril_serial_write_sync(struct tendril_serial *port, const void *data, size_t len) {
+int tendril_serial_write_sync(struct tendril_serial *port, const void *data, size_t len) {
     struct tendril_hc *hc = port->hc;
     struct sync_wait w = { false, TENDRIL_OK };
-    enum tendril_status st = tendril_serial_write(port, data, len, sync_done, &w);
+    int st = tendril_serial_write(port, data, len, sync_done, &w);
     if (st != TENDRIL_OK) {
         return st;
     }
@@ -1994,7 +2528,7 @@ struct tendril_device *tendril_serial_device(struct tendril_serial *port) {
     return port->dev;
 }
 
-enum tendril_serial_kind tendril_serial_kind(struct tendril_serial *port) {
+int tendril_serial_kind(struct tendril_serial *port) {
     return port->kind;
 }
 

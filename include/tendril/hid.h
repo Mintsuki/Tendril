@@ -1,3 +1,30 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef TENDRIL_HID_H
 #define TENDRIL_HID_H
 
@@ -98,29 +125,32 @@ struct tendril_hid_report_info {
 
 struct tendril_hid_report_desc {
     struct tendril_hid_field *fields;
-    unsigned num_fields;
+    size_t num_fields;
     struct tendril_hid_report_info *reports;
-    unsigned num_reports;
+    size_t num_reports;
     /* Reports start with a report ID byte. */
     bool numbered;
 };
 
-enum tendril_status tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_report_desc **out);
+int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_report_desc **out);
 void tendril_hid_free(struct tendril_hid_report_desc *rd);
 /* Size in bytes of a report, without its report ID byte. */
 size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, uint8_t type, uint8_t id);
-uint32_t tendril_hid_extract(const uint8_t *data, size_t size, uint32_t bit_offset, unsigned bit_size);
-void tendril_hid_insert(uint8_t *data, size_t size, uint32_t bit_offset, unsigned bit_size, uint32_t value);
+uint32_t tendril_hid_extract(const uint8_t *data, size_t size, uint32_t bit_offset, unsigned int bit_size);
+void tendril_hid_insert(uint8_t *data, size_t size, uint32_t bit_offset, unsigned int bit_size, uint32_t value);
 /* Element `index` of a field, sign-extended when the logical range is signed. */
-int32_t tendril_hid_field_get(const struct tendril_hid_field *f, const uint8_t *data, size_t size, unsigned index);
-void tendril_hid_field_set(const struct tendril_hid_field *f, uint8_t *data, size_t size, unsigned index, int32_t value);
+int32_t tendril_hid_field_get(const struct tendril_hid_field *f, const uint8_t *data, size_t size, size_t index);
+void tendril_hid_field_set(
+    const struct tendril_hid_field *f, uint8_t *data, size_t size, size_t index, int32_t value
+);
 /* The usage of element `index` of a variable field. */
-uint32_t tendril_hid_field_usage(const struct tendril_hid_field *f, unsigned index);
+uint32_t tendril_hid_field_usage(const struct tendril_hid_field *f, size_t index);
 /* The usage an array field element value stands for, or 0. */
 uint32_t tendril_hid_array_usage(const struct tendril_hid_field *f, int32_t value);
 /* Finds the variable field element with `usage` in reports of `type`. */
-const struct tendril_hid_field *tendril_hid_find(const struct tendril_hid_report_desc *rd, uint8_t type,
-                                               uint32_t usage, unsigned *index);
+const struct tendril_hid_field *tendril_hid_find(
+    const struct tendril_hid_report_desc *rd, uint8_t type, uint32_t usage, size_t *index
+);
 
 /* Class driver */
 
@@ -175,15 +205,17 @@ void tendril_hid_set_user(struct tendril_hid *hid, void *user);
 void *tendril_hid_user(struct tendril_hid *hid);
 
 /* Sets the keyboard LEDs (TENDRIL_HID_LED_*), asynchronously. */
-enum tendril_status tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds);
+int tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds);
 
-enum tendril_status tendril_hid_get_report(
+int tendril_hid_get_report(
     struct tendril_hid *hid, uint8_t type, uint8_t id, void *buf, size_t size,
-    void (*done)(void *ctx, enum tendril_status status, size_t actual), void *ctx);
+    void (*done)(void *ctx, int status, size_t actual), void *ctx
+);
 /* Output reports go to the interrupt OUT endpoint if there is one. */
-enum tendril_status tendril_hid_set_report(
+int tendril_hid_set_report(
     struct tendril_hid *hid, uint8_t type, uint8_t id, const void *buf, size_t size,
-    void (*done)(void *ctx, enum tendril_status status), void *ctx);
+    void (*done)(void *ctx, int status), void *ctx
+);
 
 #ifdef __cplusplus
 }

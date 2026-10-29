@@ -1,71 +1,167 @@
-#include "../internal.h"
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 /* UHCI 1.1. Registers sit in I/O space; descriptors are little-endian with 32-bit addresses. */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/usb.h and
+ * sys/dev/usb/controller/uhci.c (commit
+ * dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
+ * Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
+ * Copyright (c) 1998 Lennart Augustsson. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's
+ * sys/dev/usb/controller/uhci_pci.c (commit
+ * dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 1998 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lennart Augustsson (augustss@carlstedt.se) at
+ * Carlstedt Research & Technology.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "../internal.h"
 
 #define REG_USBCMD 0x00
 #define REG_USBSTS 0x02
 #define REG_USBINTR 0x04
 #define REG_FRNUM 0x06
 #define REG_FLBASEADD 0x08
-#define REG_PORTSC(n) (0x10 + 2 * ((n) - 1))
+#define REG_PORTSC(n) ((uint32_t)(0x10 + 2 * ((n) - 1)))
 
-#define CMD_RS (1u << 0)
-#define CMD_HCRESET (1u << 1)
-#define CMD_GRESET (1u << 2)
-#define CMD_CF (1u << 6)
-#define CMD_MAXP (1u << 7)
+#define CMD_RS ((uint32_t)1 << 0)
+#define CMD_HCRESET ((uint32_t)1 << 1)
+#define CMD_GRESET ((uint32_t)1 << 2)
+#define CMD_CF ((uint32_t)1 << 6)
+#define CMD_MAXP ((uint32_t)1 << 7)
 
-#define STS_USBINT (1u << 0)
-#define STS_ERROR (1u << 1)
-#define STS_RESUME (1u << 2)
-#define STS_HSE (1u << 3)
-#define STS_HCPE (1u << 4)
-#define STS_HALTED (1u << 5)
+#define STS_USBINT ((uint32_t)1 << 0)
+#define STS_ERROR ((uint32_t)1 << 1)
+#define STS_RESUME ((uint32_t)1 << 2)
+#define STS_HSE ((uint32_t)1 << 3)
+#define STS_HCPE ((uint32_t)1 << 4)
+#define STS_HALTED ((uint32_t)1 << 5)
 #define STS_ACK (STS_USBINT | STS_ERROR | STS_RESUME | STS_HSE | STS_HCPE)
 
-#define INTR_TIMEOUT_CRC (1u << 0)
-#define INTR_IOC (1u << 2)
-#define INTR_SHORT (1u << 3)
+#define INTR_TIMEOUT_CRC ((uint32_t)1 << 0)
+#define INTR_IOC ((uint32_t)1 << 2)
+#define INTR_SHORT ((uint32_t)1 << 3)
 
-#define PORT_CCS (1u << 0)
-#define PORT_CSC (1u << 1)
-#define PORT_PE (1u << 2)
-#define PORT_PEC (1u << 3)
-#define PORT_RD (1u << 6)
-#define PORT_ALWAYS_ONE (1u << 7)
-#define PORT_LSDA (1u << 8)
-#define PORT_PR (1u << 9)
-#define PORT_SUSP (1u << 12)
+#define PORT_CCS ((uint32_t)1 << 0)
+#define PORT_CSC ((uint32_t)1 << 1)
+#define PORT_PE ((uint32_t)1 << 2)
+#define PORT_PEC ((uint32_t)1 << 3)
+#define PORT_RD ((uint32_t)1 << 6)
+#define PORT_ALWAYS_ONE ((uint32_t)1 << 7)
+#define PORT_LSDA ((uint32_t)1 << 8)
+#define PORT_PR ((uint32_t)1 << 9)
+#define PORT_SUSP ((uint32_t)1 << 12)
 /* Change bits, cleared by writing one, so never written back by accident. */
 #define PORT_RWC (PORT_CSC | PORT_PEC)
 
-#define LINK_T 1u
-#define LINK_QH (1u << 1)
-#define LINK_VF (1u << 2)
+#define LINK_T ((uint32_t)1)
+#define LINK_QH ((uint32_t)1 << 1)
+#define LINK_VF ((uint32_t)1 << 2)
 
-#define TD_STATUS_BITSTUFF (1u << 17)
-#define TD_STATUS_CRC_TIMEOUT (1u << 18)
-#define TD_STATUS_BABBLE (1u << 20)
-#define TD_STATUS_DBE (1u << 21)
-#define TD_STATUS_STALLED (1u << 22)
-#define TD_ACTIVE (1u << 23)
-#define TD_IOC (1u << 24)
-#define TD_IOS (1u << 25)
-#define TD_LS (1u << 26)
+#define TD_STATUS_BITSTUFF ((uint32_t)1 << 17)
+#define TD_STATUS_CRC_TIMEOUT ((uint32_t)1 << 18)
+#define TD_STATUS_BABBLE ((uint32_t)1 << 20)
+#define TD_STATUS_DBE ((uint32_t)1 << 21)
+#define TD_STATUS_STALLED ((uint32_t)1 << 22)
+#define TD_ACTIVE ((uint32_t)1 << 23)
+#define TD_IOC ((uint32_t)1 << 24)
+#define TD_IOS ((uint32_t)1 << 25)
+#define TD_LS ((uint32_t)1 << 26)
 #define TD_CERR(n) ((uint32_t)(n) << 27)
-#define TD_SPD (1u << 29)
+#define TD_SPD ((uint32_t)1 << 29)
 #define TD_ERRORS (TD_STATUS_BITSTUFF | TD_STATUS_CRC_TIMEOUT | TD_STATUS_BABBLE | TD_STATUS_DBE | TD_STATUS_STALLED)
 /* Lengths are stored minus one, so 7FFh means none. */
-#define TD_ACTLEN(s) (((s) + 1) & 0x7ffu)
+#define TD_ACTLEN(s) (((s) + 1) & (uint32_t)0x7ff)
 
-#define PID_IN 0x69u
-#define PID_OUT 0xe1u
-#define PID_SETUP 0x2du
+#define PID_IN ((uint32_t)0x69)
+#define PID_OUT ((uint32_t)0xe1)
+#define PID_SETUP ((uint32_t)0x2d)
 #define TOKEN_ADDR(a) ((uint32_t)(a) << 8)
 #define TOKEN_ENDPT(e) ((uint32_t)(e) << 15)
-#define TOKEN_D (1u << 19)
-#define TOKEN_MAXLEN(n) (((uint32_t)(n) - 1u) << 21)
-#define TOKEN_GET_MAXLEN(t) ((((t) >> 21) + 1) & 0x7ffu)
+#define TOKEN_D ((uint32_t)1 << 19)
+#define TOKEN_MAXLEN(n) (((uint32_t)(n) - (uint32_t)1) << 21)
+#define TOKEN_GET_MAXLEN(t) ((((t) >> 21) + 1) & (uint32_t)0x7ff)
 
 #define PCI_LEGSUP 0xc0
 /* Clears the trap status bits and turns off every trap and SMI source. */
@@ -75,9 +171,18 @@
 #define FRAMES 1024
 #define LEVELS 8
 #define MAX_PORTS 8
-#define ROOT_RESET_MS 50
-#define ENABLE_POLL_MS 10
+/* BEGIN FreeBSD sys/dev/usb/usb.h, sys/dev/usb/controller/uhci.c */
+/*
+ * FreeBSD's USB_BUS_RESET_DELAY, USB_PORT_ROOT_RESET_DELAY, and
+ * USB_PORT_RESET_DELAY, from its sys/dev/usb/usb.h (BSD-2-Clause), as its
+ * sys/dev/usb/controller/uhci.c (BSD-2-Clause, uhci_reset and uhci_portreset)
+ * uses them; USB 2.0 7.1.7.5 asks for at least 50 ms of root port reset.
+ */
+#define GLOBAL_RESET_MS 100
+#define ROOT_RESET_MS 200
+#define ENABLE_POLL_MS 50
 #define ENABLE_TRIES 12
+/* END FreeBSD sys/dev/usb/usb.h, sys/dev/usb/controller/uhci.c */
 /* USB 2.0 7.1.7.7: TDRSMDN, the resume signalling software times. */
 #define RESUME_SIGNAL_MS 20
 #define PORT_POLL_MS 100
@@ -98,18 +203,16 @@ struct uhci_td {
     uint8_t setup[8];
 };
 
-enum qh_kind {
-    KIND_CONTROL,
-    KIND_BULK,
-    KIND_INTR,
-    KIND_SKELETON
-};
+#define KIND_CONTROL 0
+#define KIND_BULK 1
+#define KIND_INTR 2
+#define KIND_SKELETON 3
 
 /* Waits for endpoints being closed, then completes an asynchronous operation. */
 struct uhci_close {
     struct tendril_async *async;
-    unsigned remaining;
-    enum tendril_status status;
+    unsigned int remaining;
+    int status;
 };
 
 struct uhci_qh {
@@ -122,15 +225,15 @@ struct uhci_qh {
     struct uhci_qh *sw_prev;
     struct tendril_list node;
     struct tendril_list wait_node;
-    enum qh_kind kind;
-    unsigned level;
+    int kind;
+    size_t level;
     uint32_t wait_frame;
     struct uhci_close *close;
     bool linked;
     bool waiting;
     bool closing;
     /* The data toggle of the next TD queued on a bulk or interrupt endpoint. */
-    unsigned toggle;
+    unsigned int toggle;
 };
 
 /* Per isochronous endpoint: where its stream of frames stands. */
@@ -139,15 +242,13 @@ struct uhci_iso_ep {
     bool streaming;
 };
 
-enum port_phase {
-    PHASE_IDLE,
-    PHASE_RESET,
-    PHASE_ENABLE
-};
+#define PHASE_IDLE 0
+#define PHASE_RESET 1
+#define PHASE_ENABLE 2
 
 struct uhci {
     struct tendril_hc *hc;
-    unsigned num_ports;
+    size_t num_ports;
     uint32_t *frame_list;
     uint64_t frame_list_dma;
     struct uhci_td *frame_iso[FRAMES];
@@ -164,9 +265,9 @@ struct uhci {
     uint16_t intr;
     uint64_t port_check;
     struct tendril_timer timer;
-    enum port_phase phase[MAX_PORTS];
+    int phase[MAX_PORTS];
     uint64_t phase_start[MAX_PORTS];
-    unsigned enable_tries[MAX_PORTS];
+    unsigned int enable_tries[MAX_PORTS];
     bool reset_changed[MAX_PORTS];
     /* Resume signalling under way, and resumes finished but not yet reported. */
     uint64_t resume_start[MAX_PORTS];
@@ -183,8 +284,8 @@ struct uhci {
 #define XD_COUNT 3
 #define XD_NODE 4
 
-#define XF_CANCEL (1u << 0)
-#define XF_SHORT (1u << 1)
+#define XF_CANCEL ((uint32_t)1 << 0)
+#define XF_SHORT ((uint32_t)1 << 1)
 
 /* Isochronous transfers are tracked through a list node kept beside the transfer. */
 struct uhci_iso_xfer {
@@ -213,7 +314,7 @@ static uint32_t le(uint32_t v) {
 
 /* The 32-bit frame number, extended from the 11-bit counter. */
 static uint32_t current_frame(struct tendril_hc *hc) {
-    return tendril_frame_update(hc, reg_read16(hc, REG_FRNUM) & 0x7ffu, 0x7ff);
+    return tendril_frame_update(hc, reg_read16(hc, REG_FRNUM) & (uint32_t)0x7ff, 0x7ff);
 }
 
 static struct uhci_td *td_alloc(struct tendril_hc *hc) {
@@ -277,7 +378,7 @@ static uint64_t cursor_take(struct cursor *c, size_t want, size_t *got) {
     return a;
 }
 
-static enum tendril_status td_status(uint32_t s) {
+static int td_status(uint32_t s) {
     if (s & TD_STATUS_BABBLE) {
         return TENDRIL_ERR_BABBLE;
     }
@@ -331,9 +432,9 @@ static void unlink_qh(struct uhci_qh *qh) {
     dma_barrier();
 }
 
-static unsigned intr_level(struct tendril_endpoint *ep) {
-    unsigned log2 = ep->interval_log2 > 3 ? ep->interval_log2 - 3u : 0u;
-    return MIN(log2, LEVELS - 1u);
+static size_t intr_level(struct tendril_endpoint *ep) {
+    size_t log2 = ep->interval_log2 > 3 ? ep->interval_log2 - (uint32_t)3 : (uint32_t)0;
+    return MIN(log2, (size_t)LEVELS - 1);
 }
 
 /* Off the schedule, a queue head is safe to change once two frames have started. */
@@ -377,9 +478,9 @@ static void free_xfer_tds(struct tendril_hc *hc, struct tendril_transfer *xfer) 
     free_chain(hc, xfer_first(xfer), xfer_last(xfer)->sw_next);
 }
 
-static uint32_t td_token(struct tendril_endpoint *ep, uint32_t pid, size_t len, unsigned toggle) {
-    return TOKEN_MAXLEN(len) | (toggle ? TOKEN_D : 0) |
-           TOKEN_ENDPT(ep->address & TENDRIL_ENDPOINT_NUMBER_MASK) | TOKEN_ADDR(ep->dev->address & 0x7f) | pid;
+static uint32_t td_token(struct tendril_endpoint *ep, uint32_t pid, size_t len, unsigned int toggle) {
+    return TOKEN_MAXLEN(len) | (toggle ? TOKEN_D : 0) | TOKEN_ENDPT(ep->address & TENDRIL_ENDPOINT_NUMBER_MASK)
+        | TOKEN_ADDR(ep->dev->address & 0x7f) | pid;
 }
 
 /* An inactive TD ending a queue; it holds a valid token in case the controller looks. */
@@ -401,7 +502,7 @@ static void set_status(struct uhci_td *td, struct uhci_td *first, uint32_t statu
     td->status = le(td == first ? status & ~TD_ACTIVE : status);
 }
 
-static enum tendril_status submit_queue(struct tendril_hc *hc, struct uhci_qh *qh, struct tendril_transfer *xfer) {
+static int submit_queue(struct tendril_hc *hc, struct uhci_qh *qh, struct tendril_transfer *xfer) {
     struct tendril_endpoint *ep = xfer->endpoint;
     bool control = ep->type == TENDRIL_ENDPOINT_XFER_CONTROL;
     bool in = is_in(xfer);
@@ -412,7 +513,7 @@ static enum tendril_status submit_queue(struct tendril_hc *hc, struct uhci_qh *q
     struct uhci_td *first = qh->dummy;
     struct uhci_td *dummy = td_alloc(hc);
     struct uhci_td *td = NULL;
-    unsigned toggle = control ? 1 : qh->toggle;
+    unsigned int toggle = control ? 1 : qh->toggle;
     struct cursor c;
 
     if (dummy == NULL) {
@@ -424,22 +525,22 @@ static enum tendril_status submit_queue(struct tendril_hc *hc, struct uhci_qh *q
     first->skipped = false;
 
     /* Appends a TD to the chain, the old dummy first; its status is set by the caller. */
-#define NEXT_TD()                                                              \
-    do {                                                                       \
-        struct uhci_td *n_ = td == NULL ? first : td_alloc(hc);                \
-        if (n_ == NULL) {                                                      \
-            free_chain(hc, first->sw_next, NULL);                              \
-            make_dummy(first);                                                 \
-            td_free(hc, dummy);                                                \
-            return TENDRIL_ERR_NO_MEMORY;                                      \
-        }                                                                      \
-        if (td != NULL) {                                                      \
-            n_->sw_next = NULL;                                                \
-            n_->skipped = false;                                               \
-            td->sw_next = n_;                                                  \
-            td->link = le((uint32_t)n_->dma | LINK_VF);                        \
-        }                                                                      \
-        td = n_;                                                               \
+#define NEXT_TD() \
+    do { \
+        struct uhci_td *n_ = td == NULL ? first : td_alloc(hc); \
+        if (n_ == NULL) { \
+            free_chain(hc, first->sw_next, NULL); \
+            make_dummy(first); \
+            td_free(hc, dummy); \
+            return TENDRIL_ERR_NO_MEMORY; \
+        } \
+        if (td != NULL) { \
+            n_->sw_next = NULL; \
+            n_->skipped = false; \
+            td->sw_next = n_; \
+            td->link = le((uint32_t)n_->dma | LINK_VF); \
+        } \
+        td = n_; \
     } while (0)
 
     if (control) {
@@ -502,7 +603,7 @@ static enum tendril_status submit_queue(struct tendril_hc *hc, struct uhci_qh *q
 }
 
 /* Rewrites the data toggles from `td` on, after packets queued earlier did not all happen. */
-static void retoggle(struct uhci_qh *qh, struct uhci_td *td, unsigned toggle) {
+static void retoggle(struct uhci_qh *qh, struct uhci_td *td, unsigned int toggle) {
     for (; td != NULL && td != qh->dummy; td = td->sw_next) {
         if (td->skipped) {
             continue;
@@ -607,9 +708,8 @@ static void sweep_qh(struct tendril_hc *hc, struct uhci_qh *qh) {
     struct tendril_list *tmp;
 
     scan_qh(hc, qh);
-    struct tendril_transfer *oldest = list_empty(&ep->transfers)
-                                         ? NULL
-                                         : CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
+    struct tendril_transfer *oldest = list_empty(&ep->transfers) ? NULL
+        : CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
     bool restart = false;
     int toggle = -1;
 
@@ -663,11 +763,11 @@ static void sweep_qh(struct tendril_hc *hc, struct uhci_qh *qh) {
         head = xfer_first(CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node));
     }
     if (!control && restart) {
-        retoggle(qh, head, toggle < 0 ? qh->toggle : (unsigned)toggle);
+        retoggle(qh, head, toggle < 0 ? qh->toggle : (unsigned int)toggle);
     } else if (!control && !list_empty(&ep->transfers)) {
         /* The transfer in flight keeps its toggles; whatever was queued behind it moves up. */
         struct tendril_transfer *h = CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
-        retoggle(qh, xfer_last(h)->sw_next, ((le(xfer_last(h)->token) & TOKEN_D) != 0) ^ 1u);
+        retoggle(qh, xfer_last(h)->sw_next, ((le(xfer_last(h)->token) & TOKEN_D) != 0) ^ (uint32_t)1);
     }
     if (restart) {
         queue_restart(qh, head);
@@ -682,7 +782,7 @@ static struct uhci_iso_xfer *iso_state(struct tendril_transfer *xfer) {
 
 static void iso_unlink_td(struct tendril_hc *hc, struct uhci_td *td) {
     struct uhci *u = U(hc);
-    unsigned idx = td->frame % FRAMES;
+    size_t idx = td->frame % FRAMES;
     if (u->frame_iso[idx] == td) {
         u->frame_iso[idx] = td->frame_next;
         u->frame_list[idx] = td->link;
@@ -708,10 +808,10 @@ static void iso_free(struct tendril_hc *hc, struct tendril_transfer *xfer) {
         td = next;
     }
     list_del(&ix->node);
-    tendril_free(ix, sizeof(*ix));
+    tendril_free(ix, sizeof(struct uhci_iso_xfer));
 }
 
-static enum tendril_status submit_iso(struct tendril_hc *hc, struct tendril_transfer *xfer) {
+static int submit_iso(struct tendril_hc *hc, struct tendril_transfer *xfer) {
     struct uhci *u = U(hc);
     struct tendril_endpoint *ep = xfer->endpoint;
     struct uhci_iso_ep *iep = ep->hcd;
@@ -733,7 +833,7 @@ static enum tendril_status submit_iso(struct tendril_hc *hc, struct tendril_tran
     if ((int32_t)(frame - now) <= 0 || frame + n - now >= FRAMES) {
         return TENDRIL_ERR_MISSED;
     }
-    struct uhci_iso_xfer *ix = tendril_zalloc(sizeof(*ix));
+    struct uhci_iso_xfer *ix = tendril_zalloc(sizeof(struct uhci_iso_xfer));
     if (ix == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
@@ -748,7 +848,7 @@ static enum tendril_status submit_iso(struct tendril_hc *hc, struct tendril_tran
         struct uhci_td *td = got == len ? td_alloc(hc) : NULL;
         if (td == NULL) {
             free_chain(hc, first, NULL);
-            tendril_free(ix, sizeof(*ix));
+            tendril_free(ix, sizeof(struct uhci_iso_xfer));
             return got == len ? TENDRIL_ERR_NO_MEMORY : TENDRIL_ERR_BOUNCE;
         }
         td->sw_next = NULL;
@@ -765,7 +865,7 @@ static enum tendril_status submit_iso(struct tendril_hc *hc, struct tendril_tran
     }
     /* Each TD goes in front of whatever its frame already runs. */
     for (struct uhci_td *td = first; td != NULL; td = td->sw_next) {
-        unsigned idx = td->frame % FRAMES;
+        size_t idx = td->frame % FRAMES;
         td->link = u->frame_list[idx];
         td->frame_next = u->frame_iso[idx];
         u->frame_iso[idx] = td;
@@ -810,7 +910,7 @@ static void scan_iso(struct tendril_hc *hc) {
         struct uhci_iso_xfer *ix = CONTAINER_OF(it, struct uhci_iso_xfer, node);
         struct tendril_transfer *xfer = ix->xfer;
         if (ix->cancelled ? (int32_t)(now - ix->cancel_frame) < 2 || !iso_frames_clear(xfer, now)
-                          : (int32_t)(now - ix->last_frame) < 2) {
+          : (int32_t)(now - ix->last_frame) < 2) {
             continue;
         }
         size_t actual = 0;
@@ -835,7 +935,7 @@ static void scan_iso(struct tendril_hc *hc) {
         struct tendril_endpoint *ep = xfer->endpoint;
         iso_free(hc, xfer);
         tendril_transfer_complete(hc, xfer, cancelled ? xfer->internal.cancel_status : TENDRIL_OK, actual);
-        if (list_empty(&ep->transfers)) {
+        if (list_empty(&ep->transfers) && ep->hcd != NULL) {
             ((struct uhci_iso_ep *)ep->hcd)->streaming = false;
         }
     }
@@ -861,11 +961,11 @@ static void scan_all(struct tendril_hc *hc) {
 static void close_done(struct tendril_hc *hc, struct uhci_close *close) {
     if (close != NULL && --close->remaining == 0) {
         tendril_async_complete(hc, close->async, close->status);
-        tendril_free(close, sizeof(*close));
+        tendril_free(close, sizeof(struct uhci_close));
     }
 }
 
-static void fail_queue(struct tendril_hc *hc, struct uhci_qh *qh, enum tendril_status status) {
+static void fail_queue(struct tendril_hc *hc, struct uhci_qh *qh, int status) {
     struct tendril_endpoint *ep = qh->ep;
     while (!list_empty(&ep->transfers)) {
         struct tendril_transfer *xfer = CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
@@ -915,11 +1015,11 @@ static void process_waiting(struct tendril_hc *hc) {
 static void check_ports(struct tendril_hc *hc) {
     struct uhci *u = U(hc);
     u->port_check = tendril_now();
-    for (unsigned p = 1; p <= u->num_ports; p++) {
+    for (size_t p = 1; p <= u->num_ports; p++) {
         uint16_t v = reg_read16(hc, REG_PORTSC(p));
         bool woke = (v & PORT_SUSP) && (v & PORT_RD) && !u->resuming[p - 1];
-        if ((v & PORT_RWC) || u->phase[p - 1] != PHASE_IDLE || u->reset_changed[p - 1] || woke ||
-            u->resume_changed[p - 1]) {
+        if ((v & PORT_RWC) || u->phase[p - 1] != PHASE_IDLE || u->reset_changed[p - 1] || woke
+         || u->resume_changed[p - 1]) {
             tendril_roothub_changed(hc, p);
         }
     }
@@ -948,7 +1048,7 @@ static void uhci_timer(struct tendril_work *work) {
 
 /* Transfers */
 
-static enum tendril_status uhci_submit(struct tendril_hc *hc, struct tendril_transfer *xfer) {
+static int uhci_submit(struct tendril_hc *hc, struct tendril_transfer *xfer) {
     struct tendril_endpoint *ep = xfer->endpoint;
     if (ep->hcd == NULL) {
         return TENDRIL_ERR_INVALID;
@@ -1001,7 +1101,7 @@ static void uhci_cancel(struct tendril_hc *hc, struct tendril_transfer *xfer) {
 
 /* Endpoints */
 
-static enum tendril_status open_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep) {
+static int open_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep) {
     struct uhci *u = U(hc);
 
     if (ep->dev->speed > TENDRIL_SPEED_FULL) {
@@ -1011,7 +1111,7 @@ static enum tendril_status open_endpoint(struct tendril_hc *hc, struct tendril_e
         if (ep->dev->speed == TENDRIL_SPEED_LOW) {
             return TENDRIL_ERR_UNSUPPORTED;
         }
-        struct uhci_iso_ep *iep = tendril_zalloc(sizeof(*iep));
+        struct uhci_iso_ep *iep = tendril_zalloc(sizeof(struct uhci_iso_ep));
         if (iep == NULL) {
             return TENDRIL_ERR_NO_MEMORY;
         }
@@ -1089,12 +1189,12 @@ static void close_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep, s
     }
 }
 
-static enum tendril_status uhci_configure(struct tendril_hc *hc, struct tendril_device *dev,
-                                         struct tendril_endpoint **drop, unsigned num_drop,
-                                         struct tendril_endpoint **add, unsigned num_add,
-                                         struct tendril_async *async) {
+static int uhci_configure(
+    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_endpoint **drop, size_t num_drop,
+    struct tendril_endpoint **add, size_t num_add, struct tendril_async *async
+) {
     (void)dev;
-    struct uhci_close *close = tendril_zalloc(sizeof(*close));
+    struct uhci_close *close = tendril_zalloc(sizeof(struct uhci_close));
     if (close == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
@@ -1102,13 +1202,13 @@ static enum tendril_status uhci_configure(struct tendril_hc *hc, struct tendril_
     close->status = TENDRIL_OK;
     /* Held until everything is queued, so it cannot complete early. */
     close->remaining = 1;
-    for (unsigned i = 0; i < num_drop; i++) {
+    for (size_t i = 0; i < num_drop; i++) {
         close_endpoint(hc, drop[i], close);
     }
-    for (unsigned i = 0; i < num_add; i++) {
-        enum tendril_status st = open_endpoint(hc, add[i]);
+    for (size_t i = 0; i < num_add; i++) {
+        int st = open_endpoint(hc, add[i]);
         if (st != TENDRIL_OK) {
-            for (unsigned j = 0; j < i; j++) {
+            for (size_t j = 0; j < i; j++) {
                 close_endpoint(hc, add[j], close);
             }
             close->status = st;
@@ -1119,23 +1219,22 @@ static enum tendril_status uhci_configure(struct tendril_hc *hc, struct tendril_
     return TENDRIL_OK;
 }
 
-static enum tendril_status uhci_device_init(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async) {
-    enum tendril_status st = open_endpoint(hc, &dev->ep0);
+static int uhci_device_init(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async) {
+    int st = open_endpoint(hc, &dev->ep0);
     if (st == TENDRIL_OK) {
         tendril_async_complete(hc, async, TENDRIL_OK);
     }
     return st;
 }
 
-static enum tendril_status uhci_ep0_update(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async) {
+static int uhci_ep0_update(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async) {
     /* The address and packet size go into each TD as it is built; nothing is stored. */
     (void)dev;
     tendril_async_complete(hc, async, TENDRIL_OK);
     return TENDRIL_OK;
 }
 
-static enum tendril_status uhci_endpoint_reset(struct tendril_hc *hc, struct tendril_endpoint *ep,
-                                              struct tendril_async *async) {
+static int uhci_endpoint_reset(struct tendril_hc *hc, struct tendril_endpoint *ep, struct tendril_async *async) {
     struct uhci_qh *qh = ep->hcd;
     if (qh != NULL && ep->type != TENDRIL_ENDPOINT_XFER_ISOC && list_empty(&ep->transfers)) {
         qh->toggle = 0;
@@ -1145,7 +1244,7 @@ static enum tendril_status uhci_endpoint_reset(struct tendril_hc *hc, struct ten
 }
 
 static void uhci_device_free(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async) {
-    struct uhci_close *close = tendril_zalloc(sizeof(*close));
+    struct uhci_close *close = tendril_zalloc(sizeof(struct uhci_close));
     if (close != NULL) {
         close->async = async;
         close->status = TENDRIL_OK;
@@ -1153,9 +1252,9 @@ static void uhci_device_free(struct tendril_hc *hc, struct tendril_device *dev, 
     }
     /* The device is going away with its interfaces' endpoints still open. */
     close_endpoint(hc, &dev->ep0, close);
-    for (unsigned i = 0; i < dev->num_interfaces; i++) {
+    for (size_t i = 0; i < dev->num_interfaces; i++) {
         struct tendril_interface *intf = &dev->interfaces[i];
-        for (unsigned e = 0; e < intf->num_endpoints; e++) {
+        for (size_t e = 0; e < intf->num_endpoints; e++) {
             close_endpoint(hc, &intf->endpoints[e], close);
         }
     }
@@ -1168,22 +1267,23 @@ static void uhci_device_free(struct tendril_hc *hc, struct tendril_device *dev, 
 
 /* Root hub */
 
-static void port_write(struct tendril_hc *hc, unsigned port, uint16_t v) {
+static void port_write(struct tendril_hc *hc, size_t port, uint16_t v) {
     reg_write16(hc, REG_PORTSC(port), v);
 }
 
-static uint16_t port_read_rw(struct tendril_hc *hc, unsigned port) {
+static uint16_t port_read_rw(struct tendril_hc *hc, size_t port) {
     return (uint16_t)(reg_read16(hc, REG_PORTSC(port)) & ~PORT_RWC);
 }
 
+/* BEGIN FreeBSD sys/dev/usb/controller/uhci.c */
 /*
- * Moves a port through its reset: 50 ms of reset, then enabling it, which UHCI
- * leaves to software, in the steps FreeBSD's sys/dev/usb/controller/uhci.c
+ * Moves a port through its reset, then enabling it, which UHCI leaves to
+ * software, in the steps FreeBSD's sys/dev/usb/controller/uhci.c
  * (BSD-2-Clause, uhci_portreset) takes.
  */
-static void port_advance(struct tendril_hc *hc, unsigned port) {
+static void port_advance(struct tendril_hc *hc, size_t port) {
     struct uhci *u = U(hc);
-    unsigned i = port - 1;
+    size_t i = port - 1;
     uint64_t elapsed = tendril_now() - u->phase_start[i];
 
     if (u->phase[i] == PHASE_RESET && elapsed >= ROOT_RESET_MS * NS_PER_MS) {
@@ -1215,15 +1315,16 @@ static void port_advance(struct tendril_hc *hc, unsigned port) {
         u->reset_changed[i] = true;
     }
 }
+/* END FreeBSD sys/dev/usb/controller/uhci.c */
 
 /*
  * Root ports behave as a hub's would (USB 2.0 11.24.2.7.1.3 and 11.24.2.7.2.3):
  * software times resume signalling, ending it as UHCI 1.1, 2.1.7.1 describes,
  * and the port reports itself suspended until then.
  */
-static void advance_resume(struct tendril_hc *hc, unsigned port) {
+static void advance_resume(struct tendril_hc *hc, size_t port) {
     struct uhci *u = U(hc);
-    unsigned i = port - 1;
+    size_t i = port - 1;
     uint16_t v = reg_read16(hc, REG_PORTSC(port));
 
     if (!u->resuming[i] && (v & PORT_SUSP) && (v & PORT_RD)) {
@@ -1246,7 +1347,7 @@ static void port_timer_work(struct tendril_work *work) {
     struct tendril_hc *hc = u->hc;
     hc_lock(hc);
     bool again = false;
-    for (unsigned p = 1; !hc->dead && p <= u->num_ports; p++) {
+    for (size_t p = 1; !hc->dead && p <= u->num_ports; p++) {
         if (!u->resuming[p - 1]) {
             continue;
         }
@@ -1263,9 +1364,9 @@ static void port_timer_work(struct tendril_work *work) {
     hc_unlock(hc);
 }
 
-static void uhci_port_status(struct tendril_hc *hc, unsigned port, struct tendril_port_status *st) {
+static void uhci_port_status(struct tendril_hc *hc, size_t port, struct tendril_port_status *st) {
     struct uhci *u = U(hc);
-    unsigned i = port - 1;
+    size_t i = port - 1;
 
     if (u->phase[i] != PHASE_IDLE) {
         port_advance(hc, port);
@@ -1306,7 +1407,7 @@ static void uhci_port_status(struct tendril_hc *hc, unsigned port, struct tendri
     }
 }
 
-static enum tendril_status uhci_port_set_feature(struct tendril_hc *hc, unsigned port, unsigned feature) {
+static int uhci_port_set_feature(struct tendril_hc *hc, size_t port, unsigned int feature) {
     struct uhci *u = U(hc);
     switch (feature) {
         case TENDRIL_PORT_FEAT_RESET: {
@@ -1333,7 +1434,7 @@ static enum tendril_status uhci_port_set_feature(struct tendril_hc *hc, unsigned
     }
 }
 
-static enum tendril_status uhci_port_clear_feature(struct tendril_hc *hc, unsigned port, unsigned feature) {
+static int uhci_port_clear_feature(struct tendril_hc *hc, size_t port, unsigned int feature) {
     struct uhci *u = U(hc);
     uint16_t v = port_read_rw(hc, port);
     switch (feature) {
@@ -1344,7 +1445,7 @@ static enum tendril_status uhci_port_clear_feature(struct tendril_hc *hc, unsign
             return TENDRIL_OK;
         }
         case TENDRIL_PORT_FEAT_SUSPEND: {
-            unsigned i = port - 1;
+            size_t i = port - 1;
             if ((v & PORT_SUSP) && !u->resuming[i]) {
                 /* UHCI 1.1, 2.1.7.1: drive resume, ended by advance_resume() once timed. */
                 port_write(hc, port, (uint16_t)(v | PORT_RD));
@@ -1404,7 +1505,7 @@ static void fail_everything(struct tendril_hc *hc) {
 static void halt(struct tendril_hc *hc) {
     reg_write16(hc, REG_USBCMD, 0);
     if (!tendril_hc_wait16(hc, REG_USBSTS, STS_HALTED, STS_HALTED, 2000)) {
-        LOG_WARN("tendril: UHCI: controller did not halt");
+        LOG_WARN("UHCI: controller did not halt");
     }
 }
 
@@ -1412,7 +1513,7 @@ static void controller_died(struct tendril_hc *hc, const char *why) {
     if (hc->dead) {
         return;
     }
-    LOG_ERROR("tendril: UHCI: controller failed: %s", why);
+    LOG_ERROR("UHCI: controller failed: %s", why);
     hc->dead = true;
     reg_write16(hc, REG_USBINTR, 0);
     reg_write16(hc, REG_USBCMD, 0);
@@ -1466,7 +1567,7 @@ static uint32_t uhci_frame_number(struct tendril_hc *hc) {
 
 static void free_structures(struct tendril_hc *hc) {
     struct uhci *u = U(hc);
-    for (unsigned l = 0; l < LEVELS; l++) {
+    for (size_t l = 0; l < LEVELS; l++) {
         if (u->skel[l] != NULL) {
             qh_free(hc, u->skel[l]);
         }
@@ -1480,7 +1581,7 @@ static void free_structures(struct tendril_hc *hc) {
     tendril_dma_free(hc, u->frame_list, FRAMES * 4);
     tendril_dma_pool_destroy(&u->td_pool);
     tendril_dma_pool_destroy(&u->qh_pool);
-    tendril_free(u, sizeof(*u));
+    tendril_free(u, sizeof(struct uhci));
     hc->hcd = NULL;
 }
 
@@ -1494,9 +1595,12 @@ static struct uhci_qh *skeleton(struct tendril_hc *hc) {
     return qh;
 }
 
-/* Ports are counted by PORTSC bit 7, which always reads as one (UHCI 1.1, 2.1.7); UHCI does not say how many there are. */
-static unsigned count_ports(struct tendril_hc *hc) {
-    unsigned n = 0;
+/*
+ * Ports are counted by PORTSC bit 7, which always reads as one (UHCI 1.1,
+ * 2.1.7); UHCI does not say how many there are.
+ */
+static size_t count_ports(struct tendril_hc *hc) {
+    size_t n = 0;
     while (n < MAX_PORTS) {
         uint16_t v = reg_read16(hc, REG_PORTSC(n + 1));
         if (v == 0xffff || !(v & PORT_ALWAYS_ONE)) {
@@ -1507,8 +1611,8 @@ static unsigned count_ports(struct tendril_hc *hc) {
     return n;
 }
 
-static enum tendril_status uhci_start(struct tendril_hc *hc) {
-    struct uhci *u = tendril_zalloc(sizeof(*u));
+static int uhci_start(struct tendril_hc *hc) {
+    struct uhci *u = tendril_zalloc(sizeof(struct uhci));
     if (u == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
@@ -1532,14 +1636,14 @@ static enum tendril_status uhci_start(struct tendril_hc *hc) {
         tendril_glue_pci_write16(hc->ctx, PCI_LEGSUP, LEGSUP_CLEAR);
     }
     halt(hc);
-    /* UHCI 1.1, 2.1.1: global reset for at least 10 ms, as a root port reset wants 50. */
+    /* UHCI 1.1, 2.1.1 asks for at least 10 ms of global reset. */
     reg_write16(hc, REG_USBCMD, CMD_GRESET);
-    tendril_delay_us(ROOT_RESET_MS * 1000);
+    tendril_delay_us(GLOBAL_RESET_MS * 1000);
     reg_write16(hc, REG_USBCMD, 0);
     tendril_delay_us(10000);
     reg_write16(hc, REG_USBCMD, CMD_HCRESET);
     if (!tendril_hc_wait16(hc, REG_USBCMD, CMD_HCRESET, 0, 10000)) {
-        LOG_ERROR("tendril: UHCI: reset failed");
+        LOG_ERROR("UHCI: reset failed");
         free_structures(hc);
         return TENDRIL_ERR_TIMEOUT;
     }
@@ -1551,7 +1655,7 @@ static enum tendril_status uhci_start(struct tendril_hc *hc) {
     u->control_skel = skeleton(hc);
     u->bulk_skel = skeleton(hc);
     bool ok = u->frame_list != NULL && u->control_skel != NULL && u->bulk_skel != NULL;
-    for (unsigned l = 0; l < LEVELS; l++) {
+    for (size_t l = 0; l < LEVELS; l++) {
         u->skel[l] = skeleton(hc);
         ok = ok && u->skel[l] != NULL;
     }
@@ -1563,11 +1667,11 @@ static enum tendril_status uhci_start(struct tendril_hc *hc) {
     u->bulk_skel->link = le(LINK_T);
     u->control_skel->link = le((uint32_t)u->bulk_skel->dma | LINK_QH);
     u->skel[0]->link = le((uint32_t)u->control_skel->dma | LINK_QH);
-    for (unsigned l = 1; l < LEVELS; l++) {
+    for (size_t l = 1; l < LEVELS; l++) {
         u->skel[l]->link = le((uint32_t)u->skel[l - 1]->dma | LINK_QH);
     }
-    for (unsigned f = 0; f < FRAMES; f++) {
-        unsigned level = f == 0 ? LEVELS - 1 : MIN((unsigned)__builtin_ctz(f), LEVELS - 1u);
+    for (size_t f = 0; f < FRAMES; f++) {
+        size_t level = f == 0 ? LEVELS - 1 : MIN(lowest_bit(f), (size_t)LEVELS - 1);
         u->frame_list[f] = le((uint32_t)u->skel[level]->dma | LINK_QH);
     }
     dma_barrier();
@@ -1579,17 +1683,19 @@ static enum tendril_status uhci_start(struct tendril_hc *hc) {
     reg_write16(hc, REG_USBSTS, STS_ACK);
     reg_write16(hc, REG_USBCMD, CMD_RS | CMD_CF | CMD_MAXP);
     if (!tendril_hc_wait16(hc, REG_USBSTS, STS_HALTED, 0, 10000)) {
-        LOG_ERROR("tendril: UHCI: controller did not start");
+        LOG_ERROR("UHCI: controller did not start");
         free_structures(hc);
         return TENDRIL_ERR_TIMEOUT;
     }
     if (hc->config.pci && !(hc->quirks & TENDRIL_HC_QUIRK_NO_HANDOFF)) {
+        /* BEGIN FreeBSD sys/dev/usb/controller/uhci_pci.c */
         /* Interrupts back on PIRQD, as FreeBSD's sys/dev/usb/controller/uhci_pci.c (BSD-2-Clause) leaves it. */
         tendril_glue_pci_write16(hc->ctx, PCI_LEGSUP, LEGSUP_PIRQ);
+        /* END FreeBSD sys/dev/usb/controller/uhci_pci.c */
     }
-    LOG_INFO("tendril: UHCI: %u ports", u->num_ports);
+    LOG_INFO("UHCI: %zu ports", u->num_ports);
 
-    enum tendril_status st = tendril_roothub_init(hc, u->num_ports);
+    int st = tendril_roothub_init(hc, u->num_ports);
     if (st != TENDRIL_OK) {
         halt(hc);
         free_structures(hc);
@@ -1612,7 +1718,7 @@ static void uhci_stop(struct tendril_hc *hc) {
     fail_everything(hc);
 }
 
-static enum tendril_status uhci_suspend(struct tendril_hc *hc) {
+static int uhci_suspend(struct tendril_hc *hc) {
     struct uhci *u = U(hc);
     tendril_timer_cancel(hc, &u->port_timer);
     u->saved_cmd = reg_read16(hc, REG_USBCMD);
@@ -1624,7 +1730,7 @@ static enum tendril_status uhci_suspend(struct tendril_hc *hc) {
     return TENDRIL_OK;
 }
 
-static enum tendril_status uhci_resume(struct tendril_hc *hc) {
+static int uhci_resume(struct tendril_hc *hc) {
     struct uhci *u = U(hc);
     if (reg_read16(hc, REG_USBSTS) == 0xffff) {
         return TENDRIL_ERR_NO_DEVICE;

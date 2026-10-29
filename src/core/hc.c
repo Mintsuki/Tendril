@@ -1,6 +1,33 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "../internal.h"
 
-bool tendril_pci_hc_type(uint32_t class_code, enum tendril_hc_type *type) {
+bool tendril_pci_hc_type(uint32_t class_code, int *type) {
     if ((class_code >> 8) != 0x0c03) {
         return false;
     }
@@ -79,7 +106,7 @@ void tendril_queue_work(struct tendril_hc *hc, struct tendril_work *work) {
     }
 }
 
-void tendril_async_complete(struct tendril_hc *hc, struct tendril_async *async, enum tendril_status status) {
+void tendril_async_complete(struct tendril_hc *hc, struct tendril_async *async, int status) {
     async->status = status;
     tendril_queue_work(hc, &async->work);
 }
@@ -128,9 +155,9 @@ static uint64_t next_deadline(struct tendril_hc *hc) {
 /* Addresses */
 
 uint8_t tendril_address_alloc(struct tendril_hc *hc) {
-    for (unsigned a = 1; a < 128; a++) {
-        if (!(hc->addresses[a / 32] & (1u << (a % 32)))) {
-            hc->addresses[a / 32] |= 1u << (a % 32);
+    for (size_t a = 1; a < 128; a++) {
+        if (!(hc->addresses[a / 32] & ((uint32_t)1 << (a % 32)))) {
+            hc->addresses[a / 32] |= (uint32_t)1 << (a % 32);
             return (uint8_t)a;
         }
     }
@@ -139,7 +166,7 @@ uint8_t tendril_address_alloc(struct tendril_hc *hc) {
 
 void tendril_address_free(struct tendril_hc *hc, uint8_t address) {
     if (address != 0) {
-        hc->addresses[address / 32] &= ~(1u << (address % 32));
+        hc->addresses[address / 32] &= ~((uint32_t)1 << (address % 32));
     }
 }
 
@@ -161,18 +188,18 @@ static void root_get_status(struct tendril_port *port) {
     hc_unlock(hc);
 }
 
-static void root_set_feature(struct tendril_port *port, unsigned feature) {
+static void root_set_feature(struct tendril_port *port, unsigned int feature) {
     struct tendril_hc *hc = port_hc(port);
     hc_lock(hc);
-    enum tendril_status st = hc->dead ? TENDRIL_ERR_NO_DEVICE : hc->ops->port_set_feature(hc, port->number, feature);
+    int st = hc->dead ? TENDRIL_ERR_NO_DEVICE : hc->ops->port_set_feature(hc, port->number, feature);
     tendril_async_complete(hc, &port->async, st);
     hc_unlock(hc);
 }
 
-static void root_clear_feature(struct tendril_port *port, unsigned feature) {
+static void root_clear_feature(struct tendril_port *port, unsigned int feature) {
     struct tendril_hc *hc = port_hc(port);
     hc_lock(hc);
-    enum tendril_status st = hc->dead ? TENDRIL_ERR_NO_DEVICE : hc->ops->port_clear_feature(hc, port->number, feature);
+    int st = hc->dead ? TENDRIL_ERR_NO_DEVICE : hc->ops->port_clear_feature(hc, port->number, feature);
     tendril_async_complete(hc, &port->async, st);
     hc_unlock(hc);
 }
@@ -184,7 +211,7 @@ static const struct tendril_hub_ops root_hub_ops = {
 };
 
 /* Called by controller drivers from start() once the port count is known. */
-enum tendril_status tendril_roothub_init(struct tendril_hc *hc, unsigned num_ports) {
+int tendril_roothub_init(struct tendril_hc *hc, size_t num_ports) {
     hc->root.hc = hc;
     hc->root.dev = NULL;
     hc->root.ops = &root_hub_ops;
@@ -193,18 +220,18 @@ enum tendril_status tendril_roothub_init(struct tendril_hc *hc, unsigned num_por
     if (hc->root.ports == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
-    for (unsigned i = 0; i < num_ports; i++) {
+    for (size_t i = 0; i < num_ports; i++) {
         tendril_port_init(&hc->root.ports[i], &hc->root, i + 1);
     }
     return TENDRIL_OK;
 }
 
-void tendril_roothub_changed(struct tendril_hc *hc, unsigned port) {
+void tendril_roothub_changed(struct tendril_hc *hc, size_t port) {
     if (hc->root.ports == NULL || hc->removing) {
         return;
     }
     if (port == 0) {
-        for (unsigned i = 0; i < hc->root.num_ports; i++) {
+        for (size_t i = 0; i < hc->root.num_ports; i++) {
             tendril_port_kick(&hc->root.ports[i]);
         }
     } else if (port <= hc->root.num_ports) {
@@ -214,7 +241,7 @@ void tendril_roothub_changed(struct tendril_hc *hc, unsigned port) {
 
 /* Controllers */
 
-static const struct tendril_hcd_ops *hcd_ops(enum tendril_hc_type type) {
+static const struct tendril_hcd_ops *hcd_ops(int type) {
     switch (type) {
 #ifndef TENDRIL_NO_UHCI
         case TENDRIL_HC_UHCI: {
@@ -250,13 +277,13 @@ static void pci_enable(struct tendril_hc *hc) {
     tendril_glue_pci_write16(hc->ctx, 0x04, cmd);
 }
 
-enum tendril_status tendril_hc_add(const struct tendril_hc_config *config, struct tendril_hc **out) {
+int tendril_hc_add(const struct tendril_hc_config *config, struct tendril_hc **out) {
     const struct tendril_hcd_ops *ops = hcd_ops(config->type);
     if (ops == NULL) {
         return TENDRIL_ERR_UNSUPPORTED;
     }
 
-    struct tendril_hc *hc = tendril_zalloc(sizeof(*hc));
+    struct tendril_hc *hc = tendril_zalloc(sizeof(struct tendril_hc));
     if (hc == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
@@ -276,15 +303,17 @@ enum tendril_status tendril_hc_add(const struct tendril_hc_config *config, struc
     }
     hc->quirks = config->quirks | tendril_hc_quirk_lookup(hc);
 
-    LOG_INFO("tendril: %s controller%s%04x:%04x, quirks 0x%x", ops->name,
-             config->pci ? " " : "", config->pci ? hc->pci_vendor : 0,
-             config->pci ? hc->pci_device : 0, hc->quirks);
+    LOG_INFO(
+        "%s controller%s%04x:%04x, quirks 0x%x", ops->name,
+        config->pci ? " " : "", config->pci ? hc->pci_vendor : 0,
+        config->pci ? hc->pci_device : 0, hc->quirks
+    );
 
-    enum tendril_status st = ops->start(hc);
+    int st = ops->start(hc);
     if (st != TENDRIL_OK) {
-        LOG_ERROR("tendril: %s controller failed to start: %s", ops->name, tendril_status_str(st));
+        LOG_ERROR("%s controller failed to start: %s", ops->name, tendril_status_str(st));
         tendril_free(hc->root.ports, hc->root.num_ports * sizeof(struct tendril_port));
-        tendril_free(hc, sizeof(*hc));
+        tendril_free(hc, sizeof(struct tendril_hc));
         return st;
     }
 
@@ -321,7 +350,7 @@ static void teardown(struct tendril_hc *hc) {
     hc->dead = true;
     hc_unlock(hc);
 
-    for (unsigned i = 0; i < hc->root.num_ports; i++) {
+    for (size_t i = 0; i < hc->root.num_ports; i++) {
         struct tendril_port *port = &hc->root.ports[i];
         hc_lock(hc);
         tendril_timer_cancel(hc, &port->timer);
@@ -350,27 +379,27 @@ static void teardown(struct tendril_hc *hc) {
 
 void tendril_hc_remove(struct tendril_hc *hc) {
     teardown(hc);
-    tendril_free(hc, sizeof(*hc));
+    tendril_free(hc, sizeof(struct tendril_hc));
 }
 
 /* System sleep */
 
 struct pm_wait {
     volatile bool done;
-    enum tendril_status status;
+    int status;
 };
 
-static void pm_wait_done(void *ctx, enum tendril_status status) {
+static void pm_wait_done(void *ctx, int status) {
     struct pm_wait *w = ctx;
     w->status = status;
     w->done = true;
 }
 
-static enum tendril_status run_device_pm(struct tendril_hc *hc, struct tendril_device *dev, bool suspend, bool wake) {
+static int run_device_pm(struct tendril_hc *hc, struct tendril_device *dev, bool suspend, bool wake) {
     struct pm_wait w = { false, TENDRIL_OK };
     tendril_device_ref(dev);
-    enum tendril_status st = suspend ? tendril_device_suspend(dev, wake, pm_wait_done, &w)
-                                    : tendril_device_resume(dev, pm_wait_done, &w);
+    int st = suspend ? tendril_device_suspend(dev, wake, pm_wait_done, &w)
+        : tendril_device_resume(dev, pm_wait_done, &w);
     if (st == TENDRIL_OK) {
         tendril_hc_wait(hc, &w.done);
         st = w.status;
@@ -404,7 +433,7 @@ static struct tendril_device *next_pm_device(struct tendril_hc *hc, bool suspend
 static bool settled(struct tendril_hc *hc) {
     hc_lock(hc);
     bool idle = hc->enum_port == NULL && list_empty(&hc->enum_queue);
-    for (unsigned i = 0; i < hc->root.num_ports && idle; i++) {
+    for (size_t i = 0; i < hc->root.num_ports && idle; i++) {
         idle = tendril_port_idle(&hc->root.ports[i]);
     }
     struct tendril_list *it;
@@ -416,7 +445,7 @@ static bool settled(struct tendril_hc *hc) {
         if (dev->pm_busy) {
             idle = false;
         }
-        for (unsigned i = 0; dev->hub != NULL && dev->hub->ports != NULL && i < dev->hub->num_ports; i++) {
+        for (size_t i = 0; dev->hub != NULL && dev->hub->ports != NULL && i < dev->hub->num_ports; i++) {
             if (!tendril_port_idle(&dev->hub->ports[i])) {
                 idle = false;
             }
@@ -429,10 +458,10 @@ static bool settled(struct tendril_hc *hc) {
 static void resume_devices(struct tendril_hc *hc) {
     struct tendril_device *dev;
     while ((dev = next_pm_device(hc, false)) != NULL) {
-        enum tendril_status st = run_device_pm(hc, dev, false, false);
+        int st = run_device_pm(hc, dev, false, false);
         if (st != TENDRIL_OK && !dev->gone) {
             /* Left suspended; its port gives up on it if it is gone. */
-            LOG_WARN("tendril: device %u did not resume: %s", dev->address, tendril_status_str(st));
+            LOG_WARN("device %u did not resume: %s", dev->address, tendril_status_str(st));
             dev->pm_system = false;
         }
     }
@@ -440,7 +469,7 @@ static void resume_devices(struct tendril_hc *hc) {
 
 #define SETTLE_TIMEOUT_MS 3000
 
-enum tendril_status tendril_hc_suspend(struct tendril_hc *hc, bool wake) {
+int tendril_hc_suspend(struct tendril_hc *hc, bool wake) {
     if (hc->dead) {
         return TENDRIL_ERR_NO_DEVICE;
     }
@@ -456,25 +485,25 @@ enum tendril_status tendril_hc_suspend(struct tendril_hc *hc, bool wake) {
     }
 
     struct tendril_device *dev;
-    unsigned rounds = 0;
+    unsigned int rounds = 0;
     while ((dev = next_pm_device(hc, true)) != NULL) {
         /* A device that keeps signalling wakeup would otherwise hold this up forever. */
         if (++rounds > 256) {
             resume_devices(hc);
             return TENDRIL_ERR_BUSY;
         }
-        enum tendril_status st = run_device_pm(hc, dev, true, wake);
+        int st = run_device_pm(hc, dev, true, wake);
         if (st == TENDRIL_OK) {
             dev->pm_system = true;
         } else if (!dev->gone) {
-            LOG_WARN("tendril: device %u cannot be suspended: %s", dev->address, tendril_status_str(st));
+            LOG_WARN("device %u cannot be suspended: %s", dev->address, tendril_status_str(st));
             resume_devices(hc);
             return st;
         }
     }
 
     hc_lock(hc);
-    enum tendril_status st = hc->dead ? TENDRIL_ERR_NO_DEVICE : hc->ops->suspend != NULL ? hc->ops->suspend(hc) : TENDRIL_OK;
+    int st = hc->dead ? TENDRIL_ERR_NO_DEVICE : hc->ops->suspend != NULL ? hc->ops->suspend(hc) : TENDRIL_OK;
     if (st == TENDRIL_OK) {
         hc->suspended = true;
     }
@@ -486,8 +515,8 @@ enum tendril_status tendril_hc_suspend(struct tendril_hc *hc, bool wake) {
 }
 
 /* After a loss of power: everything is gone, so it all starts over. */
-static enum tendril_status restart(struct tendril_hc *hc) {
-    LOG_WARN("tendril: %s controller lost its state during sleep, restarting it", hc->ops->name);
+static int restart(struct tendril_hc *hc) {
+    LOG_WARN("%s controller lost its state during sleep, restarting it", hc->ops->name);
     teardown(hc);
     /* Whatever is still queued belonged to the controller state just freed. */
     list_init(&hc->work);
@@ -501,9 +530,9 @@ static enum tendril_status restart(struct tendril_hc *hc) {
     if (hc->config.pci) {
         pci_enable(hc);
     }
-    enum tendril_status st = hc->ops->start(hc);
+    int st = hc->ops->start(hc);
     if (st != TENDRIL_OK) {
-        LOG_ERROR("tendril: %s controller failed to restart: %s", hc->ops->name, tendril_status_str(st));
+        LOG_ERROR("%s controller failed to restart: %s", hc->ops->name, tendril_status_str(st));
         hc->dead = true;
         return st;
     }
@@ -513,7 +542,7 @@ static enum tendril_status restart(struct tendril_hc *hc) {
     return TENDRIL_OK;
 }
 
-enum tendril_status tendril_hc_resume(struct tendril_hc *hc) {
+int tendril_hc_resume(struct tendril_hc *hc) {
     if (!hc->suspended) {
         return TENDRIL_ERR_INVALID;
     }
@@ -523,7 +552,7 @@ enum tendril_status tendril_hc_resume(struct tendril_hc *hc) {
     }
     hc_lock(hc);
     hc->suspended = false;
-    enum tendril_status st = hc->dead ? TENDRIL_ERR_NO_DEVICE : hc->ops->resume != NULL ? hc->ops->resume(hc) : TENDRIL_OK;
+    int st = hc->dead ? TENDRIL_ERR_NO_DEVICE : hc->ops->resume != NULL ? hc->ops->resume(hc) : TENDRIL_OK;
     if (st == TENDRIL_OK) {
         /* Ports may have seen wakeups, connects, or disconnects while asleep. */
         tendril_roothub_changed(hc, 0);
@@ -582,7 +611,7 @@ void tendril_hc_wait(struct tendril_hc *hc, volatile bool *flag) {
     }
 }
 
-enum tendril_hc_type tendril_hc_type(struct tendril_hc *hc) {
+int tendril_hc_type(struct tendril_hc *hc) {
     return hc->config.type;
 }
 
@@ -590,11 +619,11 @@ uint32_t tendril_hc_quirks(struct tendril_hc *hc) {
     return hc->quirks;
 }
 
-unsigned tendril_hc_num_ports(struct tendril_hc *hc) {
+size_t tendril_hc_num_ports(struct tendril_hc *hc) {
     return hc->root.num_ports;
 }
 
-struct tendril_device *tendril_hc_port_device(struct tendril_hc *hc, unsigned port) {
+struct tendril_device *tendril_hc_port_device(struct tendril_hc *hc, size_t port) {
     if (port == 0 || port > hc->root.num_ports) {
         return NULL;
     }

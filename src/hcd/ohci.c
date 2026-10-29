@@ -1,6 +1,98 @@
-#include "../internal.h"
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 /* OpenHCI 1.0a. Registers, descriptors, and the HCCA are little-endian and use 32-bit addresses. */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/controller/ohci.c
+ * and sys/dev/usb/usb.h (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
+ * Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
+ * Copyright (c) 1998 Lennart Augustsson. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from OpenBSD's sys/dev/usb/ohci.c (commit
+ * fba0a8da167d48e1d94a300389b91b0a48708155):
+ *
+ * Copyright (c) 1998 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lennart Augustsson (lennart@augustsson.net) at
+ * Carlstedt Research & Technology.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "../internal.h"
 
 #define REG_REVISION 0x00
 #define REG_CONTROL 0x04
@@ -18,94 +110,94 @@
 #define REG_PERIODIC_START 0x40
 #define REG_RH_DESC_A 0x48
 #define REG_RH_STATUS 0x50
-#define REG_RH_PORT(n) (0x54 + 4 * ((n) - 1))
+#define REG_RH_PORT(n) ((uint32_t)(0x54 + 4 * ((n) - 1)))
 
-#define CTL_CBSR_MASK 3u
-#define CTL_RATIO_4_1 3u
-#define CTL_PLE (1u << 2)
-#define CTL_IE (1u << 3)
-#define CTL_CLE (1u << 4)
-#define CTL_BLE (1u << 5)
-#define CTL_HCFS_MASK (3u << 6)
-#define CTL_HCFS_RESET (0u << 6)
-#define CTL_HCFS_RESUME (1u << 6)
-#define CTL_HCFS_OPERATIONAL (2u << 6)
-#define CTL_IR (1u << 8)
+#define CTL_CBSR_MASK ((uint32_t)3)
+#define CTL_RATIO_4_1 ((uint32_t)3)
+#define CTL_PLE ((uint32_t)1 << 2)
+#define CTL_IE ((uint32_t)1 << 3)
+#define CTL_CLE ((uint32_t)1 << 4)
+#define CTL_BLE ((uint32_t)1 << 5)
+#define CTL_HCFS_MASK ((uint32_t)3 << 6)
+#define CTL_HCFS_RESET ((uint32_t)0 << 6)
+#define CTL_HCFS_RESUME ((uint32_t)1 << 6)
+#define CTL_HCFS_OPERATIONAL ((uint32_t)2 << 6)
+#define CTL_IR ((uint32_t)1 << 8)
 
-#define CMD_HCR (1u << 0)
-#define CMD_CLF (1u << 1)
-#define CMD_BLF (1u << 2)
-#define CMD_OCR (1u << 3)
+#define CMD_HCR ((uint32_t)1 << 0)
+#define CMD_CLF ((uint32_t)1 << 1)
+#define CMD_BLF ((uint32_t)1 << 2)
+#define CMD_OCR ((uint32_t)1 << 3)
 
-#define INT_SO (1u << 0)
-#define INT_WDH (1u << 1)
-#define INT_SF (1u << 2)
-#define INT_RD (1u << 3)
-#define INT_UE (1u << 4)
-#define INT_FNO (1u << 5)
-#define INT_RHSC (1u << 6)
-#define INT_OC (1u << 30)
-#define INT_MIE (1u << 31)
+#define INT_SO ((uint32_t)1 << 0)
+#define INT_WDH ((uint32_t)1 << 1)
+#define INT_SF ((uint32_t)1 << 2)
+#define INT_RD ((uint32_t)1 << 3)
+#define INT_UE ((uint32_t)1 << 4)
+#define INT_FNO ((uint32_t)1 << 5)
+#define INT_RHSC ((uint32_t)1 << 6)
+#define INT_OC ((uint32_t)1 << 30)
+#define INT_MIE ((uint32_t)1 << 31)
 #define INT_ALL (INT_SO | INT_WDH | INT_SF | INT_RD | INT_UE | INT_FNO | INT_RHSC | INT_OC)
 
-#define FI_MASK 0x3fffu
-#define FI_DEFAULT 11999u
-#define FIT (1u << 31)
+#define FI_MASK ((uint32_t)0x3fff)
+#define FI_DEFAULT ((uint32_t)11999)
+#define FIT ((uint32_t)1 << 31)
 /* OHCI 1.0a, 5.4: bit times of transaction and EOF overhead, taken off before the 6/7 for bit stuffing. */
-#define MAX_OVERHEAD 210u
+#define MAX_OVERHEAD ((uint32_t)210)
 
-#define RHA_NDP_MASK 0xffu
-#define RHA_PSM (1u << 8)
-#define RHA_NPS (1u << 9)
-#define RHA_NOCP (1u << 12)
-#define RHS_LPSC (1u << 16)
+#define RHA_NDP_MASK ((uint32_t)0xff)
+#define RHA_PSM ((uint32_t)1 << 8)
+#define RHA_NPS ((uint32_t)1 << 9)
+#define RHA_NOCP ((uint32_t)1 << 12)
+#define RHS_LPSC ((uint32_t)1 << 16)
 
 /* Port status: each read bit doubles as a write-one command, as noted. */
-#define PS_CCS (1u << 0)
-#define PS_CLEAR_ENABLE (1u << 0)
-#define PS_PES (1u << 1)
-#define PS_SET_ENABLE (1u << 1)
-#define PS_PSS (1u << 2)
-#define PS_SET_SUSPEND (1u << 2)
-#define PS_POCI (1u << 3)
-#define PS_CLEAR_SUSPEND (1u << 3)
-#define PS_PRS (1u << 4)
-#define PS_SET_RESET (1u << 4)
-#define PS_PPS (1u << 8)
-#define PS_SET_POWER (1u << 8)
-#define PS_LSDA (1u << 9)
-#define PS_CLEAR_POWER (1u << 9)
-#define PS_CSC (1u << 16)
-#define PS_PESC (1u << 17)
-#define PS_PSSC (1u << 18)
-#define PS_OCIC (1u << 19)
-#define PS_PRSC (1u << 20)
+#define PS_CCS ((uint32_t)1 << 0)
+#define PS_CLEAR_ENABLE ((uint32_t)1 << 0)
+#define PS_PES ((uint32_t)1 << 1)
+#define PS_SET_ENABLE ((uint32_t)1 << 1)
+#define PS_PSS ((uint32_t)1 << 2)
+#define PS_SET_SUSPEND ((uint32_t)1 << 2)
+#define PS_POCI ((uint32_t)1 << 3)
+#define PS_CLEAR_SUSPEND ((uint32_t)1 << 3)
+#define PS_PRS ((uint32_t)1 << 4)
+#define PS_SET_RESET ((uint32_t)1 << 4)
+#define PS_PPS ((uint32_t)1 << 8)
+#define PS_SET_POWER ((uint32_t)1 << 8)
+#define PS_LSDA ((uint32_t)1 << 9)
+#define PS_CLEAR_POWER ((uint32_t)1 << 9)
+#define PS_CSC ((uint32_t)1 << 16)
+#define PS_PESC ((uint32_t)1 << 17)
+#define PS_PSSC ((uint32_t)1 << 18)
+#define PS_OCIC ((uint32_t)1 << 19)
+#define PS_PRSC ((uint32_t)1 << 20)
 
-#define ED_DIR_OUT (1u << 11)
-#define ED_DIR_IN (2u << 11)
-#define ED_LOW_SPEED (1u << 13)
-#define ED_SKIP (1u << 14)
-#define ED_ISO (1u << 15)
-#define ED_HALTED 1u
-#define ED_CARRY 2u
-#define ED_PTR_MASK 0xfffffff0u
+#define ED_DIR_OUT ((uint32_t)1 << 11)
+#define ED_DIR_IN ((uint32_t)2 << 11)
+#define ED_LOW_SPEED ((uint32_t)1 << 13)
+#define ED_SKIP ((uint32_t)1 << 14)
+#define ED_ISO ((uint32_t)1 << 15)
+#define ED_HALTED ((uint32_t)1)
+#define ED_CARRY ((uint32_t)2)
+#define ED_PTR_MASK ((uint32_t)0xfffffff0)
 
-#define TD_ROUNDING (1u << 18)
-#define TD_DP_SETUP (0u << 19)
-#define TD_DP_OUT (1u << 19)
-#define TD_DP_IN (2u << 19)
-#define TD_DP_MASK (3u << 19)
+#define TD_ROUNDING ((uint32_t)1 << 18)
+#define TD_DP_SETUP ((uint32_t)0 << 19)
+#define TD_DP_OUT ((uint32_t)1 << 19)
+#define TD_DP_IN ((uint32_t)2 << 19)
+#define TD_DP_MASK ((uint32_t)3 << 19)
 #define TD_DI(n) ((uint32_t)(n) << 21)
-#define TD_TOGGLE_CARRY (0u << 24)
-#define TD_DATA0 (2u << 24)
-#define TD_DATA1 (3u << 24)
-#define TD_TOGGLE_MASK (3u << 24)
+#define TD_TOGGLE_CARRY ((uint32_t)0 << 24)
+#define TD_DATA0 ((uint32_t)2 << 24)
+#define TD_DATA1 ((uint32_t)3 << 24)
+#define TD_TOGGLE_MASK ((uint32_t)3 << 24)
 #define TD_CC_SHIFT 28
-#define TD_NOT_ACCESSED (15u << 28)
+#define TD_NOT_ACCESSED ((uint32_t)15 << 28)
 
 #define ITD_FC(n) ((uint32_t)(n) << 24)
 /* An untouched offset carries condition code 111x; x selects the page. */
-#define ITD_OFFSET_FRESH 0xe000u
+#define ITD_OFFSET_FRESH ((uint32_t)0xe000)
 
 #define CC_NOERROR 0
 #define CC_STALL 4
@@ -116,11 +208,26 @@
 #define CC_NOT_ACCESSED 14
 
 #define INTR_LEVELS 6
-/* 4 KiB per TD, as FreeBSD's sys/dev/usb/controller/ohci.c (BSD-2-Clause) has it, though OHCI 1.0a allows two pages. */
+/* BEGIN FreeBSD sys/dev/usb/controller/ohci.c */
+/*
+ * 4 KiB per TD, as FreeBSD's sys/dev/usb/controller/ohci.c (BSD-2-Clause) has
+ * it, though OHCI 1.0a allows two pages.
+ */
 #define TD_MAX_BYTES 4096
+/* END FreeBSD sys/dev/usb/controller/ohci.c */
 #define ITD_PACKETS 8
 #define ISO_LEAD_FRAMES 4
-#define ROOT_RESET_MS 50
+/* BEGIN FreeBSD sys/dev/usb/usb.h, sys/dev/usb/controller/ohci.c */
+/*
+ * FreeBSD's USB_BUS_RESET_DELAY and USB_PORT_ROOT_RESET_DELAY, from its
+ * sys/dev/usb/usb.h (BSD-2-Clause), as its sys/dev/usb/controller/ohci.c
+ * (BSD-2-Clause, ohci_controller_init and ohci_roothub_exec) uses them, and its
+ * wait for SMM to let go.
+ */
+#define BUS_RESET_MS 100
+#define ROOT_RESET_MS 200
+#define SMM_WAIT_MS 100
+/* END FreeBSD sys/dev/usb/usb.h, sys/dev/usb/controller/ohci.c */
 
 struct ohci_hcca {
     uint32_t intr_table[32];
@@ -155,19 +262,17 @@ struct ohci_itd {
     uint32_t count;
 };
 
-enum ed_kind {
-    KIND_CONTROL,
-    KIND_BULK,
-    KIND_INTR,
-    KIND_ISO,
-    KIND_SKELETON
-};
+#define KIND_CONTROL 0
+#define KIND_BULK 1
+#define KIND_INTR 2
+#define KIND_ISO 3
+#define KIND_SKELETON 4
 
 /* Waits for endpoints being closed, then completes an asynchronous operation. */
 struct ohci_close {
     struct tendril_async *async;
-    unsigned remaining;
-    enum tendril_status status;
+    unsigned int remaining;
+    int status;
 };
 
 struct ohci_ed {
@@ -185,8 +290,8 @@ struct ohci_ed {
     struct ohci_ed *sw_prev;
     struct tendril_list node;
     struct tendril_list wait_node;
-    enum ed_kind kind;
-    unsigned level;
+    int kind;
+    size_t level;
     uint32_t wait_frame;
     struct ohci_close *close;
     bool linked;
@@ -199,7 +304,7 @@ struct ohci_ed {
 
 struct ohci {
     struct tendril_hc *hc;
-    unsigned num_ports;
+    size_t num_ports;
     bool per_port_power;
     bool no_power_switching;
     struct ohci_hcca *hcca;
@@ -216,8 +321,8 @@ struct ohci {
     /* Descriptors waiting for frames to pass: closing ones off the lists, paused ones skipped. */
     struct tendril_list waiting;
     /* List enables held off while control or bulk descriptors are removed. */
-    unsigned control_removals;
-    unsigned bulk_removals;
+    unsigned int control_removals;
+    unsigned int bulk_removals;
     uint32_t control;
     uint32_t intr;
     struct tendril_timer timer;
@@ -231,8 +336,8 @@ struct ohci {
 #define XD_FLAGS 2
 #define XD_ACTUAL 3
 
-#define XF_CANCEL (1u << 0)
-#define XF_SHORT (1u << 1)
+#define XF_CANCEL ((uint32_t)1 << 0)
+#define XF_SHORT ((uint32_t)1 << 1)
 
 static struct ohci *O(struct tendril_hc *hc) {
     return hc->hcd;
@@ -387,11 +492,12 @@ static size_t td_moved(const struct ohci_td *td) {
     if (cbp == 0) {
         return td->length;
     }
-    size_t left = (((be ^ cbp) & ~0xfffu) ? 0x1000u : 0u) + (be & 0xfff) - (cbp & 0xfff) + 1;
+    size_t pages = ((be ^ cbp) & ~(uint32_t)0xfff) != 0 ? 0x1000 : 0;
+    size_t left = pages + (be & 0xfff) - (cbp & 0xfff) + 1;
     return td->length - MIN(left, (size_t)td->length);
 }
 
-static enum tendril_status cc_status(unsigned cc) {
+static int cc_status(unsigned int cc) {
     switch (cc) {
         case CC_STALL: {
             return TENDRIL_ERR_STALL;
@@ -413,8 +519,8 @@ static enum tendril_status cc_status(unsigned cc) {
 
 static uint32_t ed_flags(struct tendril_endpoint *ep) {
     struct tendril_device *dev = ep->dev;
-    uint32_t f = (uint32_t)(dev->address & 0x7f) | (uint32_t)(ep->address & TENDRIL_ENDPOINT_NUMBER_MASK) << 7 |
-                 (uint32_t)(ep->max_packet & 0x7ff) << 16;
+    uint32_t f = (uint32_t)(dev->address & 0x7f) | (uint32_t)(ep->address & TENDRIL_ENDPOINT_NUMBER_MASK) << 7
+        | (uint32_t)(ep->max_packet & 0x7ff) << 16;
     if (dev->speed == TENDRIL_SPEED_LOW) {
         f |= ED_LOW_SPEED;
     }
@@ -469,9 +575,9 @@ static void unlink_ed(struct ohci_ed *ed) {
     dma_barrier();
 }
 
-static unsigned intr_level(struct tendril_endpoint *ep) {
-    unsigned log2 = ep->interval_log2 > 3 ? ep->interval_log2 - 3u : 0u;
-    return MIN(log2, INTR_LEVELS - 1u);
+static size_t intr_level(struct tendril_endpoint *ep) {
+    size_t log2 = ep->interval_log2 > 3 ? ep->interval_log2 - (uint32_t)3 : (uint32_t)0;
+    return MIN(log2, (size_t)INTR_LEVELS - 1);
 }
 
 static void set_list_enables(struct tendril_hc *hc) {
@@ -542,7 +648,7 @@ static void fill_td(struct ohci_td *td, uint32_t flags, uint32_t cbp, uint32_t b
 /* Queues a control, bulk, or interrupt transfer behind the descriptor's dummy TD. */
 static void list_filled(struct tendril_hc *hc, struct ohci_ed *ed);
 
-static enum tendril_status submit_general(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_transfer *xfer) {
+static int submit_general(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_transfer *xfer) {
     struct tendril_endpoint *ep = xfer->endpoint;
     bool control = ep->type == TENDRIL_ENDPOINT_XFER_CONTROL;
     bool in = is_in(xfer);
@@ -568,7 +674,7 @@ static enum tendril_status submit_general(struct tendril_hc *hc, struct ohci_ed 
 
     /* Data: control toggles start at DATA1, bulk and interrupt carry theirs in the ED. */
     uint32_t dir = in ? TD_DP_IN : TD_DP_OUT;
-    unsigned packets = 1;
+    unsigned int packets = 1;
     size_t done = 0;
     bool any = false;
     while (done < len || (!control && !any) || zlp) {
@@ -603,7 +709,7 @@ static enum tendril_status submit_general(struct tendril_hc *hc, struct ohci_ed 
         bool last_data = done + chunk == len;
         /* Only the last IN TD may end short without an error; earlier ones halt on underrun. */
         fill_td(td, dir | toggle | (in && last_data ? TD_ROUNDING : 0), cbp, be, (uint32_t)chunk);
-        packets += (unsigned)((chunk + mps - 1) / mps);
+        packets += (unsigned int)((chunk + mps - 1) / mps);
         done += chunk;
         any = true;
     }
@@ -682,7 +788,7 @@ static bool scan_general(struct tendril_hc *hc, struct ohci_ed *ed, struct tendr
             }
             dma_barrier();
             uint32_t flags = le(td->flags);
-            unsigned cc = flags >> TD_CC_SHIFT;
+            unsigned int cc = flags >> TD_CC_SHIFT;
             bool data = !control || (td != first && td != last);
             if (data) {
                 actual += td_moved(td);
@@ -742,8 +848,9 @@ static void free_itd_chain(struct tendril_hc *hc, struct ohci_itd *itd, struct o
  * back to back in the rest of one page and the start of another, the same
  * two-page buffer a general TD has (OHCI 1.0a, 4.3.2.3.1). Returns the count.
  */
-static uint32_t fill_itd(struct ohci_itd *itd, struct tendril_transfer *xfer, uint32_t p, struct cursor *c,
-                         uint32_t frame) {
+static uint32_t fill_itd(
+    struct ohci_itd *itd, struct tendril_transfer *xfer, uint32_t p, struct cursor *c, uint32_t frame
+) {
     uint64_t start = cursor_addr(c);
     size_t first = cursor_page_room(c);
     size_t room = first;
@@ -777,7 +884,7 @@ static uint32_t fill_itd(struct ohci_itd *itd, struct tendril_transfer *xfer, ui
     /* BufferEnd is the last byte; with no data, the byte before the start. */
     uint64_t be = used <= first ? start + used - 1 : page1 + (used - first) - 1;
     itd->flags = le((frame & 0xffff) | TD_DI(0) | ITD_FC(n - 1) | TD_NOT_ACCESSED);
-    itd->bp0 = le((uint32_t)(start & ~0xfffull));
+    itd->bp0 = le((uint32_t)(start & ~(uint64_t)0xfff));
     itd->be = le((uint32_t)be);
     itd->first_packet = p;
     itd->count = n;
@@ -785,7 +892,7 @@ static uint32_t fill_itd(struct ohci_itd *itd, struct tendril_transfer *xfer, ui
     return n;
 }
 
-static enum tendril_status submit_iso(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_transfer *xfer) {
+static int submit_iso(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_transfer *xfer) {
     uint32_t now = current_frame(hc);
     uint32_t frame;
     struct cursor c;
@@ -841,7 +948,7 @@ static enum tendril_status submit_iso(struct tendril_hc *hc, struct ohci_ed *ed,
     }
 }
 
-static enum tendril_status psw_status(unsigned cc) {
+static int psw_status(unsigned int cc) {
     switch (cc) {
         case CC_NOERROR:
         case CC_DATA_UNDERRUN: {
@@ -863,7 +970,7 @@ static bool scan_iso(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_t
     uint32_t hp = ed_head(ed);
     bool in = is_in(xfer);
     size_t actual = 0;
-    enum tendril_status st = TENDRIL_OK;
+    int st = TENDRIL_OK;
 
     for (struct ohci_itd *itd = first;; itd = itd->sw_next) {
         if ((uint32_t)itd->dma == hp) {
@@ -878,9 +985,9 @@ static bool scan_iso(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_t
         for (uint32_t i = 0; i < itd->count; i++) {
             struct tendril_iso_packet *pkt = &xfer->iso_packets[itd->first_packet + i];
             uint16_t psw = tendril_le16(itd->offset[i]);
-            unsigned cc = psw >> 12;
+            unsigned int cc = psw >> (uint32_t)12;
             pkt->status = psw_status(cc);
-            pkt->actual = pkt->status == TENDRIL_OK ? (in ? psw & 0x7ffu : pkt->length) : 0;
+            pkt->actual = pkt->status == TENDRIL_OK ? (in ? psw & (uint32_t)0x7ff : pkt->length) : 0;
             actual += pkt->actual;
             if (pkt->status != TENDRIL_OK && st == TENDRIL_OK) {
                 st = pkt->status;
@@ -945,9 +1052,8 @@ static void sweep_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
 
     uint32_t head = le(ed->head);
     uint32_t carry = head & ED_CARRY;
-    struct tendril_transfer *oldest = list_empty(&ep->transfers)
-                                         ? NULL
-                                         : CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
+    struct tendril_transfer *oldest = list_empty(&ep->transfers) ? NULL
+        : CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
     bool restart = false;
 
     LIST_FOR_EACH_SAFE(it, tmp, &ep->transfers) {
@@ -965,7 +1071,7 @@ static void sweep_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
                     /* A TD part way through holds a toggle the carry has not caught up with. */
                     uint32_t t = le(td->flags) & TD_TOGGLE_MASK;
                     if (!control && (t & TD_DATA0) == TD_DATA0) {
-                        carry = (t & (1u << 24)) ? ED_CARRY : 0;
+                        carry = (t & ((uint32_t)1 << 24)) ? ED_CARRY : 0;
                     }
                     break;
                 }
@@ -1024,11 +1130,11 @@ static void sweep_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
 static void close_done(struct tendril_hc *hc, struct ohci_close *close) {
     if (close != NULL && --close->remaining == 0) {
         tendril_async_complete(hc, close->async, close->status);
-        tendril_free(close, sizeof(*close));
+        tendril_free(close, sizeof(struct ohci_close));
     }
 }
 
-static void fail_transfers(struct tendril_hc *hc, struct ohci_ed *ed, enum tendril_status status) {
+static void fail_transfers(struct tendril_hc *hc, struct ohci_ed *ed, int status) {
     struct tendril_endpoint *ep = ed->ep;
     while (!list_empty(&ep->transfers)) {
         struct tendril_transfer *xfer = CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
@@ -1124,7 +1230,7 @@ static void ohci_timer(struct tendril_work *work) {
 
 /* Transfers */
 
-static enum tendril_status ohci_submit(struct tendril_hc *hc, struct tendril_transfer *xfer) {
+static int ohci_submit(struct tendril_hc *hc, struct tendril_transfer *xfer) {
     struct ohci_ed *ed = xfer->endpoint->hcd;
     if (ed == NULL || ed->closing) {
         return TENDRIL_ERR_INVALID;
@@ -1159,7 +1265,7 @@ static void ohci_cancel(struct tendril_hc *hc, struct tendril_transfer *xfer) {
 
 /* Endpoints */
 
-static enum tendril_status open_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep) {
+static int open_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep) {
     struct ohci *o = O(hc);
     bool iso = ep->type == TENDRIL_ENDPOINT_XFER_ISOC;
 
@@ -1256,12 +1362,12 @@ static void close_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep, s
     }
 }
 
-static enum tendril_status ohci_configure(struct tendril_hc *hc, struct tendril_device *dev,
-                                         struct tendril_endpoint **drop, unsigned num_drop,
-                                         struct tendril_endpoint **add, unsigned num_add,
-                                         struct tendril_async *async) {
+static int ohci_configure(
+    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_endpoint **drop, size_t num_drop,
+    struct tendril_endpoint **add, size_t num_add, struct tendril_async *async
+) {
     (void)dev;
-    struct ohci_close *close = tendril_zalloc(sizeof(*close));
+    struct ohci_close *close = tendril_zalloc(sizeof(struct ohci_close));
     if (close == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
@@ -1269,13 +1375,13 @@ static enum tendril_status ohci_configure(struct tendril_hc *hc, struct tendril_
     close->status = TENDRIL_OK;
     /* Held until everything is queued, so it cannot complete early. */
     close->remaining = 1;
-    for (unsigned i = 0; i < num_drop; i++) {
+    for (size_t i = 0; i < num_drop; i++) {
         close_endpoint(hc, drop[i], close);
     }
-    for (unsigned i = 0; i < num_add; i++) {
-        enum tendril_status st = open_endpoint(hc, add[i]);
+    for (size_t i = 0; i < num_add; i++) {
+        int st = open_endpoint(hc, add[i]);
         if (st != TENDRIL_OK) {
-            for (unsigned j = 0; j < i; j++) {
+            for (size_t j = 0; j < i; j++) {
                 close_endpoint(hc, add[j], close);
             }
             close->status = st;
@@ -1286,15 +1392,15 @@ static enum tendril_status ohci_configure(struct tendril_hc *hc, struct tendril_
     return TENDRIL_OK;
 }
 
-static enum tendril_status ohci_device_init(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async) {
-    enum tendril_status st = open_endpoint(hc, &dev->ep0);
+static int ohci_device_init(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async) {
+    int st = open_endpoint(hc, &dev->ep0);
     if (st == TENDRIL_OK) {
         tendril_async_complete(hc, async, TENDRIL_OK);
     }
     return st;
 }
 
-static enum tendril_status ohci_ep0_update(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async) {
+static int ohci_ep0_update(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async) {
     struct ohci_ed *ed = dev->ep0.hcd;
     /* Nothing is queued on endpoint 0 here, so its address and packet size can change in place. */
     ed->flags = le(ed_flags(&dev->ep0) | (le(ed->flags) & ED_SKIP));
@@ -1303,8 +1409,7 @@ static enum tendril_status ohci_ep0_update(struct tendril_hc *hc, struct tendril
     return TENDRIL_OK;
 }
 
-static enum tendril_status ohci_endpoint_reset(struct tendril_hc *hc, struct tendril_endpoint *ep,
-                                              struct tendril_async *async) {
+static int ohci_endpoint_reset(struct tendril_hc *hc, struct tendril_endpoint *ep, struct tendril_async *async) {
     struct ohci_ed *ed = ep->hcd;
     /* With no TDs queued the controller leaves HeadP alone, so the carry can go back to DATA0. */
     if (ed != NULL && ed->kind != KIND_ISO && list_empty(&ep->transfers)) {
@@ -1316,7 +1421,7 @@ static enum tendril_status ohci_endpoint_reset(struct tendril_hc *hc, struct ten
 }
 
 static void ohci_device_free(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async) {
-    struct ohci_close *close = tendril_zalloc(sizeof(*close));
+    struct ohci_close *close = tendril_zalloc(sizeof(struct ohci_close));
     if (close != NULL) {
         close->async = async;
         close->status = TENDRIL_OK;
@@ -1324,9 +1429,9 @@ static void ohci_device_free(struct tendril_hc *hc, struct tendril_device *dev, 
     }
     /* The device is going away with its interfaces' endpoints still open. */
     close_endpoint(hc, &dev->ep0, close);
-    for (unsigned i = 0; i < dev->num_interfaces; i++) {
+    for (size_t i = 0; i < dev->num_interfaces; i++) {
         struct tendril_interface *intf = &dev->interfaces[i];
-        for (unsigned e = 0; e < intf->num_endpoints; e++) {
+        for (size_t e = 0; e < intf->num_endpoints; e++) {
             close_endpoint(hc, &intf->endpoints[e], close);
         }
     }
@@ -1339,21 +1444,17 @@ static void ohci_device_free(struct tendril_hc *hc, struct tendril_device *dev, 
 
 /* Root hub */
 
-static void ohci_port_status(struct tendril_hc *hc, unsigned port, struct tendril_port_status *st) {
+static void ohci_port_status(struct tendril_hc *hc, size_t port, struct tendril_port_status *st) {
     struct ohci *o = O(hc);
-    unsigned i = port - 1;
+    size_t i = port - 1;
     uint32_t ps = reg_read(hc, REG_RH_PORT(port));
 
-    if (o->resetting[i] && (ps & PS_PRSC) && !(ps & PS_PRS)) {
-        if ((ps & PS_CCS) && tendril_now() - o->reset_start[i] < ROOT_RESET_MS * NS_PER_MS) {
-            /* The controller resets for 10 ms; USB 2.0 7.1.7.5 wants 50 ms at a root port. */
-            reg_write(hc, REG_RH_PORT(port), PS_PRSC);
-            reg_write(hc, REG_RH_PORT(port), PS_SET_RESET);
-            ps = reg_read(hc, REG_RH_PORT(port));
-        } else {
-            o->resetting[i] = false;
-        }
+    /* BEGIN FreeBSD sys/dev/usb/controller/ohci.c */
+    /* The controller resets for 10 ms; as with FreeBSD, the reset is over after ROOT_RESET_MS. */
+    if (o->resetting[i] && !(ps & PS_PRS) && tendril_now() - o->reset_start[i] >= ROOT_RESET_MS * NS_PER_MS) {
+        o->resetting[i] = false;
     }
+    /* END FreeBSD sys/dev/usb/controller/ohci.c */
 
     st->status = 0;
     st->change = 0;
@@ -1396,7 +1497,7 @@ static void ohci_port_status(struct tendril_hc *hc, unsigned port, struct tendri
     }
 }
 
-static enum tendril_status ohci_port_set_feature(struct tendril_hc *hc, unsigned port, unsigned feature) {
+static int ohci_port_set_feature(struct tendril_hc *hc, size_t port, unsigned int feature) {
     struct ohci *o = O(hc);
     switch (feature) {
         case TENDRIL_PORT_FEAT_RESET: {
@@ -1427,7 +1528,7 @@ static enum tendril_status ohci_port_set_feature(struct tendril_hc *hc, unsigned
     }
 }
 
-static enum tendril_status ohci_port_clear_feature(struct tendril_hc *hc, unsigned port, unsigned feature) {
+static int ohci_port_clear_feature(struct tendril_hc *hc, size_t port, unsigned int feature) {
     uint32_t bit;
     switch (feature) {
         case TENDRIL_PORT_FEAT_ENABLE: {
@@ -1497,7 +1598,7 @@ static void controller_died(struct tendril_hc *hc, const char *why) {
     if (hc->dead) {
         return;
     }
-    LOG_ERROR("tendril: OHCI: controller failed: %s", why);
+    LOG_ERROR("OHCI: controller failed: %s", why);
     hc->dead = true;
     reg_write(hc, REG_INTR_DISABLE, INT_ALL | INT_MIE);
     reg_write(hc, REG_CONTROL, CTL_HCFS_RESET);
@@ -1552,36 +1653,40 @@ static uint32_t ohci_frame_number(struct tendril_hc *hc) {
 static void take_ownership(struct tendril_hc *hc) {
     uint32_t ctl = reg_read(hc, REG_CONTROL);
     if ((ctl & CTL_IR) && !(hc->quirks & TENDRIL_HC_QUIRK_NO_HANDOFF)) {
-        LOG_DEBUG("tendril: OHCI: taking over from SMM");
+        LOG_DEBUG("OHCI: taking over from SMM");
         reg_write(hc, REG_COMMAND_STATUS, CMD_OCR);
-        if (!tendril_hc_wait32(hc, REG_CONTROL, CTL_IR, 0, 500000)) {
-            LOG_WARN("tendril: OHCI: SMM did not release the controller, resetting it");
+        /* BEGIN FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
+        if (!tendril_hc_wait32(hc, REG_CONTROL, CTL_IR, 0, SMM_WAIT_MS * 1000)) {
+            LOG_WARN("OHCI: SMM did not release the controller, resetting it");
         }
+        /* END FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
     } else if ((ctl & CTL_HCFS_MASK) != CTL_HCFS_RESET && (ctl & CTL_HCFS_MASK) != CTL_HCFS_OPERATIONAL) {
         /* Firmware left it suspended: resume the bus before taking it down. */
         reg_write(hc, REG_CONTROL, (ctl & ~CTL_HCFS_MASK) | CTL_HCFS_RESUME);
         tendril_delay_us(20000);
     }
+    /* BEGIN FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
     /*
      * Some controllers only start after this reset, which the specification does
      * not ask for, as FreeBSD's sys/dev/usb/controller/ohci.c (BSD-2-Clause,
      * ohci_controller_init) notes.
      */
     reg_write(hc, REG_CONTROL, CTL_HCFS_RESET);
-    tendril_delay_us(ROOT_RESET_MS * 1000);
+    tendril_delay_us(BUS_RESET_MS * 1000);
+    /* END FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
 }
 
 static void free_structures(struct tendril_hc *hc) {
     struct ohci *o = O(hc);
     struct ohci_ed *skels[INTR_LEVELS + 3];
-    unsigned n = 0;
+    size_t n = 0;
     skels[n++] = o->control_head;
     skels[n++] = o->bulk_head;
     skels[n++] = o->iso_head;
-    for (unsigned l = 0; l < INTR_LEVELS; l++) {
+    for (size_t l = 0; l < INTR_LEVELS; l++) {
         skels[n++] = o->skel[l];
     }
-    for (unsigned i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         if (skels[i] != NULL) {
             ed_free(hc, skels[i]);
         }
@@ -1590,7 +1695,7 @@ static void free_structures(struct tendril_hc *hc) {
     tendril_dma_pool_destroy(&o->td_pool);
     tendril_dma_pool_destroy(&o->itd_pool);
     tendril_dma_pool_destroy(&o->ed_pool);
-    tendril_free(o, sizeof(*o));
+    tendril_free(o, sizeof(struct ohci));
     hc->hcd = NULL;
 }
 
@@ -1605,8 +1710,8 @@ static struct ohci_ed *skeleton(struct tendril_hc *hc) {
     return ed;
 }
 
-static enum tendril_status ohci_start(struct tendril_hc *hc) {
-    struct ohci *o = tendril_zalloc(sizeof(*o));
+static int ohci_start(struct tendril_hc *hc) {
+    struct ohci *o = tendril_zalloc(sizeof(struct ohci));
     if (o == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
@@ -1632,11 +1737,11 @@ static enum tendril_status ohci_start(struct tendril_hc *hc) {
     o->control_head = skeleton(hc);
     o->bulk_head = skeleton(hc);
     o->iso_head = skeleton(hc);
-    for (unsigned l = 0; l < INTR_LEVELS; l++) {
+    for (size_t l = 0; l < INTR_LEVELS; l++) {
         o->skel[l] = skeleton(hc);
     }
     bool ok = o->hcca != NULL && o->control_head != NULL && o->bulk_head != NULL && o->iso_head != NULL;
-    for (unsigned l = 0; l < INTR_LEVELS; l++) {
+    for (size_t l = 0; l < INTR_LEVELS; l++) {
         ok = ok && o->skel[l] != NULL;
     }
     if (!ok) {
@@ -1644,12 +1749,12 @@ static enum tendril_status ohci_start(struct tendril_hc *hc) {
         return TENDRIL_ERR_NO_MEMORY;
     }
     /* Level k is visited every 2^k frames, ahead of level k - 1; isochronous descriptors come last. */
-    for (unsigned l = 1; l < INTR_LEVELS; l++) {
+    for (size_t l = 1; l < INTR_LEVELS; l++) {
         o->skel[l]->next = le((uint32_t)o->skel[l - 1]->dma);
     }
     o->skel[0]->next = le((uint32_t)o->iso_head->dma);
-    for (unsigned i = 0; i < 32; i++) {
-        unsigned level = i == 0 ? INTR_LEVELS - 1 : MIN((unsigned)__builtin_ctz(i), INTR_LEVELS - 1u);
+    for (size_t i = 0; i < 32; i++) {
+        size_t level = i == 0 ? INTR_LEVELS - 1 : MIN(lowest_bit(i), (size_t)INTR_LEVELS - 1);
         o->hcca->intr_table[i] = le((uint32_t)o->skel[level]->dma);
     }
 
@@ -1660,7 +1765,7 @@ static enum tendril_status ohci_start(struct tendril_hc *hc) {
     }
     reg_write(hc, REG_COMMAND_STATUS, CMD_HCR);
     if (!tendril_hc_wait32(hc, REG_COMMAND_STATUS, CMD_HCR, 0, 1000)) {
-        LOG_ERROR("tendril: OHCI: reset failed");
+        LOG_ERROR("OHCI: reset failed");
         free_structures(hc);
         return TENDRIL_ERR_TIMEOUT;
     }
@@ -1676,12 +1781,13 @@ static enum tendril_status ohci_start(struct tendril_hc *hc) {
     if (hc->config.irq) {
         reg_write(hc, REG_INTR_ENABLE, o->intr | INT_MIE);
     }
-    o->control = (reg_read(hc, REG_CONTROL) & ~(CTL_CBSR_MASK | CTL_HCFS_MASK | CTL_IR | CTL_PLE | CTL_IE |
-                                                CTL_CLE | CTL_BLE)) |
-                 CTL_RATIO_4_1 | CTL_HCFS_OPERATIONAL;
+    /* BEGIN FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
+    uint32_t mask = CTL_CBSR_MASK | CTL_HCFS_MASK | CTL_IR | CTL_PLE | CTL_IE | CTL_CLE | CTL_BLE;
+    uint32_t keep = reg_read(hc, REG_CONTROL) & ~mask;
+    o->control = keep | CTL_RATIO_4_1 | CTL_HCFS_OPERATIONAL;
     set_list_enables(hc);
 
-    /* Registers the controller ignores while suspended. */
+    /* FreeBSD's ohci_controller_init sets these only now: the controller ignores them while suspended. */
     uint32_t fit = (reg_read(hc, REG_FM_INTERVAL) & FIT) ^ FIT;
     reg_write(hc, REG_FM_INTERVAL, fit | ((fi - MAX_OVERHEAD) * 6 / 7) << 16 | fi);
     reg_write(hc, REG_PERIODIC_START, fi * 9 / 10);
@@ -1696,26 +1802,27 @@ static enum tendril_status ohci_start(struct tendril_hc *hc) {
     o->per_port_power = !o->no_power_switching && (desca & RHA_PSM) != 0;
 
     /* The AMD-756 may report no ports at first; FreeBSD's ohci_controller_init rereads the same way. */
-    for (unsigned i = 0; i < 10 && (desca & RHA_NDP_MASK) == 0; i++) {
+    for (size_t i = 0; i < 10 && (desca & RHA_NDP_MASK) == 0; i++) {
         tendril_delay_us(5000);
         desca = reg_read(hc, REG_RH_DESC_A);
     }
-    o->num_ports = MIN(desca & RHA_NDP_MASK, 15u);
+    /* END FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
+    o->num_ports = MIN(desca & RHA_NDP_MASK, (uint32_t)15);
     if (o->per_port_power) {
-        for (unsigned p = 1; p <= o->num_ports; p++) {
+        for (size_t p = 1; p <= o->num_ports; p++) {
             reg_write(hc, REG_RH_PORT(p), PS_SET_POWER);
         }
     }
-    LOG_INFO("tendril: OHCI %u.%u: %u ports", (rev >> 4) & 0xf, rev & 0xf, o->num_ports);
+    LOG_INFO("OHCI %u.%u: %zu ports", (rev >> 4) & 0xf, rev & 0xf, o->num_ports);
 
-    enum tendril_status st = tendril_roothub_init(hc, o->num_ports);
+    int st = tendril_roothub_init(hc, o->num_ports);
     if (st != TENDRIL_OK) {
         reg_write(hc, REG_CONTROL, CTL_HCFS_RESET);
         free_structures(hc);
         return st;
     }
     /* PowerOnToPowerGoodTime, in 2 ms units, and at least the USB 2.0 7.1.7.3 settling time. */
-    tendril_delay_us(MAX((desca >> 24) * 2000u, 20000u));
+    tendril_delay_us(MAX((desca >> 24) * (uint32_t)2000, (uint32_t)20000));
     return TENDRIL_OK;
 }
 
@@ -1740,7 +1847,7 @@ static void ohci_destroy(struct tendril_hc *hc) {
  * 1.0a, HcRhPortStatus PSS), so the controller stays operational while its
  * ports are suspended.
  */
-static enum tendril_status ohci_resume(struct tendril_hc *hc) {
+static int ohci_resume(struct tendril_hc *hc) {
     uint32_t ctl = reg_read(hc, REG_CONTROL);
     if (ctl == 0xffffffff) {
         return TENDRIL_ERR_NO_DEVICE;

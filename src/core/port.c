@@ -1,4 +1,29 @@
-#include "../internal.h"
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
 /*
  * Port state machine, shared by root and external hubs. It only runs from
@@ -6,14 +31,154 @@
  * lock only around the work and timer lists.
  */
 
-/* USB 2.0 7.1.7.3 and 7.1.7.5: TATTDB, and TRSTRCY. */
-#define DEBOUNCE_MS 100
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/usb.h (commit
+ * dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
+ * Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
+ * Copyright (c) 1998 Lennart Augustsson. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/usb_request.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
+ * Copyright (c) 1998 Lennart Augustsson. All rights reserved.
+ * Copyright (c) 2008-2020 Hans Petter Selasky. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/usb_hub.h (commit
+ * dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/usb_hub.c (commit
+ * dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
+ * Copyright (c) 1998 Lennart Augustsson. All rights reserved.
+ * Copyright (c) 2008-2022 Hans Petter Selasky
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+#include "../internal.h"
+
+/* BEGIN FreeBSD sys/dev/usb/usb.h, usb_request.c */
+/*
+ * USB 2.0 7.1.7.3 and 7.1.7.5 ask for at least 100 ms of debounce (TATTDB)
+ * and 10 ms of reset recovery (TRSTRCY); these are FreeBSD's longer
+ * USB_PORT_POWERUP_DELAY, USB_PORT_RESET_DELAY, and USB_PORT_RESET_RECOVERY,
+ * from its sys/dev/usb/usb.h (BSD-2-Clause), and its usbd_req_reset_port()
+ * timeout.
+ */
+#define DEBOUNCE_MS 300
+#define RESET_POLL_MS 50
+#define RESET_TIMEOUT_MS 1000
+#define RESET_RECOVERY_MS 20
+/* END FreeBSD sys/dev/usb/usb.h, usb_request.c */
 #define DEBOUNCE_STEP_MS 25
 #define DEBOUNCE_MAX_MS 1500
-#define RESET_POLL_MS 10
-#define RESET_TIMEOUT_MS 800
-#define RESET_RECOVERY_MS 10
 #define SS_ENABLE_WAIT_MS 100
+/* BEGIN FreeBSD sys/dev/usb/usb_hub.h */
+/* FreeBSD's USB_RESTART_MAX, from its sys/dev/usb/usb_hub.h (BSD-2-Clause). */
+#define MAX_RESTARTS 5
+/* END FreeBSD sys/dev/usb/usb_hub.h */
 #define RETRY_DELAY_MS 100
 #define MAX_ATTEMPTS 3
 /*
@@ -23,28 +188,34 @@
 #define SUSPEND_POLL_MS 2
 #define SUSPEND_SETTLE_MS 10
 #define SUSPEND_TIMEOUT_MS 100
-/* USB 2.0 7.1.7.7: resume signalling lasts 20 ms, then TRSMRCY gives the device 10 ms. */
+/* BEGIN FreeBSD sys/dev/usb/usb_hub.c, usb.h */
+/*
+ * USB 2.0 7.1.7.7: resume signalling lasts 20 ms, then TRSMRCY gives the
+ * device at least 10 ms; FreeBSD's sys/dev/usb/usb_hub.c (BSD-2-Clause,
+ * usb_dev_resume_peer) waits 20 ms before a resume and gives the device
+ * USB_PORT_RESUME_DELAY, from its sys/dev/usb/usb.h, after it.
+ */
+#define RESUME_DELAY_MS 20
+#define RESUME_RECOVERY_MS 40
+/* END FreeBSD sys/dev/usb/usb_hub.c, usb.h */
 #define RESUME_POLL_MS 5
 #define RESUME_TIMEOUT_MS 500
-#define RESUME_RECOVERY_MS 10
 
-enum port_op {
-    OP_NONE,
-    OP_KICK,
-    OP_STATUS,
-    OP_CLEAR,
-    OP_RESET,
-    OP_RESET_STATUS,
-    OP_RESET_CLEAR,
-    OP_DISABLE,
-    OP_ENUM_START,
-    OP_PM_START,
-    OP_SUSPEND,
-    OP_SUSPEND_STATUS,
-    OP_RESUME,
-    OP_RESUME_STATUS,
-    OP_RESUME_CLEAR
-};
+#define OP_NONE 0
+#define OP_KICK 1
+#define OP_STATUS 2
+#define OP_CLEAR 3
+#define OP_RESET 4
+#define OP_RESET_STATUS 5
+#define OP_RESET_CLEAR 6
+#define OP_DISABLE 7
+#define OP_ENUM_START 8
+#define OP_PM_START 9
+#define OP_SUSPEND 10
+#define OP_SUSPEND_STATUS 11
+#define OP_RESUME 12
+#define OP_RESUME_STATUS 13
+#define OP_RESUME_CLEAR 14
 
 static struct tendril_hc *port_hc(struct tendril_port *port) {
     return port->hub->hc;
@@ -74,7 +245,7 @@ static const struct {
     { TENDRIL_PORT_STAT_C_CONFIG_ERROR, TENDRIL_PORT_FEAT_C_CONFIG_ERROR }
 };
 
-static unsigned link_state(struct tendril_port *port) {
+static unsigned int link_state(struct tendril_port *port) {
     return (port->st.status & TENDRIL_SS_PORT_STAT_LINK_STATE_MASK) >> TENDRIL_SS_PORT_STAT_LINK_STATE_SHIFT;
 }
 
@@ -93,7 +264,7 @@ static bool in_reset(struct tendril_port *port) {
 /* The link carries traffic again: out of U3, or out of USB 2.0 suspend. */
 static bool link_active(struct tendril_port *port) {
     if (port->superspeed) {
-        unsigned ls = link_state(port);
+        unsigned int ls = link_state(port);
         return ls == TENDRIL_SS_LINK_U0 || ls == TENDRIL_SS_LINK_U1 || ls == TENDRIL_SS_LINK_U2;
     }
     return enabled(port) && !(port->st.status & TENDRIL_PORT_STAT_SUSPEND);
@@ -110,7 +281,7 @@ static uint64_t elapsed_ms(uint64_t since) {
     return (tendril_now() - since) / NS_PER_MS;
 }
 
-static void queue_op(struct tendril_port *port, enum port_op op) {
+static void queue_op(struct tendril_port *port, int op) {
     struct tendril_hc *hc = port_hc(port);
     port->op = op;
     hc_lock(hc);
@@ -121,7 +292,7 @@ static void queue_op(struct tendril_port *port, enum port_op op) {
 static void handle_enum_failure(struct tendril_port *port);
 
 /* Answers the device layer's suspend or resume request. */
-static void pm_complete(struct tendril_port *port, enum tendril_status status) {
+static void pm_complete(struct tendril_port *port, int status) {
     struct tendril_hc *hc = port_hc(port);
     struct tendril_async *async = port->pm_async;
     if (async != NULL && port->pm_request == PORT_PM_NONE) {
@@ -170,14 +341,14 @@ static void port_wait(struct tendril_port *port, uint64_t ms) {
     hc_unlock(hc);
 }
 
-static void start_status(struct tendril_port *port, enum port_op op) {
+static void start_status(struct tendril_port *port, int op) {
     port->kick = false;
     port->op = op;
     port->hub->ops->get_status(port);
 }
 
 /* Clears the next pending change bit; false if none are left. */
-static bool clear_next(struct tendril_port *port, enum port_op op) {
+static bool clear_next(struct tendril_port *port, int op) {
     for (size_t i = 0; i < ARRAY_SIZE(change_bits); i++) {
         if (port->st.change & change_bits[i].bit) {
             port->st.change &= ~change_bits[i].bit;
@@ -199,7 +370,7 @@ static void disconnect_device(struct tendril_port *port) {
 
 static void give_up(struct tendril_port *port) {
     char name[32];
-    LOG_WARN("tendril: %s: giving up on the device", port_name(port, name, sizeof(name)));
+    LOG_WARN("%s: giving up on the device", port_name(port, name, sizeof(name)));
     port->state = PORT_DISABLED;
     if (!port->superspeed) {
         port->op = OP_DISABLE;
@@ -279,31 +450,50 @@ static void evaluate(struct tendril_port *port) {
     char name[32];
 
     if ((changes & TENDRIL_PORT_STAT_C_OVER_CURRENT) && (port->st.status & TENDRIL_PORT_STAT_OVER_CURRENT)) {
-        LOG_WARN("tendril: %s: over-current", port_name(port, name, sizeof(name)));
+        LOG_WARN("%s: over-current", port_name(port, name, sizeof(name)));
     }
     if ((changes & TENDRIL_PORT_STAT_C_CONFIG_ERROR) && port->superspeed) {
-        LOG_WARN("tendril: %s: link configuration error", port_name(port, name, sizeof(name)));
+        LOG_WARN("%s: link configuration error", port_name(port, name, sizeof(name)));
     }
 
     bool conn = connected(port);
     if ((changes & TENDRIL_PORT_STAT_C_CONNECTION) || !conn) {
         if (port->device != NULL) {
-            LOG_INFO("tendril: %s: device disconnected", port_name(port, name, sizeof(name)));
+            LOG_INFO("%s: device disconnected", port_name(port, name, sizeof(name)));
             disconnect_device(port);
         }
         if (port->state != PORT_DEBOUNCE) {
             port->state = PORT_IDLE;
         }
         port->attempts = 0;
+        port->restarts = 0;
+        port->config_failed = false;
+    } else if (!port->superspeed && (changes & TENDRIL_PORT_STAT_C_ENABLE) && !enabled(port)
+            && port->state == PORT_ATTACHED && port->device != NULL) {
+        /* BEGIN FreeBSD sys/dev/usb/usb_hub.c (and the condition above) */
+        /*
+         * The hub disabled the port on its own, after a babble or a port error:
+         * attach the device again, as FreeBSD's sys/dev/usb/usb_hub.c
+         * (BSD-2-Clause, uhub_explore) does, a few times.
+         */
+        disconnect_device(port);
+        if (++port->restarts > MAX_RESTARTS) {
+            LOG_WARN("%s: port error, giving up", port_name(port, name, sizeof(name)));
+            port->state = PORT_DISABLED;
+        } else {
+            LOG_INFO("%s: port error, attaching the device again", port_name(port, name, sizeof(name)));
+            port->state = PORT_IDLE;
+        }
+        /* END FreeBSD sys/dev/usb/usb_hub.c */
     } else if (port->superspeed && port->device != NULL) {
-        unsigned ls = link_state(port);
+        unsigned int ls = link_state(port);
         if (ls == TENDRIL_SS_LINK_INACTIVE || ls == TENDRIL_SS_LINK_COMPLIANCE) {
-            LOG_INFO("tendril: %s: link failed, recovering", port_name(port, name, sizeof(name)));
+            LOG_INFO("%s: link failed, recovering", port_name(port, name, sizeof(name)));
             disconnect_device(port);
             port->state = PORT_IDLE;
         }
     } else if (port->state == PORT_SUSPENDED && port->device != NULL && !enabled(port) && !link_suspended(port)) {
-        LOG_INFO("tendril: %s: suspended device lost, enumerating it again", port_name(port, name, sizeof(name)));
+        LOG_INFO("%s: suspended device lost, enumerating it again", port_name(port, name, sizeof(name)));
         disconnect_device(port);
         port->state = PORT_IDLE;
     }
@@ -326,7 +516,7 @@ static void evaluate(struct tendril_port *port) {
             }
             if (changes & TENDRIL_PORT_STAT_C_CONNECTION) {
                 if (elapsed_ms(port->debounce_first) > DEBOUNCE_MAX_MS) {
-                    LOG_WARN("tendril: %s: connection never settled", port_name(port, name, sizeof(name)));
+                    LOG_WARN("%s: connection never settled", port_name(port, name, sizeof(name)));
                     port->state = PORT_DISABLED;
                     break;
                 }
@@ -334,9 +524,10 @@ static void evaluate(struct tendril_port *port) {
             }
             if (elapsed_ms(port->debounce_start) >= DEBOUNCE_MS) {
                 port->attempts = 0;
+                port->config_failed = false;
                 port->warm = false;
                 if (port->superspeed) {
-                    unsigned ls = link_state(port);
+                    unsigned int ls = link_state(port);
                     port->warm = ls == TENDRIL_SS_LINK_INACTIVE || ls == TENDRIL_SS_LINK_COMPLIANCE;
                 }
                 enum_request(port);
@@ -353,7 +544,7 @@ static void evaluate(struct tendril_port *port) {
         }
         case PORT_SUSPENDED: {
             if (port->device != NULL && link_active(port)) {
-                LOG_DEBUG("tendril: %s: remote wakeup", port_name(port, name, sizeof(name)));
+                LOG_DEBUG("%s: remote wakeup", port_name(port, name, sizeof(name)));
                 port->woke = true;
                 port->state = PORT_RESUME_RECOVERY;
                 port_wait(port, RESUME_RECOVERY_MS);
@@ -372,8 +563,10 @@ static void status_done(struct tendril_port *port) {
     if (port->async.status != TENDRIL_OK) {
         if (port->async.status != TENDRIL_ERR_NO_DEVICE) {
             char name[32];
-            LOG_WARN("tendril: %s: status read failed: %s", port_name(port, name, sizeof(name)),
-                     tendril_status_str(port->async.status));
+            LOG_WARN(
+                "%s: status read failed: %s", port_name(port, name, sizeof(name)),
+                tendril_status_str(port->async.status)
+            );
         }
         port_idle(port);
         return;
@@ -394,7 +587,7 @@ static void clear_done(struct tendril_port *port) {
 
 static void reset_failed(struct tendril_port *port, const char *why) {
     char name[32];
-    LOG_WARN("tendril: %s: reset failed: %s", port_name(port, name, sizeof(name)), why);
+    LOG_WARN("%s: reset failed: %s", port_name(port, name, sizeof(name)), why);
     release_slot(port);
     retry_later(port);
 }
@@ -427,7 +620,7 @@ static void reset_complete(struct tendril_port *port) {
     char name[32];
 
     if (!connected(port)) {
-        LOG_DEBUG("tendril: %s: device left during reset", port_name(port, name, sizeof(name)));
+        LOG_DEBUG("%s: device left during reset", port_name(port, name, sizeof(name)));
         release_slot(port);
         port->state = PORT_IDLE;
         port_idle(port);
@@ -454,7 +647,7 @@ static void reset_status_done(struct tendril_port *port) {
     } else if (!port->reset_issued) {
         done = enabled(port) && link_state(port) == TENDRIL_SS_LINK_U0;
         if (!done && elapsed_ms(port->reset_start) > SS_ENABLE_WAIT_MS) {
-            unsigned ls = link_state(port);
+            unsigned int ls = link_state(port);
             port->warm = ls == TENDRIL_SS_LINK_INACTIVE || ls == TENDRIL_SS_LINK_COMPLIANCE;
             port->reset_issued = true;
             port->reset_start = tendril_now();
@@ -500,7 +693,7 @@ static void handle_enum_failure(struct tendril_port *port) {
     retry_later(port);
 }
 
-void tendril_enum_done(struct tendril_port *port, struct tendril_device *dev, enum tendril_status status) {
+void tendril_enum_done(struct tendril_port *port, struct tendril_device *dev, int status) {
     char name[32];
 
     tendril_enum_release_dev(dev);
@@ -514,7 +707,10 @@ void tendril_enum_done(struct tendril_port *port, struct tendril_device *dev, en
         return;
     }
 
-    LOG_WARN("tendril: %s: enumeration failed: %s", port_name(port, name, sizeof(name)), tendril_status_str(status));
+    LOG_WARN("%s: enumeration failed: %s", port_name(port, name, sizeof(name)), tendril_status_str(status));
+    if (status != TENDRIL_ERR_NO_DEVICE) {
+        tendril_hub_reset_tt(dev);
+    }
     disconnect_device(port);
     port->enum_status = status;
     if (port->busy) {
@@ -528,7 +724,7 @@ void tendril_enum_done(struct tendril_port *port, struct tendril_device *dev, en
 /* Suspend and resume */
 
 static void pm_start(struct tendril_port *port) {
-    enum port_pm_request request = port->pm_request;
+    int request = port->pm_request;
     port->pm_request = PORT_PM_NONE;
 
     if (request == PORT_PM_SUSPEND) {
@@ -559,22 +755,27 @@ static void pm_start(struct tendril_port *port) {
             port_idle(port);
             return;
         }
-        port->state = PORT_RESUMING;
+        port->state = PORT_RESUME_DELAY;
         port->woke = false;
-        port->pm_start = tendril_now();
-        port->op = OP_RESUME;
-        if (port->superspeed) {
-            port->hub->ops->set_feature(port, PORT_FEATURE(TENDRIL_PORT_FEAT_LINK_STATE, TENDRIL_SS_LINK_U0));
-        } else {
-            port->hub->ops->clear_feature(port, TENDRIL_PORT_FEAT_SUSPEND);
-        }
+        port_wait(port, RESUME_DELAY_MS);
         return;
     }
     port_idle(port);
 }
 
+static void start_resume(struct tendril_port *port) {
+    port->state = PORT_RESUMING;
+    port->pm_start = tendril_now();
+    port->op = OP_RESUME;
+    if (port->superspeed) {
+        port->hub->ops->set_feature(port, PORT_FEATURE(TENDRIL_PORT_FEAT_LINK_STATE, TENDRIL_SS_LINK_U0));
+    } else {
+        port->hub->ops->clear_feature(port, TENDRIL_PORT_FEAT_SUSPEND);
+    }
+}
+
 /* A status read during a suspend or resume found the device gone: the usual checks take over. */
-static void pm_lost(struct tendril_port *port, enum tendril_status status) {
+static void pm_lost(struct tendril_port *port, int status) {
     pm_complete(port, status);
     port->state = PORT_ATTACHED;
     port->changes = port->st.change;
@@ -602,7 +803,7 @@ static void suspend_status_done(struct tendril_port *port) {
         return;
     }
     if (elapsed_ms(port->pm_start) > SUSPEND_TIMEOUT_MS) {
-        LOG_WARN("tendril: %s: the port did not suspend", port_name(port, name, sizeof(name)));
+        LOG_WARN("%s: the port did not suspend", port_name(port, name, sizeof(name)));
         pm_lost(port, TENDRIL_ERR_TIMEOUT);
         return;
     }
@@ -634,7 +835,7 @@ static void resume_status_done(struct tendril_port *port) {
     bool lost = !port->superspeed && !enabled(port) && !link_suspended(port);
     if (lost || elapsed_ms(port->pm_start) > RESUME_TIMEOUT_MS) {
         /* Not coming back: enumerate it again. */
-        LOG_WARN("tendril: %s: resume failed", port_name(port, name, sizeof(name)));
+        LOG_WARN("%s: resume failed", port_name(port, name, sizeof(name)));
         pm_complete(port, lost ? TENDRIL_ERR_NO_DEVICE : TENDRIL_ERR_TIMEOUT);
         disconnect_device(port);
         port->state = PORT_IDLE;
@@ -660,7 +861,7 @@ static void resume_done(struct tendril_port *port) {
     port_idle(port);
 }
 
-void tendril_port_pm(struct tendril_port *port, enum port_pm_request request, struct tendril_async *async) {
+void tendril_port_pm(struct tendril_port *port, int request, struct tendril_async *async) {
     struct tendril_hc *hc = port_hc(port);
     hc_lock(hc);
     port->pm_request = request;
@@ -712,6 +913,10 @@ static void port_timer(struct tendril_work *work) {
             /* The suspend has settled. */
             pm_complete(port, TENDRIL_OK);
             port_idle(port);
+            break;
+        }
+        case PORT_RESUME_DELAY: {
+            start_resume(port);
             break;
         }
         case PORT_RESUMING: {
@@ -831,8 +1036,8 @@ static void port_work(struct tendril_work *work) {
     }
 }
 
-void tendril_port_init(struct tendril_port *port, struct tendril_hub *hub, unsigned number) {
-    memset(port, 0, sizeof(*port));
+void tendril_port_init(struct tendril_port *port, struct tendril_hub *hub, size_t number) {
+    memset(port, 0, sizeof(struct tendril_port));
     port->hub = hub;
     port->number = (uint8_t)number;
     port->superspeed = hub->superspeed;

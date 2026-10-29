@@ -1,3 +1,30 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "../internal.h"
 
 #define CHUNK_SIZE 4096
@@ -59,8 +86,8 @@ void *tendril_dma_alloc_limit(struct tendril_hc *hc, size_t size, size_t align, 
     if (p == NULL) {
         return NULL;
     }
-    if (dma32 && *dma + size > 0x100000000ull) {
-        LOG_ERROR("tendril: DMA memory at 0x%llx is above 4 GiB", (unsigned long long)*dma);
+    if (dma32 && *dma + size > (uint64_t)0x100000000) {
+        LOG_ERROR("DMA memory at 0x%llx is above 4 GiB", (unsigned long long)*dma);
         tendril_glue_dma_free(hc->ctx, p, size);
         return NULL;
     }
@@ -104,13 +131,16 @@ static void push_free(struct tendril_dma_pool *pool, void *block, uint64_t dma) 
 }
 
 static bool pool_grow(struct tendril_dma_pool *pool) {
-    struct tendril_dma_chunk *chunk = tendril_zalloc(sizeof(*chunk));
+    if (pool->size > CHUNK_SIZE) {
+        return false;
+    }
+    struct tendril_dma_chunk *chunk = tendril_zalloc(sizeof(struct tendril_dma_chunk));
     if (chunk == NULL) {
         return false;
     }
     chunk->virt = tendril_dma_alloc(pool->hc, CHUNK_SIZE, CHUNK_SIZE, &chunk->dma);
     if (chunk->virt == NULL) {
-        tendril_free(chunk, sizeof(*chunk));
+        tendril_free(chunk, sizeof(struct tendril_dma_chunk));
         return false;
     }
     chunk->next = pool->chunks;
@@ -145,7 +175,7 @@ void tendril_dma_pool_destroy(struct tendril_dma_pool *pool) {
     while (chunk != NULL) {
         struct tendril_dma_chunk *next = chunk->next;
         tendril_dma_free(pool->hc, chunk->virt, CHUNK_SIZE);
-        tendril_free(chunk, sizeof(*chunk));
+        tendril_free(chunk, sizeof(struct tendril_dma_chunk));
         chunk = next;
     }
     pool->chunks = NULL;

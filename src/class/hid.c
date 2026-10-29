@@ -1,20 +1,226 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/quirk/usb_quirk.h
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/input/ukbd.c,
+ * sys/dev/hid/hkbd.c, and sys/dev/usb/usb_hid.c (commit
+ * dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 1998 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lennart Augustsson (lennart@augustsson.net) at
+ * Carlstedt Research & Technology.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/quirk/usb_quirk.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
+ * Copyright (c) 1998 Lennart Augustsson. All rights reserved.
+ * Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/usbdevs (commit
+ * dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * Copyright (c) 1998-2004 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lennart Augustsson (lennart@augustsson.net) at
+ * Carlstedt Research & Technology.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/hid/hms.c (commit
+ * dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2020 Vladimir Kondratyev <wulf@FreeBSD.org>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
 #include "../internal.h"
 #include <tendril/hid.h>
 
+/* HID 1.11 6.2.1: a HID descriptor with one class descriptor entry. */
+#define HID_DESCRIPTOR_MIN_SIZE 9
 #define HID_CTRL_TIMEOUT_MS 5000
 #define HID_RETRY_MS 20
 #define HID_MAX_ERRORS 50
 #define KEY_ERROR_ROLLOVER 0x01
 #define KEY_ERROR_UNDEFINED 0x03
+#define KEY_GRAVE_ACCENT 0x35
+#define KEY_NON_US_BACKSLASH 0x64
 #define KEY_LEFT_CTRL 0xe0
+/* HID Usage Tables 1.7, table 3.1: the first vendor-defined usage page. */
+#define PAGE_VENDOR_FIRST 0xff00
+#define BUTTON_SECONDARY 2
+#define BUTTON_TERTIARY 3
 
-/* HID quirks: FreeBSD's UQ_HID_IGNORE and UQ_KBD_BOOTPROTO (sys/dev/usb/quirk/usb_quirk.h, BSD-2-Clause). */
-#define HQ_IGNORE (1u << 0)
-#define HQ_BOOT_PROTOCOL (1u << 1)
-
+/* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.h, sys/dev/usb/input/ukbd.c */
 /*
- * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c (BSD-2-Clause), naming the IDs as
- * its sys/dev/usb/usbdevs (BSD-2-Clause) does.
+ * HID quirks: FreeBSD's UQ_HID_IGNORE, UQ_KBD_BOOTPROTO, and UQ_MS_VENDOR_BTN
+ * (sys/dev/usb/quirk/usb_quirk.h, BSD-2-Clause), and the Apple ISO keyboards
+ * whose two keys its sys/dev/usb/input/ukbd.c (BSD-2-Clause) swaps back.
+ */
+#define HQ_IGNORE ((uint32_t)1 << 0)
+#define HQ_BOOT_PROTOCOL ((uint32_t)1 << 1)
+#define HQ_VENDOR_BUTTONS ((uint32_t)1 << 2)
+#define HQ_APPLE_SWAP ((uint32_t)1 << 3)
+/* END FreeBSD sys/dev/usb/quirk/usb_quirk.h, sys/dev/usb/input/ukbd.c */
+
+/* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/input/ukbd.c, sys/dev/usb/usbdevs */
+/*
+ * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c and, for HQ_APPLE_SWAP, the
+ * ukbd_apple_iso_models[] of its sys/dev/usb/input/ukbd.c (both BSD-2-Clause),
+ * naming the IDs as its sys/dev/usb/usbdevs (BSD-2-Clause) does.
  */
 static const struct tendril_id_quirk hid_quirks[] = {
     { 0x0b05, 0x1726, 0x0000, 0xffff, HQ_IGNORE }, /* ASUS LCM */
@@ -76,7 +282,30 @@ static const struct tendril_id_quirk hid_quirks[] = {
     { 0x1b1c, 0x1b15, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR STRAFE */
     { 0x1b1c, 0x1b44, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR STRAFE2 */
     { 0x04d9, 0xa030, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* HOLTEK F85 */
+    { 0x047d, 0x2041, 0x0000, 0xffff, HQ_VENDOR_BUTTONS }, /* KENSINGTON SLIMBLADE */
+    { 0x05ac, 0x020f, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE FOUNTAIN_ISO */
+    { 0x05ac, 0x0215, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE GEYSER_ISO */
+    { 0x05ac, 0x0218, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE GEYSER3_ISO */
+    { 0x05ac, 0x021b, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE GEYSER4_ISO */
+    { 0x05ac, 0x022a, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE GEYSER4_HF_ISO */
+    { 0x05ac, 0x021e, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE ALU_MINI_ISO */
+    { 0x05ac, 0x0221, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE ALU_ISO */
+    { 0x05ac, 0x0250, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE ALU_REVB_ISO */
+    { 0x05ac, 0x0224, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING_ISO */
+    { 0x05ac, 0x0231, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING2_ISO */
+    { 0x05ac, 0x0237, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING3_ISO */
+    { 0x05ac, 0x0240, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING4_ISO */
+    { 0x05ac, 0x0243, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING4A_ISO */
+    { 0x05ac, 0x0246, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING5_ISO */
+    { 0x05ac, 0x0253, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING5A_ISO */
+    { 0x05ac, 0x024d, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING6_ISO */
+    { 0x05ac, 0x024a, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING6A_ISO */
+    { 0x05ac, 0x0263, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING7_ISO */
+    { 0x05ac, 0x025a, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING7A_ISO */
+    { 0x05ac, 0x0291, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING8_ISO */
+    { 0x05ac, 0x0273, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING9_ISO */
 };
+/* END FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/input/ukbd.c, sys/dev/usb/usbdevs */
 
 /* HID 1.11 appendix B: the boot protocol report layouts. */
 static const uint8_t boot_keyboard_desc[] = {
@@ -93,13 +322,11 @@ static const uint8_t boot_mouse_desc[] = {
     0xc0, 0xc0
 };
 
-enum hid_step {
-    STEP_SET_BOOT,
-    STEP_GET_REPORT_DESC,
-    STEP_SET_REPORT_PROTOCOL,
-    STEP_SET_IDLE,
-    STEP_RUNNING
-};
+#define STEP_SET_BOOT 0
+#define STEP_GET_REPORT_DESC 1
+#define STEP_SET_REPORT_PROTOCOL 2
+#define STEP_SET_IDLE 3
+#define STEP_RUNNING 4
 
 struct tendril_hid {
     struct tendril_interface *intf;
@@ -109,12 +336,13 @@ struct tendril_hid {
     struct tendril_hid_report_desc *rd;
     uint8_t subclass;
     uint8_t protocol;
+    uint32_t quirks;
     bool boot;
     bool stopped;
     bool suspended;
     uint32_t kinds;
     void *user;
-    unsigned step;
+    int step;
     struct tendril_async async;
     struct tendril_transfer ctrl;
     uint8_t *desc_buf;
@@ -122,7 +350,7 @@ struct tendril_hid {
     struct tendril_transfer in_xfer;
     uint8_t *in_buf;
     size_t in_size;
-    unsigned errors;
+    unsigned int errors;
     struct tendril_timer retry;
     uint8_t keys[32];
     uint8_t modifiers;
@@ -136,15 +364,50 @@ struct tendril_hid {
 static const struct tendril_hid_callbacks *callbacks;
 static uint32_t hid_flags;
 
-static bool bit_get(const uint8_t *map, unsigned k) {
+static bool bit_get(const uint8_t *map, size_t k) {
     return (map[k / 8] >> (k % 8)) & 1;
 }
 
-static void bit_set(uint8_t *map, unsigned k) {
-    map[k / 8] |= (uint8_t)(1u << (k % 8));
+static void bit_set(uint8_t *map, size_t k) {
+    map[k / 8] |= (uint8_t)((uint32_t)1 << (k % 8));
 }
 
 /* Input processing */
+
+/* BEGIN FreeBSD sys/dev/usb/input/ukbd.c */
+static size_t apple_swap(const struct tendril_hid *hid, size_t key) {
+    if (!(hid->quirks & HQ_APPLE_SWAP)) {
+        return key;
+    }
+    if (key == KEY_GRAVE_ACCENT) {
+        return KEY_NON_US_BACKSLASH;
+    }
+    if (key == KEY_NON_US_BACKSLASH) {
+        return KEY_GRAVE_ACCENT;
+    }
+    return key;
+}
+/* END FreeBSD sys/dev/usb/input/ukbd.c */
+
+/* The number, from 1, of the button a usage reports, or 0. */
+static size_t button_number(const struct tendril_hid *hid, uint32_t usage) {
+    size_t n = usage & 0xffff;
+    if ((usage >> 16) == TENDRIL_HID_PAGE_BUTTON) {
+        return n <= 32 ? n : 0;
+    }
+    /* BEGIN FreeBSD sys/dev/hid/hms.c */
+    /* The buttons FreeBSD's sys/dev/hid/hms.c (BSD-2-Clause) maps these usages to. */
+    if ((hid->quirks & HQ_VENDOR_BUTTONS) && (usage >> 16) == PAGE_VENDOR_FIRST) {
+        if (n == 1) {
+            return BUTTON_SECONDARY;
+        }
+        if (n == 2) {
+            return BUTTON_TERTIARY;
+        }
+    }
+    /* END FreeBSD sys/dev/hid/hms.c */
+    return 0;
+}
 
 static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size) {
     const struct tendril_hid_report_desc *rd = hid->rd;
@@ -152,21 +415,22 @@ static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *dat
     uint8_t covered[32] = { 0 };
     bool any = false;
 
-    for (unsigned i = 0; i < rd->num_fields; i++) {
+    for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
         if (f->type != TENDRIL_HID_INPUT || f->report_id != id || (f->flags & TENDRIL_HID_CONSTANT)) {
             continue;
         }
         if (f->flags & TENDRIL_HID_VARIABLE) {
-            for (unsigned e = 0; e < f->count; e++) {
+            for (size_t e = 0; e < f->count; e++) {
                 uint32_t usage = tendril_hid_field_usage(f, e);
                 if ((usage >> 16) != TENDRIL_HID_PAGE_KEYBOARD || (usage & 0xffff) > 0xff) {
                     continue;
                 }
                 any = true;
-                bit_set(covered, usage & 0xff);
+                size_t key = apple_swap(hid, usage & 0xff);
+                bit_set(covered, key);
                 if (tendril_hid_field_get(f, data, size, e) != 0) {
-                    bit_set(now, usage & 0xff);
+                    bit_set(now, key);
                 }
             }
             continue;
@@ -175,12 +439,12 @@ static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *dat
             continue;
         }
         any = true;
-        for (uint32_t u = f->usage_min & 0xffff; u <= (f->usage_max & 0xffff) && u <= 0xff; u++) {
-            bit_set(covered, u);
+        for (size_t u = f->usage_min & 0xffff; u <= (f->usage_max & 0xffff) && u <= 0xff; u++) {
+            bit_set(covered, apple_swap(hid, u));
         }
-        for (unsigned e = 0; e < f->count; e++) {
+        for (size_t e = 0; e < f->count; e++) {
             uint32_t usage = tendril_hid_array_usage(f, tendril_hid_field_get(f, data, size, e));
-            unsigned key = usage & 0xffff;
+            size_t key = usage & 0xffff;
             if ((usage >> 16) != TENDRIL_HID_PAGE_KEYBOARD || key > 0xff) {
                 continue;
             }
@@ -189,7 +453,7 @@ static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *dat
                 return;
             }
             if (key != 0) {
-                bit_set(now, key);
+                bit_set(now, apple_swap(hid, key));
             }
         }
     }
@@ -198,24 +462,23 @@ static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *dat
     }
 
     uint8_t mods = 0;
-    for (unsigned k = 0; k < 8; k++) {
-        bool down = bit_get(covered, KEY_LEFT_CTRL + k) ? bit_get(now, KEY_LEFT_CTRL + k)
-                                                         : (hid->modifiers >> k) & 1;
+    for (size_t k = 0; k < 8; k++) {
+        bool down = bit_get(covered, KEY_LEFT_CTRL + k) ? bit_get(now, KEY_LEFT_CTRL + k) : (hid->modifiers >> k) & 1;
         if (down) {
-            mods |= (uint8_t)(1u << k);
+            mods |= (uint8_t)((uint32_t)1 << k);
         }
     }
 
     /* Releases first, so a quick re-press of a key is never lost. */
-    for (unsigned k = 0; k < 256; k++) {
+    for (size_t k = 0; k < 256; k++) {
         if (bit_get(covered, k) && bit_get(hid->keys, k) && !bit_get(now, k)) {
-            hid->keys[k / 8] &= (uint8_t)~(1u << (k % 8));
+            hid->keys[k / 8] &= (uint8_t)~((uint32_t)1 << (k % 8));
             if (callbacks->key != NULL) {
                 callbacks->key(hid, (uint16_t)k, false, mods);
             }
         }
     }
-    for (unsigned k = 0; k < 256; k++) {
+    for (size_t k = 0; k < 256; k++) {
         if (bit_get(covered, k) && !bit_get(hid->keys, k) && bit_get(now, k)) {
             bit_set(hid->keys, k);
             if (callbacks->key != NULL) {
@@ -231,25 +494,25 @@ static void process_pointer(struct tendril_hid *hid, uint8_t id, const uint8_t *
     struct tendril_hid_pointer_event ev;
     bool have = false;
 
-    memset(&ev, 0, sizeof(ev));
-    for (unsigned i = 0; i < rd->num_fields; i++) {
+    memset(&ev, 0, sizeof(struct tendril_hid_pointer_event));
+    for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
         if (f->type != TENDRIL_HID_INPUT || f->report_id != id || (f->flags & TENDRIL_HID_CONSTANT)) {
             continue;
         }
         if (!(f->flags & TENDRIL_HID_VARIABLE)) {
-            for (unsigned e = 0; e < f->count; e++) {
+            for (size_t e = 0; e < f->count; e++) {
                 uint32_t usage = tendril_hid_array_usage(f, tendril_hid_field_get(f, data, size, e));
-                unsigned n = usage & 0xffff;
-                if ((usage >> 16) == TENDRIL_HID_PAGE_BUTTON && n >= 1 && n <= 32) {
-                    ev.buttons |= 1u << (n - 1);
+                size_t n = button_number(hid, usage);
+                if (n != 0) {
+                    ev.buttons |= (uint32_t)1 << (n - 1);
                     have = true;
                 }
             }
             continue;
         }
         bool relative = (f->flags & TENDRIL_HID_RELATIVE) != 0;
-        for (unsigned e = 0; e < f->count; e++) {
+        for (size_t e = 0; e < f->count; e++) {
             uint32_t usage = tendril_hid_field_usage(f, e);
             int32_t v = tendril_hid_field_get(f, data, size, e);
             switch (usage) {
@@ -288,10 +551,10 @@ static void process_pointer(struct tendril_hid *hid, uint8_t id, const uint8_t *
                     break;
                 }
                 default: {
-                    unsigned n = usage & 0xffff;
-                    if ((usage >> 16) == TENDRIL_HID_PAGE_BUTTON && n >= 1 && n <= 32) {
+                    size_t n = button_number(hid, usage);
+                    if (n != 0) {
                         if (v != 0) {
-                            ev.buttons |= 1u << (n - 1);
+                            ev.buttons |= (uint32_t)1 << (n - 1);
                         }
                         have = true;
                     }
@@ -349,7 +612,7 @@ static void in_done(struct tendril_transfer *xfer) {
         }
         default: {
             if (++hid->errors > HID_MAX_ERRORS) {
-                LOG_WARN("tendril: HID: input keeps failing (%s), giving up", tendril_status_str(xfer->status));
+                LOG_WARN("HID: input keeps failing (%s), giving up", tendril_status_str(xfer->status));
                 return;
             }
             if (xfer->status == TENDRIL_ERR_STALL) {
@@ -380,9 +643,9 @@ static void in_submit(struct tendril_hid *hid) {
     xfer->length = hid->in_size;
     xfer->callback = in_done;
     xfer->context = hid;
-    enum tendril_status st = tendril_transfer_submit(xfer);
+    int st = tendril_transfer_submit(xfer);
     if (st != TENDRIL_OK && st != TENDRIL_ERR_NO_DEVICE) {
-        LOG_WARN("tendril: HID: cannot poll input: %s", tendril_status_str(st));
+        LOG_WARN("HID: cannot poll input: %s", tendril_status_str(st));
     }
 }
 
@@ -390,7 +653,7 @@ static void in_submit(struct tendril_hid *hid) {
 
 static uint32_t classify(const struct tendril_hid_report_desc *rd) {
     uint32_t kinds = 0;
-    for (unsigned i = 0; i < rd->num_fields; i++) {
+    for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
         if (f->type != TENDRIL_HID_INPUT) {
             continue;
@@ -403,7 +666,7 @@ static uint32_t classify(const struct tendril_hid_report_desc *rd) {
             }
             case TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x01):
             case TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x02): {
-                for (unsigned e = 0; e < f->count && (f->flags & TENDRIL_HID_VARIABLE); e++) {
+                for (size_t e = 0; e < f->count && (f->flags & TENDRIL_HID_VARIABLE); e++) {
                     if (tendril_hid_field_usage(f, e) == TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x30)) {
                         kinds |= (f->flags & TENDRIL_HID_RELATIVE) ? TENDRIL_HID_MOUSE : TENDRIL_HID_ABSOLUTE;
                     }
@@ -432,7 +695,7 @@ static uint32_t classify(const struct tendril_hid_report_desc *rd) {
 
 static size_t largest_input(const struct tendril_hid_report_desc *rd) {
     size_t max = 0;
-    for (unsigned i = 0; i < rd->num_reports; i++) {
+    for (size_t i = 0; i < rd->num_reports; i++) {
         if (rd->reports[i].type == TENDRIL_HID_INPUT) {
             size_t n = (rd->reports[i].bits + 7) / 8 + (rd->numbered ? 1 : 0);
             max = MAX(max, n);
@@ -453,11 +716,13 @@ static void hid_ready(struct tendril_hid *hid) {
         return;
     }
     hid->step = STEP_RUNNING;
-    LOG_INFO("tendril: HID: interface %u ready:%s%s%s%s%s%s", hid->intf->number,
-             hid->kinds & TENDRIL_HID_KEYBOARD ? " keyboard" : "", hid->kinds & TENDRIL_HID_MOUSE ? " mouse" : "",
-             hid->kinds & TENDRIL_HID_ABSOLUTE ? " absolute pointer" : "",
-             hid->kinds & TENDRIL_HID_GAMEPAD ? " gamepad" : "", hid->kinds & TENDRIL_HID_CONSUMER ? " consumer" : "",
-             hid->boot ? " (boot protocol)" : "");
+    LOG_INFO(
+        "HID: interface %u ready:%s%s%s%s%s%s", hid->intf->number,
+        hid->kinds & TENDRIL_HID_KEYBOARD ? " keyboard" : "", hid->kinds & TENDRIL_HID_MOUSE ? " mouse" : "",
+        hid->kinds & TENDRIL_HID_ABSOLUTE ? " absolute pointer" : "",
+        hid->kinds & TENDRIL_HID_GAMEPAD ? " gamepad" : "", hid->kinds & TENDRIL_HID_CONSUMER ? " consumer" : "",
+        hid->boot ? " (boot protocol)" : ""
+    );
     if (callbacks->attach != NULL) {
         callbacks->attach(hid);
     }
@@ -466,18 +731,22 @@ static void hid_ready(struct tendril_hid *hid) {
     }
 }
 
-static void hid_fail(struct tendril_hid *hid, enum tendril_status st, const char *what) {
+static void hid_fail(struct tendril_hid *hid, int st, const char *what) {
     if (st != TENDRIL_ERR_NO_DEVICE) {
-        LOG_WARN("tendril: HID: %s failed: %s", what, tendril_status_str(st));
+        LOG_WARN("HID: %s failed: %s", what, tendril_status_str(st));
     }
     hid->stopped = true;
 }
 
-static void ctrl(struct tendril_hid *hid, unsigned step, uint8_t request_type, uint8_t request, uint16_t value,
-                 void *data, uint16_t length) {
+static void ctrl(
+    struct tendril_hid *hid, int step, uint8_t request_type, uint8_t request, uint16_t value, void *data,
+    uint16_t length
+) {
     hid->step = step;
-    enum tendril_status st = tendril_control_async(hid->dev, &hid->ctrl, request_type, request, value,
-                                                 hid->intf->number, data, length, &hid->async);
+    int st = tendril_control_async(
+        hid->dev, &hid->ctrl, request_type, request, value,
+        hid->intf->number, data, length, &hid->async
+    );
     if (st != TENDRIL_OK) {
         hid->async.status = st;
         hid->async.work.fn(&hid->async.work);
@@ -486,31 +755,66 @@ static void ctrl(struct tendril_hid *hid, unsigned step, uint8_t request_type, u
 
 static void set_idle(struct tendril_hid *hid) {
     /* HID 1.11 7.2.4: duration 0, report only on change. */
-    ctrl(hid, STEP_SET_IDLE, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE, TENDRIL_HID_REQ_SET_IDLE, 0,
-         NULL, 0);
+    ctrl(
+        hid, STEP_SET_IDLE, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
+        TENDRIL_HID_REQ_SET_IDLE, 0, NULL, 0
+    );
 }
+
+/* HID 1.11 4.2 and 4.3: a keyboard or a mouse of the boot interface subclass. */
+static bool boot_capable(uint8_t subclass, uint8_t protocol) {
+    return subclass == 1 && (protocol == 1 || protocol == 2);
+}
+
+static void start_boot(struct tendril_hid *hid) {
+    hid->boot = true;
+    ctrl(
+        hid, STEP_SET_BOOT, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
+        TENDRIL_HID_REQ_SET_PROTOCOL, 0, NULL, 0
+    );
+}
+
+/* BEGIN FreeBSD sys/dev/hid/hkbd.c, hms.c */
+/*
+ * A boot keyboard or mouse whose report descriptor cannot be read or parsed,
+ * and a boot keyboard whose report descriptor has no keys, use the boot
+ * protocol instead, as FreeBSD's sys/dev/hid/hkbd.c and hms.c (BSD-2-Clause)
+ * do.
+ */
+static void report_fallback(struct tendril_hid *hid, int st, const char *what) {
+    if (!boot_capable(hid->subclass, hid->protocol)) {
+        hid_fail(hid, st, what);
+        return;
+    }
+    LOG_WARN("HID: %s failed: %s; using the boot protocol", what, tendril_status_str(st));
+    tendril_hid_free(hid->rd);
+    hid->rd = NULL;
+    start_boot(hid);
+}
+
+static bool has_keys(const struct tendril_hid_report_desc *rd) {
+    for (size_t i = 0; i < rd->num_fields; i++) {
+        const struct tendril_hid_field *f = &rd->fields[i];
+        if (f->type == TENDRIL_HID_INPUT && !(f->flags & TENDRIL_HID_CONSTANT)
+         && (f->usage_min >> 16) == TENDRIL_HID_PAGE_KEYBOARD) {
+            return true;
+        }
+    }
+    return false;
+}
+/* END FreeBSD sys/dev/hid/hkbd.c, hms.c */
 
 static void init_step(struct tendril_work *work) {
     struct tendril_hid *hid = CONTAINER_OF(work, struct tendril_hid, async.work);
-    enum tendril_status st = hid->async.status;
+    int st = hid->async.status;
 
-    if (hid->stopped || hid->dev->gone) {
+    if (hid->stopped || hid->dev->gone || st == TENDRIL_ERR_NO_DEVICE) {
         hid->stopped = true;
         return;
     }
     switch (hid->step) {
         case STEP_SET_BOOT: {
-            if (st != TENDRIL_OK) {
-                /* Fall back to the report protocol. */
-                hid->boot = false;
-                if (hid->desc_len == 0) {
-                    hid_fail(hid, st, "SET_PROTOCOL");
-                    return;
-                }
-                ctrl(hid, STEP_GET_REPORT_DESC, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_INTERFACE,
-                     TENDRIL_REQ_GET_DESCRIPTOR, TENDRIL_DT_HID_REPORT << 8, hid->desc_buf, (uint16_t)hid->desc_len);
-                return;
-            }
+            /* A failure is ignored, as FreeBSD's hkbd.c does. */
             const uint8_t *desc = hid->protocol == 1 ? boot_keyboard_desc : boot_mouse_desc;
             size_t len = hid->protocol == 1 ? sizeof(boot_keyboard_desc) : sizeof(boot_mouse_desc);
             st = tendril_hid_parse(desc, len, &hid->rd);
@@ -522,18 +826,26 @@ static void init_step(struct tendril_work *work) {
             return;
         }
         case STEP_GET_REPORT_DESC: {
+            /* BEGIN FreeBSD sys/dev/hid/hkbd.c, hms.c */
             if (st != TENDRIL_OK && st != TENDRIL_ERR_SHORT) {
-                hid_fail(hid, st, "reading the report descriptor");
+                report_fallback(hid, st, "reading the report descriptor");
                 return;
             }
             st = tendril_hid_parse(hid->desc_buf, hid->ctrl.actual, &hid->rd);
             if (st != TENDRIL_OK) {
-                hid_fail(hid, st, "report descriptor parsing");
+                report_fallback(hid, st, "report descriptor parsing");
                 return;
             }
+            if (hid->subclass == 1 && hid->protocol == 1 && !has_keys(hid->rd)) {
+                report_fallback(hid, TENDRIL_ERR_UNSUPPORTED, "finding keys in the report descriptor");
+                return;
+            }
+            /* END FreeBSD sys/dev/hid/hkbd.c, hms.c */
             if (hid->subclass == 1) {
-                ctrl(hid, STEP_SET_REPORT_PROTOCOL, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
-                     TENDRIL_HID_REQ_SET_PROTOCOL, 1, NULL, 0);
+                ctrl(
+                    hid, STEP_SET_REPORT_PROTOCOL, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
+                    TENDRIL_HID_REQ_SET_PROTOCOL, 1, NULL, 0
+                );
                 return;
             }
             set_idle(hid);
@@ -554,21 +866,25 @@ static void init_step(struct tendril_work *work) {
     }
 }
 
+/* BEGIN FreeBSD sys/dev/usb/usb_hid.c */
+/*
+ * The first HID descriptor among the interface's descriptors, before or after
+ * its endpoint descriptors, with room for a class descriptor entry, as
+ * hid_get_descriptor_from_usb() in FreeBSD's sys/dev/usb/usb_hid.c
+ * (BSD-2-Clause) finds it.
+ */
 static const uint8_t *find_hid_descriptor(struct tendril_interface *intf) {
     size_t size;
     const uint8_t *p = tendril_interface_descriptors(intf, &size);
     const uint8_t *end = p + size;
     for (const uint8_t *q = tendril_desc_next(p, end); q != NULL; q = tendril_desc_next(q, end)) {
-        if (q[1] == TENDRIL_DT_HID && q[0] >= 9) {
+        if (q[1] == TENDRIL_DT_HID && q[0] >= HID_DESCRIPTOR_MIN_SIZE) {
             return q;
         }
-        if (q[1] == TENDRIL_DT_ENDPOINT) {
-            break;
-        }
     }
-    /* Some devices put the HID descriptor after the endpoints. */
-    return tendril_desc_find(tendril_desc_next(p, end), end, TENDRIL_DT_HID);
+    return NULL;
 }
+/* END FreeBSD sys/dev/usb/usb_hid.c */
 
 static bool hid_probe(struct tendril_interface *intf) {
     const struct tendril_interface_descriptor *id = tendril_interface_descriptor(intf);
@@ -583,9 +899,36 @@ static bool hid_probe(struct tendril_interface *intf) {
     if (in_ep == NULL) {
         return false;
     }
-    struct tendril_hid *hid = tendril_zalloc(sizeof(*hid));
+
+    size_t desc_len = 0;
+    const uint8_t *hd = find_hid_descriptor(intf);
+    if (hd != NULL) {
+        /* HID 1.11 6.2.1: (bDescriptorType, wDescriptorLength) entries from offset 6. */
+        size_t n = hd[5];
+        for (size_t i = 0; i < n && 6 + i * 3 + 2 < hd[0]; i++) {
+            if (hd[6 + i * 3] == TENDRIL_DT_HID_REPORT) {
+                desc_len = (size_t)hd[7 + i * 3] | (size_t)hd[8 + i * 3] << 8;
+                break;
+            }
+        }
+    }
+    bool boot = boot_capable(id->interface_subclass, id->interface_protocol);
+    if (desc_len == 0 && !boot) {
+        LOG_WARN("HID: interface %u has no report descriptor", intf->number);
+        return false;
+    }
+
+    struct tendril_hid *hid = tendril_zalloc(sizeof(struct tendril_hid));
     if (hid == NULL) {
         return false;
+    }
+    if (desc_len != 0) {
+        hid->desc_buf = tendril_zalloc(desc_len);
+        if (hid->desc_buf == NULL) {
+            tendril_free(hid, sizeof(struct tendril_hid));
+            return false;
+        }
+        hid->desc_len = desc_len;
     }
     hid->intf = intf;
     hid->dev = intf->dev;
@@ -593,45 +936,22 @@ static bool hid_probe(struct tendril_interface *intf) {
     hid->out_ep = tendril_interface_find_endpoint(intf, TENDRIL_ENDPOINT_XFER_INT, TENDRIL_DIR_OUT);
     hid->subclass = id->interface_subclass;
     hid->protocol = id->interface_protocol;
+    hid->quirks = quirks;
     tendril_async_init(&hid->async, init_step);
     tendril_timer_init(&hid->retry, retry_work);
     tendril_interface_set_data(intf, hid);
 
-    const uint8_t *hd = find_hid_descriptor(intf);
-    if (hd != NULL) {
-        /* HID 1.11 6.2.1: (bDescriptorType, wDescriptorLength) pairs from offset 6. */
-        unsigned n = hd[5];
-        for (unsigned i = 0; i < n && 6 + i * 3 + 2 < hd[0]; i++) {
-            if (hd[6 + i * 3] == TENDRIL_DT_HID_REPORT) {
-                hid->desc_len = (size_t)hd[7 + i * 3] | (size_t)hd[8 + i * 3] << 8;
-                break;
-            }
-        }
-    }
-    if (hid->desc_len != 0) {
-        hid->desc_buf = tendril_zalloc(hid->desc_len);
-        if (hid->desc_buf == NULL) {
-            tendril_free(hid, sizeof(*hid));
-            return false;
-        }
-    }
-
-    /* As FreeBSD's sys/dev/usb/input/ukbd.c (BSD-2-Clause) does for UQ_KBD_BOOTPROTO keyboards. */
-    bool boot = ((hid_flags & TENDRIL_HID_BOOT_PROTOCOL) || (quirks & HQ_BOOT_PROTOCOL)) && hid->subclass == 1 &&
-                (hid->protocol == 1 || hid->protocol == 2);
-    if (boot || hid->desc_len == 0) {
-        if (hid->subclass != 1 || (hid->protocol != 1 && hid->protocol != 2)) {
-            LOG_WARN("tendril: HID: interface %u has no report descriptor", intf->number);
-            tendril_free(hid, sizeof(*hid));
-            return false;
-        }
-        hid->boot = true;
-        ctrl(hid, STEP_SET_BOOT, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
-             TENDRIL_HID_REQ_SET_PROTOCOL, 0, NULL, 0);
+    /* BEGIN FreeBSD sys/dev/hid/hkbd.c */
+    /* As FreeBSD's sys/dev/hid/hkbd.c (BSD-2-Clause) does for HQ_KBD_BOOTPROTO keyboards. */
+    if (desc_len == 0 || (boot && ((hid_flags & TENDRIL_HID_BOOT_PROTOCOL) || (quirks & HQ_BOOT_PROTOCOL)))) {
+        start_boot(hid);
         return true;
     }
-    ctrl(hid, STEP_GET_REPORT_DESC, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_INTERFACE,
-         TENDRIL_REQ_GET_DESCRIPTOR, TENDRIL_DT_HID_REPORT << 8, hid->desc_buf, (uint16_t)hid->desc_len);
+    /* END FreeBSD sys/dev/hid/hkbd.c */
+    ctrl(
+        hid, STEP_GET_REPORT_DESC, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_INTERFACE,
+        TENDRIL_REQ_GET_DESCRIPTOR, TENDRIL_DT_HID_REPORT << 8, hid->desc_buf, (uint16_t)hid->desc_len
+    );
     return true;
 }
 
@@ -652,7 +972,7 @@ static void hid_disconnect(struct tendril_interface *intf) {
     tendril_hid_free(hid->rd);
     tendril_free(hid->desc_buf, hid->desc_len);
     tendril_free(hid->in_buf, hid->in_size);
-    tendril_free(hid, sizeof(*hid));
+    tendril_free(hid, sizeof(struct tendril_hid));
 }
 
 static bool hid_suspend(struct tendril_interface *intf) {
@@ -729,50 +1049,75 @@ void *tendril_hid_user(struct tendril_hid *hid) {
 
 /* Reports over the control pipe or the interrupt OUT endpoint */
 
+/*
+ * HID 1.11 5.6: a numbered report starts with its report ID byte, which the
+ * driver adds or removes; the caller's buffer holds the rest.
+ */
 struct report_op {
-    struct tendril_hid *hid;
     struct tendril_transfer xfer;
-    void (*get_done)(void *ctx, enum tendril_status status, size_t actual);
-    void (*set_done)(void *ctx, enum tendril_status status);
+    void (*get_done)(void *ctx, int status, size_t actual);
+    void (*set_done)(void *ctx, int status);
     void *ctx;
     uint8_t *buf;
     size_t size;
+    size_t prefix;
     void *user_buf;
 };
 
 static void report_op_done(struct tendril_transfer *xfer) {
     struct report_op *op = xfer->context;
-    enum tendril_status st = xfer->status;
-    size_t actual = xfer->actual;
+    int st = xfer->status;
     if (op->get_done != NULL) {
-        size_t n = MIN(actual, op->size);
-        memcpy(op->user_buf, op->buf, n);
+        size_t n = xfer->actual > op->prefix ? MIN(xfer->actual - op->prefix, op->size) : 0;
+        memcpy(op->user_buf, op->buf + op->prefix, n);
         op->get_done(op->ctx, st, n);
     } else if (op->set_done != NULL) {
         op->set_done(op->ctx, st);
     }
     tendril_free(op->buf, op->size + 1);
-    tendril_free(op, sizeof(*op));
+    tendril_free(op, sizeof(struct report_op));
 }
 
-enum tendril_status tendril_hid_get_report(
-    struct tendril_hid *hid, uint8_t type, uint8_t id, void *buf, size_t size,
-    void (*done)(void *ctx, enum tendril_status status, size_t actual), void *ctx) {
-    if (size > 0xffff || hid->stopped) {
-        return hid->stopped ? TENDRIL_ERR_NO_DEVICE : TENDRIL_ERR_INVALID;
-    }
-    struct report_op *op = tendril_zalloc(sizeof(*op));
+static struct report_op *report_op_new(uint8_t id, size_t size) {
+    struct report_op *op = tendril_zalloc(sizeof(struct report_op));
     uint8_t *b = tendril_zalloc(size + 1);
     if (op == NULL || b == NULL) {
-        tendril_free(op, sizeof(*op));
+        tendril_free(op, sizeof(struct report_op));
         tendril_free(b, size + 1);
-        return TENDRIL_ERR_NO_MEMORY;
+        return NULL;
     }
-    op->hid = hid;
-    op->get_done = done;
-    op->ctx = ctx;
     op->buf = b;
     op->size = size;
+    op->prefix = id != 0 ? 1 : 0;
+    b[0] = id;
+    return op;
+}
+
+static int report_op_submit(struct report_op *op) {
+    int st = tendril_transfer_submit(&op->xfer);
+    if (st != TENDRIL_OK) {
+        tendril_free(op->buf, op->size + 1);
+        tendril_free(op, sizeof(struct report_op));
+    }
+    return st;
+}
+
+int tendril_hid_get_report(
+    struct tendril_hid *hid, uint8_t type, uint8_t id, void *buf, size_t size,
+    void (*done)(void *ctx, int status, size_t actual), void *ctx
+) {
+    if (hid->stopped) {
+        return TENDRIL_ERR_NO_DEVICE;
+    }
+    if (size > 0xfffe) {
+        return TENDRIL_ERR_INVALID;
+    }
+    struct report_op *op = report_op_new(id, size);
+    if (op == NULL) {
+        return TENDRIL_ERR_NO_MEMORY;
+    }
+    op->get_done = done;
+    op->ctx = ctx;
     op->user_buf = buf;
     struct tendril_transfer *xfer = &op->xfer;
     tendril_transfer_init(xfer, tendril_device_ep0(hid->dev));
@@ -780,71 +1125,53 @@ enum tendril_status tendril_hid_get_report(
     xfer->setup.request = TENDRIL_HID_REQ_GET_REPORT;
     xfer->setup.value = tendril_le16((uint16_t)(type << 8 | id));
     xfer->setup.index = tendril_le16(hid->intf->number);
-    xfer->setup.length = tendril_le16((uint16_t)size);
-    xfer->buffer = b;
-    xfer->length = size;
+    xfer->setup.length = tendril_le16((uint16_t)(op->prefix + size));
+    xfer->buffer = op->buf;
+    xfer->length = op->prefix + size;
     xfer->timeout_ms = HID_CTRL_TIMEOUT_MS;
     xfer->callback = report_op_done;
     xfer->context = op;
-    enum tendril_status st = tendril_transfer_submit(xfer);
-    if (st != TENDRIL_OK) {
-        tendril_free(b, size + 1);
-        tendril_free(op, sizeof(*op));
-    }
-    return st;
+    return report_op_submit(op);
 }
 
-enum tendril_status tendril_hid_set_report(
+int tendril_hid_set_report(
     struct tendril_hid *hid, uint8_t type, uint8_t id, const void *buf, size_t size,
-    void (*done)(void *ctx, enum tendril_status status), void *ctx) {
-    if (size > 0xfffe || hid->stopped) {
-        return hid->stopped ? TENDRIL_ERR_NO_DEVICE : TENDRIL_ERR_INVALID;
+    void (*done)(void *ctx, int status), void *ctx
+) {
+    if (hid->stopped) {
+        return TENDRIL_ERR_NO_DEVICE;
     }
-    bool interrupt = type == TENDRIL_HID_OUTPUT && hid->out_ep != NULL;
-    bool prefix = interrupt && id != 0;
-    size_t total = size + (prefix ? 1 : 0);
-    struct report_op *op = tendril_zalloc(sizeof(*op));
-    uint8_t *b = tendril_zalloc(size + 1);
-    if (op == NULL || b == NULL) {
-        tendril_free(op, sizeof(*op));
-        tendril_free(b, size + 1);
+    if (size > 0xfffe) {
+        return TENDRIL_ERR_INVALID;
+    }
+    struct report_op *op = report_op_new(id, size);
+    if (op == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
-    if (prefix) {
-        b[0] = id;
-    }
-    memcpy(b + (prefix ? 1 : 0), buf, size);
-    op->hid = hid;
+    memcpy(op->buf + op->prefix, buf, size);
     op->set_done = done;
     op->ctx = ctx;
-    op->buf = b;
-    op->size = size;
     struct tendril_transfer *xfer = &op->xfer;
-    if (interrupt) {
+    /* HID 1.11 4.4: output reports go to the interrupt OUT endpoint if there is one. */
+    if (type == TENDRIL_HID_OUTPUT && hid->out_ep != NULL) {
         tendril_transfer_init(xfer, hid->out_ep);
     } else {
-        /* HID 1.11 7.2.2: the report ID is in wValue, and still leads numbered data. */
         tendril_transfer_init(xfer, tendril_device_ep0(hid->dev));
         xfer->setup.request_type = TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE;
         xfer->setup.request = TENDRIL_HID_REQ_SET_REPORT;
         xfer->setup.value = tendril_le16((uint16_t)(type << 8 | id));
         xfer->setup.index = tendril_le16(hid->intf->number);
-        xfer->setup.length = tendril_le16((uint16_t)total);
+        xfer->setup.length = tendril_le16((uint16_t)(op->prefix + size));
         xfer->timeout_ms = HID_CTRL_TIMEOUT_MS;
     }
-    xfer->buffer = b;
-    xfer->length = total;
+    xfer->buffer = op->buf;
+    xfer->length = op->prefix + size;
     xfer->callback = report_op_done;
     xfer->context = op;
-    enum tendril_status st = tendril_transfer_submit(xfer);
-    if (st != TENDRIL_OK) {
-        tendril_free(b, size + 1);
-        tendril_free(op, sizeof(*op));
-    }
-    return st;
+    return report_op_submit(op);
 }
 
-static void led_done(void *ctx, enum tendril_status status) {
+static void led_done(void *ctx, int status) {
     struct tendril_hid *hid = ctx;
     if (status == TENDRIL_ERR_CANCELLED || status == TENDRIL_ERR_SUSPENDED) {
         hid->led_dirty = true;
@@ -856,7 +1183,7 @@ static void led_done(void *ctx, enum tendril_status status) {
     }
 }
 
-enum tendril_status tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds) {
+int tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds) {
     hid->leds = leds;
     if (hid->rd == NULL || hid->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
@@ -867,7 +1194,7 @@ enum tendril_status tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds) 
         return TENDRIL_OK;
     }
     const struct tendril_hid_report_desc *rd = hid->rd;
-    for (unsigned i = 0; i < rd->num_fields; i++) {
+    for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
         if (f->type != TENDRIL_HID_OUTPUT || (f->usage_min >> 16) != TENDRIL_HID_PAGE_LED) {
             continue;
@@ -878,21 +1205,21 @@ enum tendril_status tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds) 
             return TENDRIL_ERR_UNSUPPORTED;
         }
         memset(hid->led_buf, 0, sizeof(hid->led_buf));
-        for (unsigned j = 0; j < rd->num_fields; j++) {
+        for (size_t j = 0; j < rd->num_fields; j++) {
             const struct tendril_hid_field *g = &rd->fields[j];
             if (g->type != TENDRIL_HID_OUTPUT || g->report_id != id || !(g->flags & TENDRIL_HID_VARIABLE)) {
                 continue;
             }
-            for (unsigned e = 0; e < g->count; e++) {
+            for (size_t e = 0; e < g->count; e++) {
                 uint32_t usage = tendril_hid_field_usage(g, e);
-                unsigned n = usage & 0xffff;
+                size_t n = usage & 0xffff;
                 if ((usage >> 16) == TENDRIL_HID_PAGE_LED && n >= 1 && n <= 5) {
                     tendril_hid_field_set(g, hid->led_buf, size, e, (leds >> (n - 1)) & 1);
                 }
             }
         }
         hid->led_busy = true;
-        enum tendril_status st = tendril_hid_set_report(hid, TENDRIL_HID_OUTPUT, id, hid->led_buf, size, led_done, hid);
+        int st = tendril_hid_set_report(hid, TENDRIL_HID_OUTPUT, id, hid->led_buf, size, led_done, hid);
         if (st != TENDRIL_OK) {
             hid->led_busy = false;
         }

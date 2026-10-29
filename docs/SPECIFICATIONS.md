@@ -19,6 +19,10 @@ and section.
 - OpenHCI Open Host Controller Interface Specification for USB, Release 1.0a.
 - Intel Universal Host Controller Interface (UHCI) Design Guide, Revision 1.1.
 
+## PCI
+
+- PCI Local Bus Specification, Revision 3.0.
+
 ## Device classes
 
 - Device Class Definition for Human Interface Devices (HID), Version 1.11;

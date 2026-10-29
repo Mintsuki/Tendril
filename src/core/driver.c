@@ -1,3 +1,30 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "../internal.h"
 
 struct tendril_driver *tendril_drivers;
@@ -25,7 +52,7 @@ bool tendril_interface_claim(struct tendril_interface *intf, struct tendril_driv
 }
 
 void tendril_bind_interfaces(struct tendril_device *dev) {
-    for (unsigned i = 0; i < dev->num_interfaces && !dev->gone; i++) {
+    for (size_t i = 0; i < dev->num_interfaces && !dev->gone; i++) {
         struct tendril_interface *intf = &dev->interfaces[i];
         if (intf->driver != NULL || (dev->hub != NULL && i == 0)) {
             continue;
@@ -42,11 +69,12 @@ void tendril_bind_interfaces(struct tendril_device *dev) {
             if (claimed) {
                 break;
             }
-            /* A declined probe must not leave companion claims behind. */
-            for (unsigned j = 0; j < dev->num_interfaces; j++) {
+            /* A declined probe must not leave companion claims or driver data behind. */
+            for (size_t j = 0; j < dev->num_interfaces; j++) {
                 if (dev->interfaces[j].primary == intf) {
                     dev->interfaces[j].driver = NULL;
                     dev->interfaces[j].primary = NULL;
+                    dev->interfaces[j].driver_data = NULL;
                 }
             }
         }
@@ -54,7 +82,7 @@ void tendril_bind_interfaces(struct tendril_device *dev) {
 }
 
 void tendril_unbind_interfaces(struct tendril_device *dev) {
-    for (unsigned i = 0; i < dev->num_interfaces; i++) {
+    for (size_t i = 0; i < dev->num_interfaces; i++) {
         struct tendril_interface *intf = &dev->interfaces[i];
         struct tendril_driver *drv = intf->driver;
         if (drv == NULL || intf->primary != intf) {
@@ -63,7 +91,7 @@ void tendril_unbind_interfaces(struct tendril_device *dev) {
         if (drv->disconnect != NULL) {
             drv->disconnect(intf);
         }
-        for (unsigned j = 0; j < dev->num_interfaces; j++) {
+        for (size_t j = 0; j < dev->num_interfaces; j++) {
             struct tendril_interface *other = &dev->interfaces[j];
             if (other->primary == intf) {
                 other->driver = NULL;
@@ -102,20 +130,20 @@ static bool primary_bound(struct tendril_interface *intf) {
     return intf->driver != NULL && intf->primary == intf;
 }
 
-bool tendril_suspend_interfaces(struct tendril_device *dev, enum tendril_status *status) {
-    for (unsigned i = 0; i < dev->num_interfaces; i++) {
+bool tendril_suspend_interfaces(struct tendril_device *dev, int *status) {
+    for (size_t i = 0; i < dev->num_interfaces; i++) {
         struct tendril_interface *intf = &dev->interfaces[i];
         if (primary_bound(intf) && intf->driver->suspend == NULL) {
             *status = TENDRIL_ERR_UNSUPPORTED;
             return false;
         }
     }
-    for (unsigned i = 0; i < dev->num_interfaces; i++) {
+    for (size_t i = 0; i < dev->num_interfaces; i++) {
         struct tendril_interface *intf = &dev->interfaces[i];
         if (!primary_bound(intf) || intf->driver->suspend(intf)) {
             continue;
         }
-        for (unsigned j = 0; j < i; j++) {
+        for (size_t j = 0; j < i; j++) {
             struct tendril_interface *done = &dev->interfaces[j];
             if (primary_bound(done) && done->driver->resume != NULL) {
                 done->driver->resume(done);
@@ -129,7 +157,7 @@ bool tendril_suspend_interfaces(struct tendril_device *dev, enum tendril_status 
 }
 
 void tendril_resume_interfaces(struct tendril_device *dev) {
-    for (unsigned i = 0; i < dev->num_interfaces && !dev->gone; i++) {
+    for (size_t i = 0; i < dev->num_interfaces && !dev->gone; i++) {
         struct tendril_interface *intf = &dev->interfaces[i];
         if (primary_bound(intf) && intf->driver->resume != NULL) {
             intf->driver->resume(intf);

@@ -1,3 +1,30 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef TENDRIL_MSC_H
 #define TENDRIL_MSC_H
 
@@ -28,7 +55,7 @@ struct tendril_msc_callbacks {
 void tendril_msc_register(const struct tendril_msc_callbacks *callbacks);
 
 struct tendril_device *tendril_msc_device(struct tendril_msc_lun *lun);
-unsigned tendril_msc_lun_number(struct tendril_msc_lun *lun);
+unsigned int tendril_msc_lun_number(struct tendril_msc_lun *lun);
 /* SCSI peripheral device type: 0x00 direct access, 0x05 CD/DVD, and so on. */
 uint8_t tendril_msc_type(struct tendril_msc_lun *lun);
 bool tendril_msc_removable(struct tendril_msc_lun *lun);
@@ -61,30 +88,29 @@ struct tendril_msc_request {
     void *buffer;
     void (*done)(struct tendril_msc_request *req);
     void *context;
-    enum tendril_status status;
+    int status;
     struct tendril_msc_request_internal internal;
 };
 
 /* Queues a request; requests complete in order, through `done`. */
-enum tendril_status tendril_msc_submit(struct tendril_msc_lun *lun, struct tendril_msc_request *req);
+int tendril_msc_submit(struct tendril_msc_lun *lun, struct tendril_msc_request *req);
 
 /* Synchronous helpers, running tendril_hc_poll() until done. */
-enum tendril_status tendril_msc_read(struct tendril_msc_lun *lun, uint64_t lba, uint32_t count, void *buf);
-enum tendril_status tendril_msc_write(struct tendril_msc_lun *lun, uint64_t lba, uint32_t count, const void *buf);
-enum tendril_status tendril_msc_flush(struct tendril_msc_lun *lun);
+int tendril_msc_read(struct tendril_msc_lun *lun, uint64_t lba, uint32_t count, void *buf);
+int tendril_msc_write(struct tendril_msc_lun *lun, uint64_t lba, uint32_t count, const void *buf);
+int tendril_msc_flush(struct tendril_msc_lun *lun);
 
 /*
  * Runs one command, padded as the device's command set wants. `sense`, if
  * not NULL, receives up to 32 bytes of sense data after a CHECK CONDITION.
  */
-enum tendril_status tendril_msc_command(
-    struct tendril_msc_lun *lun, const uint8_t *cdb, unsigned cdb_len, void *data, size_t len, bool in,
-    uint8_t *sense, void (*done)(void *ctx, enum tendril_status status, uint8_t scsi_status, size_t actual),
-    void *ctx);
+int tendril_msc_command(
+    struct tendril_msc_lun *lun, const uint8_t *cdb, size_t cdb_len, void *data, size_t len, bool in, uint8_t *sense,
+    void (*done)(void *ctx, int status, uint8_t scsi_status, size_t actual), void *ctx
+);
 
 /* Probes a removable medium again, reporting changes through medium_changed. */
-enum tendril_status tendril_msc_check_medium(struct tendril_msc_lun *lun,
-                                           void (*done)(void *ctx, enum tendril_status status), void *ctx);
+int tendril_msc_check_medium(struct tendril_msc_lun *lun, void (*done)(void *ctx, int status), void *ctx);
 
 #ifdef __cplusplus
 }

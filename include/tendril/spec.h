@@ -1,3 +1,30 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #ifndef TENDRIL_SPEC_H
 #define TENDRIL_SPEC_H
 
@@ -21,7 +48,7 @@ extern "C" {
 
 static inline uint16_t tendril_le16(uint16_t v) {
 #if TENDRIL_BIG_ENDIAN
-    return __builtin_bswap16(v);
+    return (uint16_t)(v >> 8 | v << 8);
 #else
     return v;
 #endif
@@ -29,7 +56,7 @@ static inline uint16_t tendril_le16(uint16_t v) {
 
 static inline uint32_t tendril_le32(uint32_t v) {
 #if TENDRIL_BIG_ENDIAN
-    return __builtin_bswap32(v);
+    return v >> 24 | (v >> 8 & (uint32_t)0xff00) | (v << 8 & (uint32_t)0xff0000) | v << 24;
 #else
     return v;
 #endif
@@ -37,7 +64,7 @@ static inline uint32_t tendril_le32(uint32_t v) {
 
 static inline uint64_t tendril_le64(uint64_t v) {
 #if TENDRIL_BIG_ENDIAN
-    return __builtin_bswap64(v);
+    return (uint64_t)tendril_le32((uint32_t)v) << 32 | tendril_le32((uint32_t)(v >> 32));
 #else
     return v;
 #endif
@@ -106,6 +133,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_FUNCTION_SUSPEND_REMOTE_WAKE 0x02
 
 /* Configuration descriptor bmAttributes */
+#define TENDRIL_CONFIG_ATTR_BUS_POWERED 0x80
 #define TENDRIL_CONFIG_ATTR_SELF_POWERED 0x40
 #define TENDRIL_CONFIG_ATTR_REMOTE_WAKEUP 0x20
 

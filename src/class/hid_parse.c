@@ -1,3 +1,30 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "../internal.h"
 #include <tendril/hid.h>
 
@@ -36,6 +63,8 @@
 #define MAX_RANGES 256
 #define MAX_FIELDS 1024
 #define MAX_EXPANDED 2048
+/* Reports beyond 64 KiB are taken as a broken descriptor. */
+#define MAX_REPORT_BITS ((uint32_t)65536 * 8)
 
 struct globals {
     uint32_t usage_page;
@@ -59,26 +88,27 @@ struct usage_range {
 struct parser {
     struct globals g;
     struct globals stack[MAX_STACK];
-    unsigned sp;
+    size_t sp;
     struct usage_range ranges[MAX_RANGES];
-    unsigned num_ranges;
+    size_t num_ranges;
     bool have_min;
     uint32_t pending_min;
-    unsigned delimiter;
+    uint32_t delimiter;
     bool delimiter_used;
     uint32_t collections[MAX_COLLECTIONS];
     uint8_t collection_types[MAX_COLLECTIONS];
-    unsigned depth;
+    /* Collections open, which may be more than MAX_COLLECTIONS keeps. */
+    size_t depth;
     struct tendril_hid_report_desc *rd;
-    unsigned cap_fields;
-    unsigned cap_reports;
+    size_t cap_fields;
+    size_t cap_reports;
 };
 
-static bool grow(void **array, unsigned *cap, unsigned count, size_t elem) {
+static bool grow(void **array, size_t *cap, size_t count, size_t elem) {
     if (count < *cap) {
         return true;
     }
-    unsigned ncap = *cap == 0 ? 8 : *cap * 2;
+    size_t ncap = *cap == 0 ? 8 : *cap * 2;
     void *n = tendril_zalloc(ncap * elem);
     if (n == NULL) {
         return false;
@@ -92,7 +122,7 @@ static bool grow(void **array, unsigned *cap, unsigned count, size_t elem) {
     return true;
 }
 
-static enum tendril_status trim(void **array, unsigned cap, unsigned count, size_t elem) {
+static int trim(void **array, size_t cap, size_t count, size_t elem) {
     if (cap == count) {
         return TENDRIL_OK;
     }
@@ -111,12 +141,12 @@ static enum tendril_status trim(void **array, unsigned cap, unsigned count, size
 
 static struct tendril_hid_report_info *report_info(struct parser *p, uint8_t type, uint8_t id) {
     struct tendril_hid_report_desc *rd = p->rd;
-    for (unsigned i = 0; i < rd->num_reports; i++) {
+    for (size_t i = 0; i < rd->num_reports; i++) {
         if (rd->reports[i].type == type && rd->reports[i].id == id) {
             return &rd->reports[i];
         }
     }
-    if (!grow((void **)&rd->reports, &p->cap_reports, rd->num_reports, sizeof(*rd->reports))) {
+    if (!grow((void **)&rd->reports, &p->cap_reports, rd->num_reports, sizeof(struct tendril_hid_report_info))) {
         return NULL;
     }
     struct tendril_hid_report_info *r = &rd->reports[rd->num_reports++];
@@ -152,7 +182,7 @@ static uint32_t first_usage(struct parser *p) {
 }
 
 static uint32_t application(struct parser *p) {
-    for (unsigned i = p->depth; i > 0; i--) {
+    for (size_t i = MIN(p->depth, (size_t)MAX_COLLECTIONS); i > 0; i--) {
         if (p->collection_types[i - 1] == 0x01) {
             return p->collections[i - 1];
         }
@@ -160,15 +190,19 @@ static uint32_t application(struct parser *p) {
     return 0;
 }
 
-static enum tendril_status add_field(struct parser *p, uint8_t type, uint32_t flags) {
+static int add_field(struct parser *p, uint8_t type, uint32_t flags) {
     struct globals *g = &p->g;
     struct tendril_hid_report_desc *rd = p->rd;
     struct tendril_hid_report_info *r = report_info(p, type, g->report_id);
     if (r == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
-    uint32_t bits = g->report_size * g->report_count;
-    if (g->report_size > 32 && !(flags & TENDRIL_HID_CONSTANT)) {
+    uint64_t bits64 = (uint64_t)g->report_size * g->report_count;
+    if (bits64 > MAX_REPORT_BITS - r->bits) {
+        return TENDRIL_ERR_PROTOCOL;
+    }
+    uint32_t bits = (uint32_t)bits64;
+    if (g->report_size > 32) {
         /* Larger elements cannot be read as values; keep the layout right anyway. */
         r->bits += bits;
         return TENDRIL_OK;
@@ -176,19 +210,19 @@ static enum tendril_status add_field(struct parser *p, uint8_t type, uint32_t fl
     if (bits == 0) {
         return TENDRIL_OK;
     }
-    if (rd->num_fields >= MAX_FIELDS ||
-        !grow((void **)&rd->fields, &p->cap_fields, rd->num_fields, sizeof(*rd->fields))) {
+    if (rd->num_fields >= MAX_FIELDS
+     || !grow((void **)&rd->fields, &p->cap_fields, rd->num_fields, sizeof(struct tendril_hid_field))) {
         return TENDRIL_ERR_NO_MEMORY;
     }
 
     struct tendril_hid_field *f = &rd->fields[rd->num_fields];
-    memset(f, 0, sizeof(*f));
+    memset(f, 0, sizeof(struct tendril_hid_field));
     f->type = type;
     f->report_id = g->report_id;
     f->flags = (uint16_t)flags;
     f->bit_offset = r->bits;
     f->bit_size = (uint16_t)g->report_size;
-    f->count = (uint16_t)MIN(g->report_count, 0xffffu);
+    f->count = (uint16_t)MIN(g->report_count, (uint32_t)0xffff);
     f->logical_min = g->logical_min;
     f->logical_max = g->logical_max;
     /* A maximum below the minimum was meant as unsigned. */
@@ -210,22 +244,22 @@ static enum tendril_status add_field(struct parser *p, uint8_t type, uint32_t fl
         f->usage_min = p->ranges[0].min;
         f->usage_max = p->ranges[0].max;
     } else if (p->num_ranges > 1) {
-        unsigned total = 0;
-        for (unsigned i = 0; i < p->num_ranges; i++) {
-            total += p->ranges[i].max - p->ranges[i].min + 1;
-            if (total > MAX_EXPANDED) {
-                total = MAX_EXPANDED;
-                break;
-            }
+        uint64_t total = 0;
+        for (size_t i = 0; i < p->num_ranges; i++) {
+            total += (uint64_t)p->ranges[i].max - p->ranges[i].min + 1;
         }
-        f->usages = tendril_zalloc(total * sizeof(uint32_t));
+        size_t n = (size_t)MIN(total, (uint64_t)MAX_EXPANDED);
+        f->usages = tendril_zalloc(n * sizeof(uint32_t));
         if (f->usages == NULL) {
             return TENDRIL_ERR_NO_MEMORY;
         }
-        unsigned n = 0;
-        for (unsigned i = 0; i < p->num_ranges && n < total; i++) {
-            for (uint32_t u = p->ranges[i].min; u <= p->ranges[i].max && n < total; u++) {
-                f->usages[n++] = u;
+        size_t k = 0;
+        for (size_t i = 0; i < p->num_ranges && k < n; i++) {
+            for (uint32_t u = p->ranges[i].min; k < n; u++) {
+                f->usages[k++] = u;
+                if (u == p->ranges[i].max) {
+                    break;
+                }
             }
         }
         f->num_usages = (uint16_t)n;
@@ -236,7 +270,7 @@ static enum tendril_status add_field(struct parser *p, uint8_t type, uint32_t fl
     return TENDRIL_OK;
 }
 
-static int32_t sign_extend(uint32_t v, unsigned size) {
+static int32_t sign_extend(uint32_t v, size_t size) {
     switch (size) {
         case 1: {
             return (int8_t)v;
@@ -254,26 +288,26 @@ void tendril_hid_free(struct tendril_hid_report_desc *rd) {
     if (rd == NULL) {
         return;
     }
-    for (unsigned i = 0; i < rd->num_fields; i++) {
+    for (size_t i = 0; i < rd->num_fields; i++) {
         tendril_free(rd->fields[i].usages, rd->fields[i].num_usages * sizeof(uint32_t));
     }
-    tendril_free(rd->fields, rd->num_fields * sizeof(*rd->fields));
-    tendril_free(rd->reports, rd->num_reports * sizeof(*rd->reports));
-    tendril_free(rd, sizeof(*rd));
+    tendril_free(rd->fields, rd->num_fields * sizeof(struct tendril_hid_field));
+    tendril_free(rd->reports, rd->num_reports * sizeof(struct tendril_hid_report_info));
+    tendril_free(rd, sizeof(struct tendril_hid_report_desc));
 }
 
-enum tendril_status tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_report_desc **out) {
-    struct parser *p = tendril_zalloc(sizeof(*p));
+int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_report_desc **out) {
+    struct parser *p = tendril_zalloc(sizeof(struct parser));
     if (p == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
     }
-    p->rd = tendril_zalloc(sizeof(*p->rd));
+    p->rd = tendril_zalloc(sizeof(struct tendril_hid_report_desc));
     if (p->rd == NULL) {
-        tendril_free(p, sizeof(*p));
+        tendril_free(p, sizeof(struct parser));
         return TENDRIL_ERR_NO_MEMORY;
     }
 
-    enum tendril_status st = TENDRIL_OK;
+    int st = TENDRIL_OK;
     size_t i = 0;
     while (i < size && st == TENDRIL_OK) {
         uint8_t prefix = desc[i++];
@@ -285,15 +319,15 @@ enum tendril_status tendril_hid_parse(const uint8_t *desc, size_t size, struct t
             i += 2 + desc[i];
             continue;
         }
-        unsigned bsize = prefix & 3;
-        unsigned len = bsize == 3 ? 4 : bsize;
-        unsigned type = (prefix >> 2) & 3;
-        unsigned tag = prefix >> 4;
+        size_t bsize = prefix & 3;
+        size_t len = bsize == 3 ? 4 : bsize;
+        unsigned int type = (prefix >> 2) & 3;
+        unsigned int tag = prefix >> 4;
         if (i + len > size) {
             break;
         }
         uint32_t v = 0;
-        for (unsigned b = 0; b < len; b++) {
+        for (size_t b = 0; b < len; b++) {
             v |= (uint32_t)desc[i + b] << (8 * b);
         }
         i += len;
@@ -434,28 +468,28 @@ enum tendril_status tendril_hid_parse(const uint8_t *desc, size_t size, struct t
     /* Trim the arrays to their counts, which tendril_hid_free() relies on. */
     struct tendril_hid_report_desc *rd = p->rd;
     if (st == TENDRIL_OK) {
-        st = trim((void **)&rd->fields, p->cap_fields, rd->num_fields, sizeof(*rd->fields));
+        st = trim((void **)&rd->fields, p->cap_fields, rd->num_fields, sizeof(struct tendril_hid_field));
     }
     if (st == TENDRIL_OK) {
-        st = trim((void **)&rd->reports, p->cap_reports, rd->num_reports, sizeof(*rd->reports));
+        st = trim((void **)&rd->reports, p->cap_reports, rd->num_reports, sizeof(struct tendril_hid_report_info));
     }
     if (st != TENDRIL_OK) {
-        for (unsigned f = 0; f < rd->num_fields; f++) {
+        for (size_t f = 0; f < rd->num_fields; f++) {
             tendril_free(rd->fields[f].usages, rd->fields[f].num_usages * sizeof(uint32_t));
         }
-        tendril_free(rd->fields, p->cap_fields * sizeof(*rd->fields));
-        tendril_free(rd->reports, p->cap_reports * sizeof(*rd->reports));
-        tendril_free(rd, sizeof(*rd));
-        tendril_free(p, sizeof(*p));
+        tendril_free(rd->fields, p->cap_fields * sizeof(struct tendril_hid_field));
+        tendril_free(rd->reports, p->cap_reports * sizeof(struct tendril_hid_report_info));
+        tendril_free(rd, sizeof(struct tendril_hid_report_desc));
+        tendril_free(p, sizeof(struct parser));
         return st;
     }
-    tendril_free(p, sizeof(*p));
+    tendril_free(p, sizeof(struct parser));
     *out = rd;
     return TENDRIL_OK;
 }
 
 size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, uint8_t type, uint8_t id) {
-    for (unsigned i = 0; i < rd->num_reports; i++) {
+    for (size_t i = 0; i < rd->num_reports; i++) {
         if (rd->reports[i].type == type && rd->reports[i].id == id) {
             return (rd->reports[i].bits + 7) / 8;
         }
@@ -463,77 +497,81 @@ size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, uint8_t
     return 0;
 }
 
-uint32_t tendril_hid_extract(const uint8_t *data, size_t size, uint32_t bit_offset, unsigned bit_size) {
+uint32_t tendril_hid_extract(const uint8_t *data, size_t size, uint32_t bit_offset, unsigned int bit_size) {
     uint32_t v = 0;
-    for (unsigned b = 0; b < bit_size && b < 32; b++) {
-        uint32_t bit = bit_offset + b;
+    for (size_t b = 0; b < bit_size && b < 32; b++) {
+        uint32_t bit = bit_offset + (uint32_t)b;
         if (bit / 8 >= size) {
             break;
         }
-        if (data[bit / 8] & (1u << (bit % 8))) {
-            v |= 1u << b;
+        if (data[bit / 8] & ((uint32_t)1 << (bit % 8))) {
+            v |= (uint32_t)1 << b;
         }
     }
     return v;
 }
 
-void tendril_hid_insert(uint8_t *data, size_t size, uint32_t bit_offset, unsigned bit_size, uint32_t value) {
-    for (unsigned b = 0; b < bit_size && b < 32; b++) {
-        uint32_t bit = bit_offset + b;
+void tendril_hid_insert(uint8_t *data, size_t size, uint32_t bit_offset, unsigned int bit_size, uint32_t value) {
+    for (size_t b = 0; b < bit_size && b < 32; b++) {
+        uint32_t bit = bit_offset + (uint32_t)b;
         if (bit / 8 >= size) {
             break;
         }
-        if (value & (1u << b)) {
-            data[bit / 8] |= (uint8_t)(1u << (bit % 8));
+        if (value & ((uint32_t)1 << b)) {
+            data[bit / 8] |= (uint8_t)((uint32_t)1 << (bit % 8));
         } else {
-            data[bit / 8] &= (uint8_t)~(1u << (bit % 8));
+            data[bit / 8] &= (uint8_t)~((uint32_t)1 << (bit % 8));
         }
     }
 }
 
-int32_t tendril_hid_field_get(const struct tendril_hid_field *f, const uint8_t *data, size_t size, unsigned index) {
-    uint32_t v = tendril_hid_extract(data, size, f->bit_offset + index * f->bit_size, f->bit_size);
-    if (f->logical_min < 0 && f->bit_size < 32 && (v & (1u << (f->bit_size - 1)))) {
-        v |= ~0u << f->bit_size;
+int32_t tendril_hid_field_get(const struct tendril_hid_field *f, const uint8_t *data, size_t size, size_t index) {
+    uint32_t v = tendril_hid_extract(data, size, f->bit_offset + (uint32_t)index * f->bit_size, f->bit_size);
+    if (f->logical_min < 0 && f->bit_size < 32 && (v & ((uint32_t)1 << (f->bit_size - 1)))) {
+        v |= ~(uint32_t)0 << f->bit_size;
     }
     return (int32_t)v;
 }
 
-void tendril_hid_field_set(const struct tendril_hid_field *f, uint8_t *data, size_t size, unsigned index, int32_t value) {
-    tendril_hid_insert(data, size, f->bit_offset + index * f->bit_size, f->bit_size, (uint32_t)value);
+void tendril_hid_field_set(
+    const struct tendril_hid_field *f, uint8_t *data, size_t size, size_t index, int32_t value
+) {
+    tendril_hid_insert(data, size, f->bit_offset + (uint32_t)index * f->bit_size, f->bit_size, (uint32_t)value);
 }
 
-uint32_t tendril_hid_field_usage(const struct tendril_hid_field *f, unsigned index) {
+uint32_t tendril_hid_field_usage(const struct tendril_hid_field *f, size_t index) {
     if (f->num_usages != 0) {
-        return f->usages[MIN(index, (unsigned)f->num_usages - 1)];
+        return f->usages[MIN(index, (size_t)f->num_usages - 1)];
     }
     if (f->usage_max < f->usage_min) {
         return f->usage_min;
     }
-    uint32_t u = f->usage_min + index;
-    return u > f->usage_max ? f->usage_max : u;
+    return index > f->usage_max - f->usage_min ? f->usage_max : f->usage_min + (uint32_t)index;
 }
 
 uint32_t tendril_hid_array_usage(const struct tendril_hid_field *f, int32_t value) {
     if (value < f->logical_min || value > f->logical_max) {
         return 0;
     }
-    uint32_t index = (uint32_t)(value - f->logical_min);
+    uint32_t index = (uint32_t)((int64_t)value - f->logical_min);
     if (f->num_usages != 0) {
         return index < f->num_usages ? f->usages[index] : 0;
     }
-    uint32_t u = f->usage_min + index;
-    return u <= f->usage_max ? u : 0;
+    if (f->usage_max < f->usage_min || index > f->usage_max - f->usage_min) {
+        return 0;
+    }
+    return f->usage_min + index;
 }
 
-const struct tendril_hid_field *tendril_hid_find(const struct tendril_hid_report_desc *rd, uint8_t type,
-                                               uint32_t usage, unsigned *index) {
-    for (unsigned i = 0; i < rd->num_fields; i++) {
+const struct tendril_hid_field *tendril_hid_find(
+    const struct tendril_hid_report_desc *rd, uint8_t type, uint32_t usage, size_t *index
+) {
+    for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
         if (f->type != type || !(f->flags & TENDRIL_HID_VARIABLE) || (f->flags & TENDRIL_HID_CONSTANT)) {
             continue;
         }
-        for (unsigned e = 0; e < f->count; e++) {
+        for (size_t e = 0; e < f->count; e++) {
             if (tendril_hid_field_usage(f, e) == usage) {
                 if (index != NULL) {
                     *index = e;

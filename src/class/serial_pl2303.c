@@ -1,3 +1,30 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /*
  * Prolific PL2303 serial adapters. Prolific publishes no protocol
  * documentation: the chip types, the vendor requests, the rate divisor, and
@@ -5,14 +32,70 @@
  * control lines, and break follow CDC PSTN 1.2.
  */
 
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uplcom.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2001-2003, 2005 Shunsuke Akiyama <akiyama@jp.FreeBSD.org>.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Copyright (c) 2001 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Ichiro FUKUHARA (ichiro@ichiro.org).
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "serial_internal.h"
 
-enum pl2303_chip {
-    PL2303_ORIGINAL,
-    PL2303_HX,
-    PL2303_HXD,
-    PL2303_HXN
-};
+#define PL2303_ORIGINAL 0
+#define PL2303_HX 1
+#define PL2303_HXD 2
+#define PL2303_HXN 3
 
 #define PL2303_VENDOR 0x01
 #define PL2303_HXN_WRITE 0x80
@@ -22,11 +105,11 @@ enum pl2303_chip {
 #define PSTN_SET_CONTROL_LINE_STATE 0x22
 #define PSTN_SEND_BREAK 0x23
 
-#define PSTN_LINE_DTR (1u << 0)
-#define PSTN_LINE_RTS (1u << 1)
+#define PSTN_LINE_DTR ((uint32_t)1 << 0)
+#define PSTN_LINE_RTS ((uint32_t)1 << 1)
 
-#define DIVISOR_BASE 383385600u
-#define DIVISOR_FORM 0x80000000u
+#define DIVISOR_BASE ((uint32_t)383385600)
+#define DIVISOR_FORM ((uint32_t)0x80000000)
 
 /* Bring-up of the original PL2303, HX, and HXD; reads' answers are ignored. */
 struct init_step {
@@ -48,6 +131,7 @@ static const struct init_step init_steps[] = {
     { false, 1, 0 }
 };
 
+/* BEGIN FreeBSD sys/dev/usb/serial/uplcom.c */
 /*
  * Rates written as they are, and which rates each chip takes, follow
  * FreeBSD's sys/dev/usb/serial/uplcom.c (BSD-2-Clause, uplcom_rates and
@@ -58,6 +142,7 @@ static const uint32_t listed_rates[] = {
     56000, 57600, 115200, 128000, 134400, 161280, 201600, 230400, 268800, 403200, 460800, 614400,
     806400, 921600, 1228800, 2457600, 3000000, 6000000, 12000000
 };
+/* END FreeBSD sys/dev/usb/serial/uplcom.c */
 
 static void put_le32(uint8_t *p, uint32_t v) {
     p[0] = (uint8_t)v;
@@ -81,7 +166,7 @@ static void hxn_write(struct serial_op *op, uint16_t value, uint16_t index) {
 void serial_pl2303_init(struct tendril_serial *port) {
     const struct tendril_device_descriptor *desc = &port->dev->desc;
     uint16_t bcd = tendril_le16(desc->bcd_device);
-    enum pl2303_chip chip;
+    int chip;
 
     if (bcd == 0x0300) {
         chip = PL2303_HX;
@@ -94,7 +179,7 @@ void serial_pl2303_init(struct tendril_serial *port) {
     } else {
         chip = PL2303_ORIGINAL;
     }
-    port->chip = (unsigned)chip;
+    port->chip = chip;
 }
 
 static void add_setup(struct tendril_serial *port, struct serial_op *op) {
@@ -121,7 +206,7 @@ static void add_setup(struct tendril_serial *port, struct serial_op *op) {
     serial_pl2303_lines(port, op);
 }
 
-static void probe_done(struct tendril_serial *port, struct serial_op *op, unsigned index, enum tendril_status status) {
+static void probe_done(struct tendril_serial *port, struct serial_op *op, size_t index, int status) {
     if (index != 0 || status == TENDRIL_ERR_NO_DEVICE) {
         return;
     }
@@ -150,9 +235,10 @@ static bool rate_listed(uint32_t rate) {
     return false;
 }
 
-static bool encode_rate(unsigned chip, uint32_t rate, uint32_t *out) {
+static bool encode_rate(int chip, uint32_t rate, uint32_t *out) {
     uint32_t max;
 
+    /* BEGIN FreeBSD sys/dev/usb/serial/uplcom.c */
     switch (chip) {
         case PL2303_ORIGINAL: {
             max = 1228800;
@@ -177,6 +263,7 @@ static bool encode_rate(unsigned chip, uint32_t rate, uint32_t *out) {
     if (chip == PL2303_ORIGINAL) {
         return false;
     }
+    /* END FreeBSD sys/dev/usb/serial/uplcom.c */
 
     /* rate = 383385600 / (m * 4^e), 9-bit m and 3-bit e (clean-room specification). */
     uint32_t m = DIVISOR_BASE / rate;
@@ -193,7 +280,7 @@ static bool encode_rate(unsigned chip, uint32_t rate, uint32_t *out) {
             break;
         }
     }
-    *out = DIVISOR_FORM | (e << 1 | m >> 8) << 8 | (m & 0xffu);
+    *out = DIVISOR_FORM | (e << 1 | m >> 8) << 8 | (m & (uint32_t)0xff);
     return true;
 }
 
@@ -202,8 +289,8 @@ void serial_pl2303_line(struct tendril_serial *port, struct serial_op *op) {
     uint32_t rate;
     uint8_t coding[7];
 
-    if (config->data_bits < 5 || config->data_bits > 8 || config->parity > TENDRIL_SERIAL_PARITY_SPACE ||
-        config->stop_bits > TENDRIL_SERIAL_STOP_2 || !encode_rate(port->chip, config->baud, &rate)) {
+    if (config->data_bits < 5 || config->data_bits > 8 || config->parity > TENDRIL_SERIAL_PARITY_SPACE
+     || config->stop_bits > TENDRIL_SERIAL_STOP_2 || !encode_rate(port->chip, config->baud, &rate)) {
         op->status = TENDRIL_ERR_INVALID;
         return;
     }

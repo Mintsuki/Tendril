@@ -51,4 +51,7 @@ are enumerated, and every callback runs, from within `tendril_hc_poll()`.
 
 ## License
 
-BSD-2-Clause; see `LICENSE`.
+BSD-2-Clause; see `LICENSE`. Every source file opens with that license. A file
+with parts derived from other projects follows it with their notices, and
+brackets those parts with `BEGIN` and `END` comments naming their source; see
+`3RDPARTY.md`.

@@ -1,8 +1,35 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "../internal.h"
 
-enum tendril_log_level tendril_log_threshold = TENDRIL_LOG_INFO;
+int tendril_log_threshold = TENDRIL_LOG_INFO;
 
-void tendril_set_log_level(enum tendril_log_level level) {
+void tendril_set_log_level(int level) {
     tendril_log_threshold = level;
 }
 
@@ -31,8 +58,9 @@ static void out_pad(struct out *o, char c, int count) {
 #define FLAG_SPACE 0x08
 #define FLAG_ALT 0x10
 
-static void out_number(struct out *o, uint64_t value, bool negative, unsigned base, bool upper,
-                       int flags, int width, int precision) {
+static void out_number(
+    struct out *o, uint64_t value, bool negative, unsigned int base, bool upper, int flags, int width, int precision
+) {
     const char *digits = upper ? "0123456789ABCDEF" : "0123456789abcdef";
     char tmp[24];
     int n = 0;
@@ -74,7 +102,7 @@ static void out_number(struct out *o, uint64_t value, bool negative, unsigned ba
     if (sign) {
         out_char(o, sign);
     }
-    for (int i = 0; i < prefix_len; i++) {
+    for (size_t i = 0; prefix[i] != '\0'; i++) {
         out_char(o, prefix[i]);
     }
     out_pad(o, '0', zeros);
@@ -86,18 +114,16 @@ static void out_number(struct out *o, uint64_t value, bool negative, unsigned ba
     }
 }
 
-enum length {
-    LEN_DEFAULT,
-    LEN_CHAR,
-    LEN_SHORT,
-    LEN_LONG,
-    LEN_LONG_LONG,
-    LEN_SIZE,
-    LEN_MAX,
-    LEN_PTRDIFF
-};
+#define LEN_DEFAULT 0
+#define LEN_CHAR 1
+#define LEN_SHORT 2
+#define LEN_LONG 3
+#define LEN_LONG_LONG 4
+#define LEN_SIZE 5
+#define LEN_MAX 6
+#define LEN_PTRDIFF 7
 
-static uint64_t fetch_unsigned(va_list *args, enum length len) {
+static uint64_t fetch_unsigned(va_list *args, int len) {
     switch (len) {
         case LEN_CHAR: {
             return (unsigned char)va_arg(*args, unsigned int);
@@ -126,7 +152,7 @@ static uint64_t fetch_unsigned(va_list *args, enum length len) {
     }
 }
 
-static int64_t fetch_signed(va_list *args, enum length len) {
+static int64_t fetch_signed(va_list *args, int len) {
     switch (len) {
         case LEN_CHAR: {
             return (signed char)va_arg(*args, int);
@@ -213,7 +239,7 @@ int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args_in) 
             }
         }
 
-        enum length len = LEN_DEFAULT;
+        int len = LEN_DEFAULT;
         if (*fmt == 'h') {
             fmt++;
             len = LEN_SHORT;
@@ -286,18 +312,18 @@ int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args_in) 
                 if (s == NULL) {
                     s = "(null)";
                 }
-                int n = 0;
-                while (s[n] != '\0' && (precision < 0 || n < precision)) {
+                size_t n = 0;
+                while (s[n] != '\0' && (precision < 0 || n < (size_t)precision)) {
                     n++;
                 }
                 if (!(flags & FLAG_LEFT)) {
-                    out_pad(&o, ' ', width - n);
+                    out_pad(&o, ' ', width - (int)n);
                 }
-                for (int i = 0; i < n; i++) {
+                for (size_t i = 0; i < n; i++) {
                     out_char(&o, s[i]);
                 }
                 if (flags & FLAG_LEFT) {
-                    out_pad(&o, ' ', width - n);
+                    out_pad(&o, ' ', width - (int)n);
                 }
                 break;
             }
@@ -328,7 +354,7 @@ int tendril_snprintf(char *buf, size_t size, const char *fmt, ...) {
     return ret;
 }
 
-void tendril_vlog(enum tendril_log_level level, const char *fmt, va_list args) {
+void tendril_vlog(int level, const char *fmt, va_list args) {
     char line[256];
 
     if (level > tendril_log_threshold) {
@@ -338,14 +364,14 @@ void tendril_vlog(enum tendril_log_level level, const char *fmt, va_list args) {
     tendril_glue_log(level, line);
 }
 
-void tendril_log(enum tendril_log_level level, const char *fmt, ...) {
+void tendril_log(int level, const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     tendril_vlog(level, fmt, args);
     va_end(args);
 }
 
-const char *tendril_status_str(enum tendril_status status) {
+const char *tendril_status_str(int status) {
     switch (status) {
         case TENDRIL_OK: {
             return "success";
@@ -410,11 +436,14 @@ const char *tendril_status_str(enum tendril_status status) {
         case TENDRIL_ERR_SUSPENDED: {
             return "device suspended";
         }
+        case TENDRIL_ERR_NO_POWER: {
+            return "not enough bus power";
+        }
     }
     return "unknown error";
 }
 
-const char *tendril_speed_str(enum tendril_speed speed) {
+const char *tendril_speed_str(int speed) {
     switch (speed) {
         case TENDRIL_SPEED_LOW: {
             return "low-speed";
@@ -438,7 +467,7 @@ const char *tendril_speed_str(enum tendril_speed speed) {
     return "unknown speed";
 }
 
-const char *tendril_hc_type_str(enum tendril_hc_type type) {
+const char *tendril_hc_type_str(int type) {
     switch (type) {
         case TENDRIL_HC_UHCI: {
             return "UHCI";

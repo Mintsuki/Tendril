@@ -1,21 +1,82 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
+/* Copyright (C) 2026 Mintsuki and contributors.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 /*
  * FTDI serial adapters: chip identification, the vendor control requests,
  * and the status bytes heading received data. Follows FTDI AN232B-04 Version
  * 1.1 and FTDI AN_120 Version 1.2.
  */
 
+/*
+ * Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uftdi.c
+ * (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2000 The NetBSD Foundation, Inc.
+ * All rights reserved.
+ *
+ * This code is derived from software contributed to The NetBSD Foundation
+ * by Lennart Augustsson (lennart@augustsson.net).
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "serial_internal.h"
 
-enum ftdi_chip {
-    FTDI_FT232A,
-    FTDI_FT232B,
-    FTDI_FT2232D,
-    FTDI_FT232R,
-    FTDI_FT2232H,
-    FTDI_FT4232H,
-    FTDI_FT232H,
-    FTDI_FT230X
-};
+/* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
+#define FTDI_FT232A 0
+#define FTDI_FT232B 1
+#define FTDI_FT2232D 2
+#define FTDI_FT232R 3
+#define FTDI_FT2232H 4
+#define FTDI_FT4232H 5
+#define FTDI_FT232H 6
+#define FTDI_FT230X 7
+/* END FreeBSD sys/dev/usb/serial/uftdi.c */
 
 /* Vendor requests and their fields (clean-room specification). */
 #define FTDI_RESET 0x00
@@ -25,19 +86,20 @@ enum ftdi_chip {
 #define FTDI_SET_DATA 0x04
 #define FTDI_SET_LATENCY_TIMER 0x09
 
-#define FTDI_MODEM_DTR (1u << 0)
-#define FTDI_MODEM_RTS (1u << 1)
-#define FTDI_MODEM_SET_DTR (1u << 8)
-#define FTDI_MODEM_SET_RTS (1u << 9)
+#define FTDI_MODEM_DTR ((uint32_t)1 << 0)
+#define FTDI_MODEM_RTS ((uint32_t)1 << 1)
+#define FTDI_MODEM_SET_DTR ((uint32_t)1 << 8)
+#define FTDI_MODEM_SET_RTS ((uint32_t)1 << 9)
 
 #define FTDI_FLOW_RTS_CTS 0x01
 
-#define FTDI_DATA_BREAK (1u << 14)
+#define FTDI_DATA_BREAK ((uint32_t)1 << 14)
 
 #define FTDI_LATENCY_MS 2
 
+/* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
 /* Chips with several ports, which take the port index in wIndex. */
-static bool multi_port(unsigned chip) {
+static bool multi_port(int chip) {
     switch (chip) {
         case FTDI_FT2232D:
         case FTDI_FT2232H:
@@ -53,7 +115,7 @@ static bool multi_port(unsigned chip) {
 }
 
 /* Chips with the 12 MHz baud rate reference (FTDI AN_120 Version 1.2, 4.4). */
-static bool fast_clock(unsigned chip) {
+static bool fast_clock(int chip) {
     switch (chip) {
         case FTDI_FT2232H:
         case FTDI_FT4232H:
@@ -65,9 +127,10 @@ static bool fast_clock(unsigned chip) {
         }
     }
 }
+/* END FreeBSD sys/dev/usb/serial/uftdi.c */
 
 static uint16_t req_index(const struct tendril_serial *port, uint8_t high) {
-    return (uint16_t)((unsigned)high << 8 | (port->port_index & 0xffu));
+    return (uint16_t)((uint32_t)high << 8 | (port->port_index & (uint32_t)0xff));
 }
 
 static void ftdi_req(struct serial_op *op, uint8_t request, uint16_t value, uint16_t index) {
@@ -77,8 +140,9 @@ static void ftdi_req(struct serial_op *op, uint8_t request, uint16_t value, uint
 bool serial_ftdi_init(struct tendril_serial *port) {
     const struct tendril_device_descriptor *desc = &port->dev->desc;
     uint16_t bcd = tendril_le16(desc->bcd_device);
-    enum ftdi_chip chip;
+    int chip;
 
+    /* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
     /* As FreeBSD's sys/dev/usb/serial/uftdi.c (BSD-2-Clause, uftdi_devtype_setup) does. */
     switch (bcd) {
         case 0x0200: {
@@ -119,37 +183,39 @@ bool serial_ftdi_init(struct tendril_serial *port) {
         }
         default: {
             if (bcd < 0x0200) {
-                LOG_WARN("tendril: serial: FTDI SIO parts are not supported");
+                LOG_WARN("serial: FTDI SIO parts are not supported");
                 return false;
             }
             chip = FTDI_FT232R;
             break;
         }
     }
+    /* END FreeBSD sys/dev/usb/serial/uftdi.c */
 
-    port->chip = (unsigned)chip;
+    port->chip = chip;
     if (multi_port(port->chip)) {
         /* 1, 2, 3, ... select ports A, B, C, ... (clean-room specification). */
-        port->port_index = (uint16_t)(1u + port->intf->number);
+        port->port_index = (uint16_t)((uint32_t)1 + port->intf->number);
     } else {
         port->port_index = 0;
     }
     return true;
 }
 
+/* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
 /*
  * The SET_BAUD_RATE divisor of a 3 MHz or 12 MHz reference (FTDI AN_120
  * Version 1.2, 3, 4.3, and 4.4), rounded and with the 12 MHz reference
  * picked as FreeBSD's sys/dev/usb/serial/uftdi.c (BSD-2-Clause,
  * uftdi_encode_baudrate) does.
  */
-static bool encode_baud(unsigned chip, uint32_t rate, uint32_t *encoded) {
+static bool encode_baud(int chip, uint32_t rate, uint32_t *encoded) {
     /* Fraction codes by eighths (FTDI AN_120 Version 1.2, 4.3). */
     static const uint8_t frac_code[8] = { 0, 3, 2, 4, 1, 5, 6, 7 };
     /* Moves sixteenths to the nearest fraction the FT232A has: 0, 1/8, 1/4, or 1/2. */
     static const int8_t roundoff[16] = { 0, 1, 0, 1, 0, -1, 2, 1, 0, -1, -2, -3, 4, 3, 2, 1 };
     bool fast = fast_clock(chip) && rate >= 1200;
-    uint32_t clock = fast ? 12000000u : 3000000u;
+    uint32_t clock = fast ? (uint32_t)12000000 : (uint32_t)3000000;
 
     if (rate < clock / 16384 || rate > clock) {
         return false;
@@ -157,7 +223,7 @@ static bool encode_baud(unsigned chip, uint32_t rate, uint32_t *encoded) {
 
     uint32_t d16 = clock * 16 / rate;
     if ((d16 & 0xf) == 1) {
-        d16 &= ~7u;
+        d16 &= ~(uint32_t)7;
     } else if (chip == FTDI_FT232A) {
         d16 = (uint32_t)((int32_t)d16 + roundoff[d16 & 0xf]);
     } else {
@@ -174,24 +240,25 @@ static bool encode_baud(unsigned chip, uint32_t rate, uint32_t *encoded) {
     uint32_t value;
     if (n == 1) {
         /* Divisors 0 and 1 mean 3 and 2 MBaud, or 12 and 8 on 12 MHz (FTDI AN_120 Version 1.2, 3 and 4.4). */
-        value = (d8 % 8) == 0 ? 0u : 1u;
+        value = (d8 % 8) == 0 ? (uint32_t)0 : (uint32_t)1;
     } else if (n > 16383) {
         return false;
     } else {
         value = n | (uint32_t)frac_code[d8 % 8] << 14;
     }
     if (fast) {
-        value |= 1u << 17;
+        value |= (uint32_t)1 << 17;
     }
     *encoded = value;
     return true;
 }
+/* END FreeBSD sys/dev/usb/serial/uftdi.c */
 
 static bool data_value(const struct tendril_serial *port, uint16_t *value) {
     const struct tendril_serial_config *config = &port->config;
 
-    if (config->data_bits < 5 || config->data_bits > 8 ||
-        config->parity > TENDRIL_SERIAL_PARITY_SPACE || config->stop_bits > TENDRIL_SERIAL_STOP_2) {
+    if (config->data_bits < 5 || config->data_bits > 8
+     || config->parity > TENDRIL_SERIAL_PARITY_SPACE || config->stop_bits > TENDRIL_SERIAL_STOP_2) {
         return false;
     }
 
@@ -236,7 +303,7 @@ void serial_ftdi_line(struct tendril_serial *port, struct serial_op *op) {
         flow = FTDI_FLOW_RTS_CTS;
     }
 
-    ftdi_req(op, FTDI_SET_BAUD_RATE, (uint16_t)(divisor & 0xffffu), baud_index);
+    ftdi_req(op, FTDI_SET_BAUD_RATE, (uint16_t)(divisor & (uint32_t)0xffff), baud_index);
     ftdi_req(op, FTDI_SET_DATA, data, req_index(port, 0));
     ftdi_req(op, FTDI_SET_FLOW_CTRL, 0, req_index(port, flow));
 }
