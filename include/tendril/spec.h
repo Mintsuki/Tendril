@@ -47,6 +47,20 @@ extern "C" {
 #define TENDRIL_BIG_ENDIAN 0
 #endif
 
+/*
+ * The structures below are packed by attribute, or with MSVC, which has none,
+ * by pragma.
+ */
+#if defined(_MSC_VER) && !defined(__clang__)
+#define TENDRIL_PACKED
+#define TENDRIL_PACK_BEGIN __pragma(pack(push, 1))
+#define TENDRIL_PACK_END __pragma(pack(pop))
+#else
+#define TENDRIL_PACKED __attribute__((packed))
+#define TENDRIL_PACK_BEGIN
+#define TENDRIL_PACK_END
+#endif
+
 static inline uint16_t tendril_le16(uint16_t v) {
 #if TENDRIL_BIG_ENDIAN
     return (uint16_t)(v >> 8 | v << 8);
@@ -274,18 +288,20 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_HUB_CHAR_TTTT_SHIFT 5
 #define TENDRIL_HUB_CHAR_PORTIND 0x0080
 
+TENDRIL_PACK_BEGIN
+
 struct tendril_setup {
     uint8_t request_type;
     uint8_t request;
     uint16_t value;
     uint16_t index;
     uint16_t length;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_descriptor_header {
     uint8_t length;
     uint8_t type;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_device_descriptor {
     uint8_t length;
@@ -302,7 +318,7 @@ struct tendril_device_descriptor {
     uint8_t product_string;
     uint8_t serial_string;
     uint8_t num_configurations;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_config_descriptor {
     uint8_t length;
@@ -313,7 +329,7 @@ struct tendril_config_descriptor {
     uint8_t configuration_string;
     uint8_t attributes;
     uint8_t max_power;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_interface_assoc_descriptor {
     uint8_t length;
@@ -324,7 +340,7 @@ struct tendril_interface_assoc_descriptor {
     uint8_t function_subclass;
     uint8_t function_protocol;
     uint8_t function_string;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_interface_descriptor {
     uint8_t length;
@@ -336,7 +352,7 @@ struct tendril_interface_descriptor {
     uint8_t interface_subclass;
     uint8_t interface_protocol;
     uint8_t interface_string;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_endpoint_descriptor {
     uint8_t length;
@@ -345,7 +361,7 @@ struct tendril_endpoint_descriptor {
     uint8_t attributes;
     uint16_t max_packet_size;
     uint8_t interval;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_ss_ep_companion_descriptor {
     uint8_t length;
@@ -353,40 +369,40 @@ struct tendril_ss_ep_companion_descriptor {
     uint8_t max_burst;
     uint8_t attributes;
     uint16_t bytes_per_interval;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_ssp_iso_ep_companion_descriptor {
     uint8_t length;
     uint8_t type;
     uint16_t reserved;
     uint32_t bytes_per_interval;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_string_descriptor {
     uint8_t length;
     uint8_t type;
     uint16_t data[];
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_bos_descriptor {
     uint8_t length;
     uint8_t type;
     uint16_t total_length;
     uint8_t num_device_caps;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_device_capability_header {
     uint8_t length;
     uint8_t type;
     uint8_t capability_type;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_usb20_ext_capability {
     uint8_t length;
     uint8_t type;
     uint8_t capability_type;
     uint32_t attributes;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_ss_capability {
     uint8_t length;
@@ -397,7 +413,7 @@ struct tendril_ss_capability {
     uint8_t functionality_support;
     uint8_t u1_dev_exit_lat;
     uint16_t u2_dev_exit_lat;
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_hub_descriptor {
     uint8_t length;
@@ -407,7 +423,7 @@ struct tendril_hub_descriptor {
     uint8_t power_on_to_good;
     uint8_t controller_current;
     uint8_t variable[64];
-} __attribute__((packed));
+} TENDRIL_PACKED;
 
 struct tendril_ss_hub_descriptor {
     uint8_t length;
@@ -419,7 +435,9 @@ struct tendril_ss_hub_descriptor {
     uint8_t header_decode_latency;
     uint16_t hub_delay;
     uint16_t device_removable;
-} __attribute__((packed));
+} TENDRIL_PACKED;
+
+TENDRIL_PACK_END
 
 #ifdef __cplusplus
 }

@@ -46,10 +46,24 @@
 #define NS_PER_US ((uint64_t)1000)
 #define NS_PER_MS ((uint64_t)1000000)
 
+/*
+ * MSVC has neither the builtins nor the format attribute: its intrinsics stand
+ * in for the former.
+ */
+#if defined(_MSC_VER) && !defined(__clang__)
+void *memcpy(void *dest, const void *src, size_t size);
+void *memset(void *dest, int value, size_t size);
+void *memmove(void *dest, const void *src, size_t size);
+int memcmp(const void *a, const void *b, size_t size);
+#pragma intrinsic(memcpy, memset, memcmp)
+#define PRINTF_FORMAT(fmt, first)
+#else
 #define memcpy __builtin_memcpy
 #define memset __builtin_memset
 #define memmove __builtin_memmove
 #define memcmp __builtin_memcmp
+#define PRINTF_FORMAT(fmt, first) __attribute__((format(printf, fmt, first)))
+#endif
 
 /* Lists */
 
@@ -105,12 +119,11 @@ static inline bool list_linked(const struct tendril_list *node) {
 
 extern int tendril_log_threshold;
 
-void tendril_log(int level, const char *fmt, ...)
-    __attribute__((format(printf, 2, 3)));
+void tendril_log(int level, const char *fmt, ...) PRINTF_FORMAT(2, 3);
 void tendril_vlog(int level, const char *fmt, va_list args);
 int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 int tendril_snprintf(char *buf, size_t size, const char *fmt, ...)
-    __attribute__((format(printf, 3, 4)));
+    PRINTF_FORMAT(3, 4);
 
 #define LOG_ERROR(...) tendril_log(TENDRIL_LOG_ERROR, __VA_ARGS__)
 #define LOG_WARN(...) tendril_log(TENDRIL_LOG_WARN, __VA_ARGS__)

@@ -24,10 +24,13 @@ needs no C library and asks the embedder for a small set of glue functions.
 
 Compile every `.c` file under `src/` with `include/` on the include path,
 which code using Tendril needs too. The sources are C99 and build as C99
-through C23 with GCC and Clang, freestanding; they use the compiler's
-freestanding headers and `__builtin_memcpy` and friends. On 32-bit targets,
-link the compiler's runtime library (libgcc or the compiler-rt builtins) for
-64-bit division.
+through C23 with GCC and Clang, freestanding. They use the compiler's
+freestanding headers and `__builtin_memcpy` and friends, which may still call
+`memcpy`, `memset`, `memmove`, and `memcmp`. With MSVC, which has no such
+builtins and no packing attribute, the intrinsics of those names and
+`#pragma pack` stand in for them. On 32-bit targets, link the compiler's
+runtime library (libgcc or the compiler-rt builtins, for example) for 64-bit
+division.
 
 Defining `TENDRIL_NO_UHCI`, `TENDRIL_NO_OHCI`, `TENDRIL_NO_EHCI`, or
 `TENDRIL_NO_XHCI` leaves the corresponding controller driver out.
