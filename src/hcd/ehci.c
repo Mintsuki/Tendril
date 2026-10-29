@@ -301,6 +301,12 @@
  * 4.3.1).
  */
 #define RESUME_SIGNAL_MS 20
+/*
+ * A device handed to a companion controller shows up there once the companion
+ * has detected it, within TDCNN (2 ms, USB 2.0 Table 7-13), and looked: UHCI
+ * looks every UHCI_PORT_POLL_MS.
+ */
+#define COMPANION_HOLD_MS (UHCI_PORT_POLL_MS + 2)
 /* BEGIN FreeBSD sys/dev/usb/usb.h */
 /*
  * FreeBSD's USB_PORT_ROOT_RESET_DELAY, from its sys/dev/usb/usb.h
@@ -2068,6 +2074,7 @@ static void ehci_port_status(struct tendril_hc *hc, uint8_t port, struct tendril
             /* Not high-speed: hand it to a companion controller. */
             op_write(hc, OP_PORTSC(port), (sc & ~PORT_RWC) | PORT_PO);
             e->released[i] = true;
+            tendril_roothub_hold(hc, port, COMPANION_HOLD_MS);
             sc = op_read(hc, OP_PORTSC(port));
         }
     }
@@ -2135,6 +2142,7 @@ static int ehci_port_set_feature(struct tendril_hc *hc, uint8_t port, int featur
                  */
                 op_write(hc, OP_PORTSC(port), sc | PORT_PO);
                 e->released[i] = true;
+                tendril_roothub_hold(hc, port, COMPANION_HOLD_MS);
                 e->reset_changed[i] = true;
                 return TENDRIL_OK;
             }

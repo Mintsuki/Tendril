@@ -180,6 +180,11 @@
 #define DEBOUNCE_STEP_MS 25
 #define DEBOUNCE_MAX_MS 1500
 #define SS_ENABLE_WAIT_MS 100
+/*
+ * USB 3.2 revision 1.1, Table 7-12: tPollingLFPSTimeout, 360 ms, which 7.5
+ * lets run 50% over.
+ */
+#define POLLING_MAX_MS 540
 /* BEGIN FreeBSD sys/dev/usb/usb_hub.h */
 /* FreeBSD's USB_RESTART_MAX, from its sys/dev/usb/usb_hub.h (BSD-2-Clause). */
 #define MAX_RESTARTS 5
@@ -450,6 +455,23 @@ void tendril_enum_release_dev(struct tendril_device *dev) {
 
 /* Status checks in the stable states */
 
+/*
+ * A SuperSpeed link in Polling is training with a device the hub does not
+ * report as connected yet (USB 3.2 revision 1.1, 7.5.4), so the port is looked
+ * at again until the link leaves Polling or one Polling.LFPS run is over.
+ */
+static bool link_training(struct tendril_port *port) {
+    if (!port->superspeed || link_state(port) != TENDRIL_SS_LINK_POLLING) {
+        port->polling = false;
+        return false;
+    }
+    if (!port->polling) {
+        port->polling = true;
+        port->polling_start = tendril_now();
+    }
+    return elapsed_ms(port->polling_start) < POLLING_MAX_MS;
+}
+
 static void evaluate(struct tendril_port *port) {
     uint16_t changes = port->changes;
     char name[32];
@@ -505,6 +527,11 @@ static void evaluate(struct tendril_port *port) {
 
     switch (port->state) {
         case PORT_IDLE: {
+            if (!conn && link_training(port)) {
+                port->kick = true;
+                port_wait(port, DEBOUNCE_STEP_MS);
+                return;
+            }
             if (conn) {
                 port->state = PORT_DEBOUNCE;
                 port->debounce_start = tendril_now();
@@ -1054,6 +1081,11 @@ static void port_work(struct tendril_work *work) {
     }
 }
 
+/* Only its running out matters, to tendril_hc_settled(). */
+static void hold_over(struct tendril_work *work) {
+    (void)work;
+}
+
 void tendril_port_init(struct tendril_port *port, struct tendril_hub *hub, size_t number) {
     memset(port, 0, sizeof(struct tendril_port));
     port->hub = hub;
@@ -1062,6 +1094,7 @@ void tendril_port_init(struct tendril_port *port, struct tendril_hub *hub, size_
     port->state = PORT_IDLE;
     tendril_async_init(&port->async, port_work);
     tendril_timer_init(&port->timer, port_timer);
+    tendril_timer_init(&port->hold, hold_over);
     list_init(&port->enum_node);
 }
 
@@ -1079,6 +1112,7 @@ void tendril_port_kick(struct tendril_port *port) {
 void tendril_port_stop(struct tendril_port *port) {
     struct tendril_hc *hc = port_hc(port);
     tendril_timer_cancel(hc, &port->timer);
+    tendril_timer_cancel(hc, &port->hold);
     if (list_linked(&port->enum_node)) {
         list_del(&port->enum_node);
     }

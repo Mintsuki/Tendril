@@ -1656,13 +1656,13 @@ static int xhci_start(struct tendril_hc *hc) {
             powered = true;
         }
     }
-    if (powered) {
-        /*
-         * USB 2.0 7.1.7.3: time for power to settle before connects are
-         * trusted.
-         */
-        tendril_delay_us(20000);
-    }
+    /*
+     * The reset left the USB2 ports disconnected (xHCI 1.2, 4.19.1.1.2), and
+     * seeing a device again takes up to 2 ms (TDCNN, USB 2.0 Table 7-13);
+     * ports switched on just now first need their power to settle (USB 2.0
+     * 7.1.7.3).
+     */
+    tendril_delay_us(powered ? 20000 : 2000);
     return TENDRIL_OK;
 }
 

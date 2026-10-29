@@ -189,10 +189,21 @@ struct tendril_port {
     struct tendril_device *device;
     struct tendril_async async;
     struct tendril_timer timer;
+    /*
+     * Armed while a device handed to a companion controller may not show up
+     * there yet.
+     */
+    struct tendril_timer hold;
     struct tendril_list enum_node;
     uint64_t debounce_start;
     uint64_t debounce_first;
     uint64_t reset_start;
+    /*
+     * Since when the SuperSpeed link has been seen training with nothing
+     * connected, while polling is set.
+     */
+    uint64_t polling_start;
+    bool polling;
     size_t attempts;
     int enum_status;
     bool busy;
@@ -571,6 +582,15 @@ void tendril_async_complete(struct tendril_hc *hc, struct tendril_async *async, 
 
 /* Root hub port change notification from controller drivers, lock held. */
 void tendril_roothub_changed(struct tendril_hc *hc, uint8_t port);
+
+/*
+ * How often UHCI looks at its root ports, which raise no interrupt when they
+ * change.
+ */
+#define UHCI_PORT_POLL_MS 100
+
+/* Keeps a root port from counting as settled for ms, lock held. */
+void tendril_roothub_hold(struct tendril_hc *hc, uint8_t port, uint64_t ms);
 
 /* Transfer completion from controller drivers, lock held. */
 void tendril_transfer_complete(struct tendril_hc *hc, struct tendril_transfer *xfer, int status, size_t actual);

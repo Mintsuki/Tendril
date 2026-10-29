@@ -459,6 +459,26 @@ runs callbacks, one at a time.
 
 Calls `tendril_hc_poll()` until `*flag` is true. It has no timeout.
 
+#### `bool tendril_hc_settled(struct tendril_hc *hc)`
+
+**Returns** true once every port of the controller has been looked at since
+`tendril_hc_add()` and none is busy: no port is part way through a connection,
+a reset, or a power change, no device is being enumerated or handed from an
+EHCI controller to its companion, and no SuperSpeed link is still training (for
+up to 540 ms each time, USB 3.2 revision 1.1 Table 7-12 and section 7.5). It
+stays true until a port changes again, and is true once the controller has
+died. It takes the controller's lock, and may be called wherever
+`tendril_hc_poll()` may.
+
+To find the devices present at boot, call `tendril_hc_poll()` on every
+controller until all of them are settled, with a deadline of your own. Drivers
+may still be setting their devices up then; mass storage logical units, for
+one, are announced through their own callbacks. A device the controller does
+not report yet is not waited for: on a port that was just powered, a device may
+take up to 1 s to connect (USB 2.0 Connect Timing ECN, TSVLD_CON_PWD), so if a
+device you need is missing once everything is settled, keep polling until your
+deadline.
+
 #### `int tendril_hc_suspend(struct tendril_hc *hc, bool wake)`
 
 Prepares the controller for system sleep: waits up to 3 seconds for enumeration

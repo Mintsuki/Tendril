@@ -318,6 +318,15 @@ uint64_t tendril_hc_poll(struct tendril_hc *hc);
 void tendril_hc_wait(struct tendril_hc *hc, volatile bool *flag);
 
 /*
+ * Whether every port has been looked at since tendril_hc_add() and none is
+ * busy: none is mid-way through a change, no device is being enumerated or
+ * handed to a companion controller, and no SuperSpeed link is still training.
+ * True once the controller has died. Drivers may still be setting their
+ * devices up.
+ */
+bool tendril_hc_settled(struct tendril_hc *hc);
+
+/*
  * Prepares the controller for system sleep: suspends every device, arming
  * remote wakeup on those that support it if `wake`, then stops the controller.
  * On failure, the devices suspended so far are resumed. Calls

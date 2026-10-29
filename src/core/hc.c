@@ -244,6 +244,12 @@ void tendril_roothub_changed(struct tendril_hc *hc, uint8_t port) {
     }
 }
 
+void tendril_roothub_hold(struct tendril_hc *hc, uint8_t port, uint64_t ms) {
+    if (hc->root.ports != NULL && port >= 1 && port <= hc->root.num_ports) {
+        tendril_timer_arm(hc, &hc->root.ports[port - 1].hold, ms * NS_PER_MS);
+    }
+}
+
 /* Controllers */
 
 static const struct tendril_hcd_ops *hcd_ops(int type) {
@@ -361,6 +367,7 @@ static void teardown(struct tendril_hc *hc) {
         struct tendril_port *port = &hc->root.ports[i];
         hc_lock(hc);
         tendril_timer_cancel(hc, &port->timer);
+        tendril_timer_cancel(hc, &port->hold);
         hc_unlock(hc);
         if (port->device != NULL) {
             tendril_device_disconnect(port->device);
@@ -441,12 +448,20 @@ static struct tendril_device *next_pm_device(struct tendril_hc *hc, bool suspend
     return best;
 }
 
-/* No port is mid-way through something, and no device is enumerating. */
-static bool settled(struct tendril_hc *hc) {
+/*
+ * At rest, and not enumerating a device, which holds no enumeration slot past
+ * getting its address.
+ */
+static bool port_settled(struct tendril_port *port) {
+    return tendril_port_idle(port) && port->state != PORT_WAIT_ENUM && port->state != PORT_ENUM
+        && !tendril_timer_armed(&port->hold);
+}
+
+bool tendril_hc_settled(struct tendril_hc *hc) {
     hc_lock(hc);
     bool idle = hc->enum_port == NULL && list_empty(&hc->enum_queue);
     for (size_t i = 0; i < hc->root.num_ports && idle; i++) {
-        idle = tendril_port_idle(&hc->root.ports[i]);
+        idle = port_settled(&hc->root.ports[i]);
     }
     struct tendril_list *it;
     LIST_FOR_EACH(it, &hc->devices) {
@@ -458,11 +473,12 @@ static bool settled(struct tendril_hc *hc) {
             idle = false;
         }
         for (size_t i = 0; dev->hub != NULL && dev->hub->ports != NULL && i < dev->hub->num_ports; i++) {
-            if (!tendril_port_idle(&dev->hub->ports[i])) {
+            if (!port_settled(&dev->hub->ports[i])) {
                 idle = false;
             }
         }
     }
+    idle = idle || hc->dead;
     hc_unlock(hc);
     return idle;
 }
@@ -489,7 +505,7 @@ int tendril_hc_suspend(struct tendril_hc *hc, bool wake) {
         return TENDRIL_ERR_INVALID;
     }
     uint64_t deadline = tendril_now() + SETTLE_TIMEOUT_MS * NS_PER_MS;
-    while (!settled(hc)) {
+    while (!tendril_hc_settled(hc)) {
         if (tendril_now() >= deadline) {
             return TENDRIL_ERR_BUSY;
         }

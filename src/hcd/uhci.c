@@ -194,7 +194,6 @@
 /* END FreeBSD sys/dev/usb/usb.h, sys/dev/usb/controller/uhci.c */
 /* USB 2.0 7.1.7.7: TDRSMDN, the resume signalling software times. */
 #define RESUME_SIGNAL_MS 20
-#define PORT_POLL_MS 100
 #define ISO_LEAD_FRAMES 4
 
 struct uhci_td {
@@ -1080,10 +1079,10 @@ static void uhci_timer(struct tendril_work *work) {
     if (!hc->dead) {
         process_waiting(hc);
         scan_iso(hc);
-        if (tendril_now() - u->port_check >= PORT_POLL_MS * NS_PER_MS) {
+        if (tendril_now() - u->port_check >= UHCI_PORT_POLL_MS * NS_PER_MS) {
             check_ports(hc);
         }
-        uint64_t next = PORT_POLL_MS * NS_PER_MS;
+        uint64_t next = UHCI_PORT_POLL_MS * NS_PER_MS;
         if (!list_empty(&u->waiting) || !list_empty(&u->iso_active)) {
             next = NS_PER_MS;
         }
@@ -1612,7 +1611,7 @@ static void uhci_poll(struct tendril_hc *hc) {
     if (!list_empty(&u->waiting)) {
         process_waiting(hc);
     }
-    if (tendril_now() - u->port_check >= PORT_POLL_MS * NS_PER_MS) {
+    if (tendril_now() - u->port_check >= UHCI_PORT_POLL_MS * NS_PER_MS) {
         check_ports(hc);
     }
     if (hc->config.irq) {
@@ -1780,7 +1779,7 @@ static int uhci_start(struct tendril_hc *hc) {
         return st;
     }
     u->port_check = tendril_now();
-    tendril_timer_arm(hc, &u->timer, PORT_POLL_MS * NS_PER_MS);
+    tendril_timer_arm(hc, &u->timer, UHCI_PORT_POLL_MS * NS_PER_MS);
     return TENDRIL_OK;
 }
 
