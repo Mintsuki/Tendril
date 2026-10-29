@@ -185,6 +185,11 @@
  * lets run 50% over.
  */
 #define POLLING_MAX_MS 540
+/*
+ * USB 2.0 Connect Timing ECN, Table 7-14: TSVLD_CON_PWD, how long a device may
+ * take to connect once its port has power.
+ */
+#define CONNECT_MAX_MS 1000
 /* BEGIN FreeBSD sys/dev/usb/usb_hub.h */
 /* FreeBSD's USB_RESTART_MAX, from its sys/dev/usb/usb_hub.h (BSD-2-Clause). */
 #define MAX_RESTARTS 5
@@ -564,6 +569,11 @@ static void evaluate(struct tendril_port *port) {
                 return;
             }
             if (conn) {
+                /* The device waited for, if any, has connected. */
+                struct tendril_hc *hc = port_hc(port);
+                hc_lock(hc);
+                tendril_timer_cancel(hc, &port->connect_wait);
+                hc_unlock(hc);
                 port->state = PORT_DEBOUNCE;
                 port->debounce_start = tendril_now();
                 port->debounce_first = port->debounce_start;
@@ -1158,8 +1168,11 @@ static void port_work(struct tendril_work *work) {
     }
 }
 
-/* Only its running out matters, to tendril_hc_settled(). */
-static void hold_over(struct tendril_work *work) {
+/*
+ * Only the running out of the port's waits matters, to tendril_hc_settled()
+ * and tendril_hc_ready().
+ */
+static void wait_over(struct tendril_work *work) {
     (void)work;
 }
 
@@ -1173,8 +1186,16 @@ void tendril_port_init(
     port->state = PORT_IDLE;
     tendril_async_init(&port->async, port_work);
     tendril_timer_init(&port->timer, port_timer);
-    tendril_timer_init(&port->hold, hold_over);
+    tendril_timer_init(&port->hold, wait_over);
+    tendril_timer_init(&port->connect_wait, wait_over);
     list_init(&port->enum_node);
+}
+
+void tendril_port_powered(struct tendril_port *port, uint64_t extra_ms) {
+    tendril_timer_arm(
+        port_hc(port), &port->connect_wait,
+        (CONNECT_MAX_MS + TDCNN_MS + extra_ms) * NS_PER_MS
+    );
 }
 
 /* With the lock held. */
@@ -1192,6 +1213,7 @@ void tendril_port_stop(struct tendril_port *port) {
     struct tendril_hc *hc = port_hc(port);
     tendril_timer_cancel(hc, &port->timer);
     tendril_timer_cancel(hc, &port->hold);
+    tendril_timer_cancel(hc, &port->connect_wait);
     if (list_linked(&port->enum_node)) {
         list_del(&port->enum_node);
     }

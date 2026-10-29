@@ -3331,6 +3331,11 @@ static void net_disconnect(struct tendril_interface *intf) {
  * stopped: a frame being sent or queued, an operation, or an RNDIS exchange.
  * The core then cancels the receive and interrupt transfers.
  */
+static bool net_busy(struct tendril_interface *intf) {
+    struct tendril_net *net = tendril_interface_data(intf);
+    return net != NULL && !net->attached && !net->stopped;
+}
+
 static bool net_suspend(struct tendril_interface *intf) {
     struct tendril_net *net = tendril_interface_data(intf);
 
@@ -3395,6 +3400,7 @@ void tendril_net_register(const struct tendril_net_callbacks *callbacks) {
     net_callbacks = callbacks;
     net_driver.name = "net";
     net_driver.probe = net_probe;
+    net_driver.busy = net_busy;
     net_driver.disconnect = net_disconnect;
     net_driver.suspend = net_suspend;
     net_driver.resume = net_resume;

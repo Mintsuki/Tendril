@@ -1807,6 +1807,7 @@ static int xhci_start(struct tendril_hc *hc) {
         uint32_t sc = op_read(hc, OP_PORTSC(p));
         if ((x->hcc1 & HCC1_PPC) != 0 && (sc & PORTSC_PP) == 0) {
             op_write(hc, OP_PORTSC(p), (sc & PORTSC_KEEP) | PORTSC_PP);
+            tendril_roothub_powered(hc, (uint8_t)p, 20);
             powered = true;
         }
     }

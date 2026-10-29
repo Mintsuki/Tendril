@@ -681,8 +681,15 @@ static void hub_init_step(struct tendril_hub *hub) {
         case HUB_POWER_WAIT: {
             hub->init_step = HUB_RUNNING;
             hub_status_submit(hub);
+            /*
+             * The status change endpoint reports a connection when next
+             * polled, every interval microframes.
+             */
+            struct tendril_endpoint *ep = hub->status_xfer.endpoint;
+            uint64_t report_ms = ep != NULL ? (ep->interval + 7) / 8 : 0;
             hc_lock(hc);
             for (size_t i = 0; i < hub->num_ports; i++) {
+                tendril_port_powered(&hub->ports[i], report_ms);
                 tendril_port_kick(&hub->ports[i]);
             }
             hc_unlock(hc);

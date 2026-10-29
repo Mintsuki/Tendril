@@ -1086,6 +1086,11 @@ static void hid_disconnect(struct tendril_interface *intf) {
     tendril_free(hid, sizeof(struct tendril_hid));
 }
 
+static bool hid_busy(struct tendril_interface *intf) {
+    struct tendril_hid *hid = tendril_interface_data(intf);
+    return hid != NULL && hid->step != STEP_RUNNING && !hid->stopped;
+}
+
 static bool hid_suspend(struct tendril_interface *intf) {
     struct tendril_hid *hid = tendril_interface_data(intf);
     struct tendril_hc *hc = intf->dev->hc;
@@ -1123,6 +1128,7 @@ static void hid_resume(struct tendril_interface *intf) {
 static struct tendril_driver hid_driver = {
     .name = "hid",
     .probe = hid_probe,
+    .busy = hid_busy,
     .disconnect = hid_disconnect,
     .suspend = hid_suspend,
     .resume = hid_resume

@@ -268,6 +268,14 @@ void tendril_roothub_hold(struct tendril_hc *hc, uint8_t port, uint64_t ms) {
     }
 }
 
+void tendril_roothub_powered(
+    struct tendril_hc *hc, uint8_t port, uint64_t settle_ms
+) {
+    if (hc->root.ports != NULL && port >= 1 && port <= hc->root.num_ports) {
+        tendril_port_powered(&hc->root.ports[port - 1], settle_ms);
+    }
+}
+
 /* Controllers */
 
 static const struct tendril_hcd_ops *hcd_ops(int type) {
@@ -396,6 +404,7 @@ static void teardown(struct tendril_hc *hc) {
         hc_lock(hc);
         tendril_timer_cancel(hc, &port->timer);
         tendril_timer_cancel(hc, &port->hold);
+        tendril_timer_cancel(hc, &port->connect_wait);
         hc_unlock(hc);
         if (port->device != NULL) {
             tendril_device_disconnect(port->device);
@@ -487,18 +496,33 @@ static struct tendril_device *next_pm_device(
 
 /*
  * At rest, and not enumerating a device, which holds no enumeration slot past
- * getting its address.
+ * getting its address; for `ready`, with a device or past the time one may
+ * take to connect after the port was switched on.
  */
-static bool port_settled(struct tendril_port *port) {
-    return tendril_port_idle(port) && port->state != PORT_WAIT_ENUM
-        && port->state != PORT_ENUM && !tendril_timer_armed(&port->hold);
+static bool port_settled(struct tendril_port *port, bool ready) {
+    if (!tendril_port_idle(port) || port->state == PORT_WAIT_ENUM
+     || port->state == PORT_ENUM || tendril_timer_armed(&port->hold)) {
+        return false;
+    }
+    return !ready || port->device != NULL
+        || !tendril_timer_armed(&port->connect_wait);
 }
 
-bool tendril_hc_settled(struct tendril_hc *hc) {
-    hc_lock(hc);
-    bool idle = hc->enum_port == NULL && list_empty(&hc->enum_queue);
-    for (size_t i = 0; i < hc->root.num_ports && idle; i++) {
-        idle = port_settled(&hc->root.ports[i]);
+/*
+ * No port is busy, and for `ready`, no device is changing configuration and no
+ * driver is still setting an interface up. Lock held.
+ */
+static bool at_rest(struct tendril_hc *hc, bool ready) {
+    if (hc->dead) {
+        return true;
+    }
+    if (hc->enum_port != NULL || !list_empty(&hc->enum_queue)) {
+        return false;
+    }
+    for (size_t i = 0; i < hc->root.num_ports; i++) {
+        if (!port_settled(&hc->root.ports[i], ready)) {
+            return false;
+        }
     }
     struct tendril_list *it;
     LIST_FOR_EACH(it, &hc->devices) {
@@ -508,20 +532,33 @@ bool tendril_hc_settled(struct tendril_hc *hc) {
         if (dev->gone) {
             continue;
         }
-        if (dev->pm_busy) {
-            idle = false;
+        if (dev->pm_busy
+         || (ready && (dev->config_busy || tendril_interfaces_busy(dev)))) {
+            return false;
         }
+        struct tendril_hub *hub = dev->hub;
         for (size_t i = 0;
-             dev->hub != NULL && dev->hub->ports != NULL
-          && i < dev->hub->num_ports; i++) {
-            if (!port_settled(&dev->hub->ports[i])) {
-                idle = false;
+             hub != NULL && hub->ports != NULL && i < hub->num_ports; i++) {
+            if (!port_settled(&hub->ports[i], ready)) {
+                return false;
             }
         }
     }
-    idle = idle || hc->dead;
+    return true;
+}
+
+bool tendril_hc_settled(struct tendril_hc *hc) {
+    hc_lock(hc);
+    bool settled = at_rest(hc, false);
     hc_unlock(hc);
-    return idle;
+    return settled;
+}
+
+bool tendril_hc_ready(struct tendril_hc *hc) {
+    hc_lock(hc);
+    bool ready = at_rest(hc, true);
+    hc_unlock(hc);
+    return ready;
 }
 
 static void resume_devices(struct tendril_hc *hc) {

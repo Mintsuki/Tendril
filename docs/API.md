@@ -470,14 +470,29 @@ stays true until a port changes again, and is true once the controller has
 died. It takes the controller's lock, and may be called wherever
 `tendril_hc_poll()` may.
 
+Drivers may still be setting their devices up then, and a device may still
+connect to a port that was just switched on: `tendril_hc_ready()` waits for
+both. `tendril_hc_suspend()` waits for this one.
+
+#### `bool tendril_hc_ready(struct tendril_hc *hc)`
+
+**Returns** true once the devices plugged in so far are all up:
+`tendril_hc_settled()` holds, no device is changing configuration, every
+interface a driver claimed has been set up or given up on (the `busy` member of
+`struct tendril_driver`), and every port the library switched on with nothing
+connected has had 1 s for a device to connect (TSVLD_CON_PWD, USB 2.0 Connect
+Timing ECN, Table 7-14) and its hub the time to report it: TDCNN (2 ms, USB 2.0
+Table 7-13), plus one interval of its status change endpoint for a hub's port.
+It is true once the controller has died. It takes the controller's lock, and
+may be called wherever `tendril_hc_poll()` may. The deadline
+`tendril_hc_poll()` returns accounts for the waits for devices to connect.
+
 To find the devices present at boot, call `tendril_hc_poll()` on every
-controller until all of them are settled, with a deadline of your own. Drivers
-may still be setting their devices up then; mass storage logical units, for
-one, are announced through their own callbacks. A device the controller does
-not report yet is not waited for: on a port that was just powered, a device may
-take up to 1 s to connect (USB 2.0 Connect Timing ECN, TSVLD_CON_PWD), so if a
-device you need is missing once everything is settled, keep polling until your
-deadline.
+controller until all of them are ready, with a deadline of your own. The
+built-in class drivers are setting an interface up until they call its `attach`
+callback or give up on it, mass storage until it has done so for each logical
+unit, which can take up to 15 s for a unit slow to become ready. Ports that
+were already on when the library took over are not waited on.
 
 #### `int tendril_hc_suspend(struct tendril_hc *hc, bool wake)`
 
@@ -791,6 +806,7 @@ controller is added. Registering the same structure again does nothing.
 | ------ | ------- |
 | `name` | For logs |
 | `bool (*probe)(struct tendril_interface *intf)` | Offered each unclaimed interface of a newly configured device, drivers in the order they were registered; true claims it. A driver without `probe` only watches devices come and go. The first interface of a hub belongs to the hub driver |
+| `bool (*busy)(struct tendril_interface *intf)` | Whether the driver is still setting up the interface it probed and claimed, until the interface is usable or given up on; `tendril_hc_ready()` waits for it. Called with the controller's lock held, so it must not call into the library. A driver without it is never busy |
 | `void (*disconnect)(struct tendril_interface *intf)` | The interface it probed is going away (unplugged, configuration change, controller removal); its transfers have all completed. Interfaces it claimed along with it are released with it |
 | `void (*device_added)(struct tendril_device *dev)`, `void (*device_removed)(struct tendril_device *dev)` | Called on every registered driver: after a device's interfaces were offered, and after they were disconnected |
 | `bool (*suspend)(struct tendril_interface *intf)` | The device is being suspended: stop submitting; the core cancels what is still outstanding. False refuses, failing the suspend with `TENDRIL_ERR_BUSY`. A device bound to a driver without this hook cannot be suspended |

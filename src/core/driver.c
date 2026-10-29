@@ -169,6 +169,17 @@ bool tendril_suspend_interfaces(struct tendril_device *dev, int *status) {
     return true;
 }
 
+bool tendril_interfaces_busy(struct tendril_device *dev) {
+    for (size_t i = 0; i < dev->num_interfaces; i++) {
+        struct tendril_interface *intf = &dev->interfaces[i];
+        if (primary_bound(intf) && intf->driver->busy != NULL
+         && intf->driver->busy(intf)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void tendril_resume_interfaces(struct tendril_device *dev) {
     for (size_t i = 0; i < dev->num_interfaces && !dev->gone; i++) {
         struct tendril_interface *intf = &dev->interfaces[i];

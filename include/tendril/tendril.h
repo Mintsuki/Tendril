@@ -324,9 +324,19 @@ void tendril_hc_wait(struct tendril_hc *hc, volatile bool *flag);
  * busy: none is mid-way through a change, no device is being enumerated or
  * handed to a companion controller, and no SuperSpeed link is still training.
  * True once the controller has died. Drivers may still be setting their
- * devices up.
+ * devices up: see tendril_hc_ready().
  */
 bool tendril_hc_settled(struct tendril_hc *hc);
+
+/*
+ * Whether the devices plugged in so far are all up: tendril_hc_settled()
+ * holds, no device is changing configuration, every interface a driver claimed
+ * has been set up or given up on, and every port the library switched on with
+ * nothing connected has had TSVLD_CON_PWD (USB 2.0 Connect Timing ECN) for a
+ * device to connect and its hub the time to report it. True once the
+ * controller has died.
+ */
+bool tendril_hc_ready(struct tendril_hc *hc);
 
 /*
  * Prepares the controller for system sleep: suspends every device, arming
@@ -627,6 +637,13 @@ struct tendril_driver {
      * Offered each unclaimed interface of a configured device; true claims it.
      */
     bool (*probe)(struct tendril_interface *intf);
+    /*
+     * Whether the driver is still setting up an interface it probed and
+     * claimed, until the interface is usable or given up on. Called by
+     * tendril_hc_ready() with the controller's lock held, so it must not call
+     * into the library. A driver without it is never busy.
+     */
+    bool (*busy)(struct tendril_interface *intf);
     /*
      * The claimed interface is going away; its transfers have all completed.
      */

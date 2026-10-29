@@ -1974,6 +1974,16 @@ static int ohci_start(struct tendril_hc *hc) {
     if (hc->config.irq) {
         reg_write(hc, REG_INTR_ENABLE, o->intr | INT_MIE);
     }
+    /* The ports off now, switched on below. */
+    uint32_t was_off = 0;
+    uint32_t ndp = MIN(
+        reg_read(hc, REG_RH_DESC_A) & RHA_NDP_MASK, (uint32_t)15
+    );
+    for (size_t p = 1; p <= ndp; p++) {
+        if ((reg_read(hc, REG_RH_PORT(p)) & PS_PPS) == 0) {
+            was_off |= (uint32_t)1 << p;
+        }
+    }
     /* BEGIN FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
     uint32_t mask = CTL_CBSR_MASK | CTL_HCFS_MASK | CTL_IR | CTL_PLE | CTL_IE
         | CTL_CLE | CTL_BLE;
@@ -2032,7 +2042,13 @@ static int ohci_start(struct tendril_hc *hc) {
      * PowerOnToPowerGoodTime, in 2 ms units, and at least the USB 2.0 7.1.7.3
      * settling time.
      */
-    tendril_delay_us(MAX((desca >> 24) * (uint32_t)2000, (uint32_t)20000));
+    uint32_t settle_ms = MAX((desca >> 24) * (uint32_t)2, (uint32_t)20);
+    for (size_t p = 1; p <= o->num_ports; p++) {
+        if ((was_off & (uint32_t)1 << p) != 0) {
+            tendril_roothub_powered(hc, (uint8_t)p, settle_ms);
+        }
+    }
+    tendril_delay_us(settle_ms * 1000);
     return TENDRIL_OK;
 }
 

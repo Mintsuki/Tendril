@@ -226,6 +226,11 @@ struct tendril_port {
      * there yet.
      */
     struct tendril_timer hold;
+    /*
+     * Armed while a device may still connect to the port, switched on just
+     * now, and be reported.
+     */
+    struct tendril_timer connect_wait;
     struct tendril_list enum_node;
     uint64_t debounce_start;
     uint64_t debounce_first;
@@ -334,6 +339,13 @@ void tendril_port_pm(
     struct tendril_port *port, int request, struct tendril_async *async
 );
 bool tendril_port_idle(struct tendril_port *port);
+/*
+ * A device may connect to the port within TSVLD_CON_PWD of its power being
+ * good, and its hub take TDCNN to see it: tendril_hc_ready() waits that long,
+ * and extra_ms more, for the power to settle or the hub to report the
+ * connection. Lock held, or from a controller's start().
+ */
+void tendril_port_powered(struct tendril_port *port, uint64_t extra_ms);
 int tendril_roothub_init(struct tendril_hc *hc, size_t num_ports);
 void tendril_hub_start(struct tendril_device *dev);
 void tendril_hub_stop(struct tendril_hub *hub);
@@ -664,9 +676,18 @@ void tendril_roothub_changed(struct tendril_hc *hc, uint8_t port);
  * change.
  */
 #define UHCI_PORT_POLL_MS 100
+/* USB 2.0 Table 7-13: TDCNN, the time a hub takes to see a connection. */
+#define TDCNN_MS 2
 
 /* Keeps a root port from counting as settled for ms, lock held. */
 void tendril_roothub_hold(struct tendril_hc *hc, uint8_t port, uint64_t ms);
+/*
+ * The controller switched a root port on, its power good within settle_ms.
+ * Lock held, or from start().
+ */
+void tendril_roothub_powered(
+    struct tendril_hc *hc, uint8_t port, uint64_t settle_ms
+);
 
 /* Transfer completion from controller drivers, lock held. */
 void tendril_transfer_complete(
@@ -753,6 +774,8 @@ void tendril_notify_woke(struct tendril_device *dev);
  */
 bool tendril_suspend_interfaces(struct tendril_device *dev, int *status);
 void tendril_resume_interfaces(struct tendril_device *dev);
+/* Whether a driver is still setting up an interface it claimed, lock held. */
+bool tendril_interfaces_busy(struct tendril_device *dev);
 /* A quirk table row; product 0xffff matches every product of the vendor. */
 struct tendril_id_quirk {
     uint16_t vendor;

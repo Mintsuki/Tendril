@@ -3672,6 +3672,26 @@ static bool msc_idle(struct tendril_msc *msc) {
     return true;
 }
 
+/*
+ * Until every logical unit has been probed, its wait for the unit to become
+ * ready included, or freed.
+ */
+static bool msc_busy(struct tendril_interface *intf) {
+    struct tendril_msc *msc = tendril_interface_data(intf);
+    if (msc == NULL || msc->stopped || msc->broken) {
+        return false;
+    }
+    if (msc->num_luns == 0) {
+        return true;
+    }
+    for (size_t i = 0; i < msc->num_luns; i++) {
+        if (msc->luns[i] != NULL && !msc->luns[i]->attached) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool msc_suspend(struct tendril_interface *intf) {
     struct tendril_msc *msc = tendril_interface_data(intf);
     if (msc == NULL || msc->stopped || msc->broken) {
@@ -3701,6 +3721,7 @@ static void msc_resume(struct tendril_interface *intf) {
 static struct tendril_driver msc_driver = {
     .name = "msc",
     .probe = msc_probe,
+    .busy = msc_busy,
     .disconnect = msc_disconnect,
     .suspend = msc_suspend,
     .resume = msc_resume

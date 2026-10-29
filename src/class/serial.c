@@ -2765,6 +2765,11 @@ static bool serial_probe(struct tendril_interface *intf) {
     return true;
 }
 
+static bool serial_busy(struct tendril_interface *intf) {
+    struct tendril_serial *port = tendril_interface_data(intf);
+    return port != NULL && !port->attached && !port->stopped;
+}
+
 static bool serial_suspend(struct tendril_interface *intf) {
     struct tendril_serial *port = tendril_interface_data(intf);
     if (port == NULL || port->stopped) {
@@ -2841,6 +2846,7 @@ static void serial_disconnect(struct tendril_interface *intf) {
 static struct tendril_driver serial_driver = {
     .name = "serial",
     .probe = serial_probe,
+    .busy = serial_busy,
     .disconnect = serial_disconnect,
     .suspend = serial_suspend,
     .resume = serial_resume
