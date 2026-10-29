@@ -591,6 +591,14 @@ void tendril_endpoint_setup(
         } else {
             ep->interval_log2 = (uint8_t)(MIN(binterval, 16) - 1 + 3);
         }
+    } else if (dev->speed == TENDRIL_SPEED_HIGH
+            && ep->type == TENDRIL_ENDPOINT_XFER_INT && binterval > 16) {
+        /*
+         * USB 2.0 Table 9-13 allows 1 to 16 here: a larger value, such as the
+         * FFH hubs give (11.23.1), was most likely written for full speed, in
+         * frames.
+         */
+        ep->interval_log2 = (uint8_t)ilog2((uint32_t)binterval * 8);
     } else {
         ep->interval_log2 = (uint8_t)(MIN(binterval, 16) - 1);
     }
