@@ -26,26 +26,31 @@
  */
 
 #ifndef TENDRIL_CLASS_SERIAL_INTERNAL_H
-#define TENDRIL_CLASS_SERIAL_INTERNAL_H
+#define TENDRIL_CLASS_SERIAL_INTERNAL_H 1
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../../include/tendril/serial.h"
-#include "../../include/tendril/spec.h"
-#include "../../include/tendril/tendril.h"
 #include "../internal.h"
+#include <tendril/serial.h>
+#include <tendril/spec.h>
+#include <tendril/tendril.h>
 
 /* Shared by serial.c and the vendor protocol modules. */
 
 #define RX_BUFS 2
 #define MAX_REQS 24
 
-#define REQ_CLASS_OUT (TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE)
-#define REQ_VENDOR_OUT (TENDRIL_DIR_OUT | TENDRIL_TYPE_VENDOR | TENDRIL_RECIP_DEVICE)
-#define REQ_VENDOR_IN (TENDRIL_DIR_IN | TENDRIL_TYPE_VENDOR | TENDRIL_RECIP_DEVICE)
-#define REQ_VENDOR_IFACE_OUT (TENDRIL_DIR_OUT | TENDRIL_TYPE_VENDOR | TENDRIL_RECIP_INTERFACE)
-#define REQ_VENDOR_IFACE_IN (TENDRIL_DIR_IN | TENDRIL_TYPE_VENDOR | TENDRIL_RECIP_INTERFACE)
+#define REQ_CLASS_OUT \
+    (TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE)
+#define REQ_VENDOR_OUT \
+    (TENDRIL_DIR_OUT | TENDRIL_TYPE_VENDOR | TENDRIL_RECIP_DEVICE)
+#define REQ_VENDOR_IN \
+    (TENDRIL_DIR_IN | TENDRIL_TYPE_VENDOR | TENDRIL_RECIP_DEVICE)
+#define REQ_VENDOR_IFACE_OUT \
+    (TENDRIL_DIR_OUT | TENDRIL_TYPE_VENDOR | TENDRIL_RECIP_INTERFACE)
+#define REQ_VENDOR_IFACE_IN \
+    (TENDRIL_DIR_IN | TENDRIL_TYPE_VENDOR | TENDRIL_RECIP_INTERFACE)
 
 struct serial_req {
     uint8_t type;
@@ -71,7 +76,10 @@ struct serial_op {
     bool tolerant;
     int status;
     /* Called after each request, to read its answer or to add requests. */
-    void (*after)(struct tendril_serial *port, struct serial_op *op, size_t index, int status);
+    void (*after)(
+        struct tendril_serial *port, struct serial_op *op, size_t index,
+        int status
+    );
     void (*done)(void *ctx, int status);
     void *ctx;
 };
@@ -146,13 +154,15 @@ struct tendril_serial {
  * op->status instead fails the operation before anything is sent.
  */
 void serial_op_add(
-    struct serial_op *op, uint8_t type, uint8_t request, uint16_t value, uint16_t index, const void *data,
-    size_t length
+    struct serial_op *op, uint8_t type, uint8_t request, uint16_t value,
+    uint16_t index, const void *data, size_t length
 );
 /* Reports line states and events (TENDRIL_SERIAL_*). */
 void serial_status_update(struct tendril_serial *port, uint32_t status);
 /* Hands received data to the embedder. */
-void serial_deliver(struct tendril_serial *port, const uint8_t *data, size_t len);
+void serial_deliver(
+    struct tendril_serial *port, const uint8_t *data, size_t len
+);
 
 /* FTDI (serial_ftdi.c) */
 
@@ -169,7 +179,9 @@ void serial_ftdi_lines(struct tendril_serial *port, struct serial_op *op);
 /* Applies port->in_break. */
 void serial_ftdi_break(struct tendril_serial *port, struct serial_op *op);
 /* Data from the bulk IN endpoint. */
-void serial_ftdi_receive(struct tendril_serial *port, const uint8_t *buf, size_t len);
+void serial_ftdi_receive(
+    struct tendril_serial *port, const uint8_t *buf, size_t len
+);
 
 /* Prolific PL2303 (serial_pl2303.c) */
 
@@ -180,6 +192,8 @@ void serial_pl2303_line(struct tendril_serial *port, struct serial_op *op);
 void serial_pl2303_lines(struct tendril_serial *port, struct serial_op *op);
 void serial_pl2303_break(struct tendril_serial *port, struct serial_op *op);
 /* Data from the interrupt IN endpoint. */
-void serial_pl2303_status(struct tendril_serial *port, const uint8_t *buf, size_t len);
+void serial_pl2303_status(
+    struct tendril_serial *port, const uint8_t *buf, size_t len
+);
 
 #endif

@@ -32,19 +32,20 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "../../include/tendril/spec.h"
-#include "../../include/tendril/tendril.h"
 #include "../internal.h"
+#include <tendril/spec.h>
+#include <tendril/tendril.h>
 
 int tendril_msc_shuttle_init(
-    struct tendril_device *dev, uint8_t interface_number, struct tendril_transfer *xfer, uint8_t *buf, size_t size,
+    struct tendril_device *dev, uint8_t interface_number,
+    struct tendril_transfer *xfer, uint8_t *buf, size_t size,
     struct tendril_async *async
 ) {
     if (size < 2) {
         return TENDRIL_ERR_INVALID;
     }
     return tendril_control_async(
-        dev, xfer, TENDRIL_DIR_IN | TENDRIL_TYPE_VENDOR | TENDRIL_RECIP_DEVICE, 0x01, 0, interface_number, buf, 2,
-        async
+        dev, xfer, TENDRIL_DIR_IN | TENDRIL_TYPE_VENDOR | TENDRIL_RECIP_DEVICE,
+        0x01, 0, interface_number, buf, 2, async
     );
 }

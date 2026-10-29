@@ -25,8 +25,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_TENDRIL_GLUE_H
-#define TENDRIL_TENDRIL_GLUE_H
+#ifndef TENDRIL_GLUE_H
+#define TENDRIL_GLUE_H 1
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -60,7 +60,9 @@ void tendril_glue_free(void *ptr, size_t size);
  * Memory coherent with the controller, aligned to `align` (a power of two),
  * below 4 GiB in bus address space if `dma32` is set.
  */
-void *tendril_glue_dma_alloc(void *ctx, size_t size, size_t align, bool dma32, uint64_t *dma);
+void *tendril_glue_dma_alloc(
+    void *ctx, size_t size, size_t align, bool dma32, uint64_t *dma
+);
 void tendril_glue_dma_free(void *ctx, void *ptr, size_t size);
 
 /*
@@ -70,8 +72,12 @@ void tendril_glue_dma_free(void *ctx, void *ptr, size_t size);
  * 0 makes the library bounce the transfer through tendril_glue_dma_alloc()
  * memory instead.
  */
-size_t tendril_glue_dma_map(void *ctx, void *ptr, size_t size, int dir, uint64_t *dma);
-void tendril_glue_dma_unmap(void *ctx, void *ptr, size_t size, int dir, uint64_t dma);
+size_t tendril_glue_dma_map(
+    void *ctx, void *ptr, size_t size, int dir, uint64_t *dma
+);
+void tendril_glue_dma_unmap(
+    void *ctx, void *ptr, size_t size, int dir, uint64_t dma
+);
 
 /* Orders all earlier memory accesses before all later ones, as seen by DMA. */
 void tendril_glue_dma_barrier(void);
@@ -99,7 +105,10 @@ void tendril_glue_pci_write32(void *ctx, uint16_t offset, uint32_t value);
  * with these vendor and device IDs, which some controllers' chipset fixes
  * depend on; false if there is none, or the embedder cannot look.
  */
-bool tendril_glue_pci_find_read8(void *ctx, uint16_t vendor, uint16_t device, uint16_t offset, uint8_t *value);
+bool tendril_glue_pci_find_read8(
+    void *ctx, uint16_t vendor, uint16_t device, uint16_t offset,
+    uint8_t *value
+);
 
 /* Monotonic time in nanoseconds. */
 uint64_t tendril_glue_time_ns(void);

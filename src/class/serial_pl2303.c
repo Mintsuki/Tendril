@@ -93,11 +93,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../../include/tendril/serial.h"
-#include "../../include/tendril/spec.h"
-#include "../../include/tendril/tendril.h"
 #include "../internal.h"
 #include "serial_internal.h"
+#include <tendril/serial.h>
+#include <tendril/spec.h>
+#include <tendril/tendril.h>
 
 #define PL2303_ORIGINAL 0
 #define PL2303_HX 1
@@ -145,9 +145,10 @@ static const struct init_step init_steps[] = {
  * uplcom_pre_param).
  */
 static const uint32_t listed_rates[] = {
-    75, 150, 300, 600, 900, 1200, 1800, 2400, 3600, 4800, 7200, 9600, 14400, 19200, 28800, 38400,
-    56000, 57600, 115200, 128000, 134400, 161280, 201600, 230400, 268800, 403200, 460800, 614400,
-    806400, 921600, 1228800, 2457600, 3000000, 6000000, 12000000
+    75, 150, 300, 600, 900, 1200, 1800, 2400, 3600, 4800, 7200, 9600, 14400,
+    19200, 28800, 38400, 56000, 57600, 115200, 128000, 134400, 161280, 201600,
+    230400, 268800, 403200, 460800, 614400, 806400, 921600, 1228800, 2457600,
+    3000000, 6000000, 12000000
 };
 /* END FreeBSD sys/dev/usb/serial/uplcom.c */
 
@@ -162,7 +163,9 @@ static void vendor_read(struct serial_op *op, uint16_t value, uint16_t index) {
     serial_op_add(op, REQ_VENDOR_IN, PL2303_VENDOR, value, index, NULL, 1);
 }
 
-static void vendor_write(struct serial_op *op, uint16_t value, uint16_t index) {
+static void vendor_write(
+    struct serial_op *op, uint16_t value, uint16_t index
+) {
     serial_op_add(op, REQ_VENDOR_OUT, PL2303_VENDOR, value, index, NULL, 0);
 }
 
@@ -213,7 +216,9 @@ static void add_setup(struct tendril_serial *port, struct serial_op *op) {
     serial_pl2303_lines(port, op);
 }
 
-static void probe_done(struct tendril_serial *port, struct serial_op *op, size_t index, int status) {
+static void probe_done(
+    struct tendril_serial *port, struct serial_op *op, size_t index, int status
+) {
     if (index != 0 || status == TENDRIL_ERR_NO_DEVICE) {
         return;
     }
@@ -302,8 +307,10 @@ void serial_pl2303_line(struct tendril_serial *port, struct serial_op *op) {
     uint32_t rate;
     uint8_t coding[7];
 
-    if (config->data_bits < 5 || config->data_bits > 8 || config->parity > TENDRIL_SERIAL_PARITY_SPACE
-     || config->stop_bits > TENDRIL_SERIAL_STOP_2 || !encode_rate(port->chip, config->baud, &rate)) {
+    if (config->data_bits < 5 || config->data_bits > 8
+     || config->parity > TENDRIL_SERIAL_PARITY_SPACE
+     || config->stop_bits > TENDRIL_SERIAL_STOP_2
+     || !encode_rate(port->chip, config->baud, &rate)) {
         op->status = TENDRIL_ERR_INVALID;
         return;
     }
@@ -313,7 +320,10 @@ void serial_pl2303_line(struct tendril_serial *port, struct serial_op *op) {
     coding[4] = config->stop_bits;
     coding[5] = config->parity;
     coding[6] = config->data_bits;
-    serial_op_add(op, REQ_CLASS_OUT, PSTN_SET_LINE_CODING, 0, port->intf->number, coding, (uint16_t)sizeof(coding));
+    serial_op_add(
+        op, REQ_CLASS_OUT, PSTN_SET_LINE_CODING, 0, port->intf->number, coding,
+        (uint16_t)sizeof(coding)
+    );
 
     /* RTS/CTS flow control (clean-room specification). */
     if (port->chip == PL2303_HXN) {
@@ -343,7 +353,10 @@ void serial_pl2303_lines(struct tendril_serial *port, struct serial_op *op) {
     if (port->rts) {
         value |= PSTN_LINE_RTS;
     }
-    serial_op_add(op, REQ_CLASS_OUT, PSTN_SET_CONTROL_LINE_STATE, (uint16_t)value, port->intf->number, NULL, 0);
+    serial_op_add(
+        op, REQ_CLASS_OUT, PSTN_SET_CONTROL_LINE_STATE, (uint16_t)value,
+        port->intf->number, NULL, 0
+    );
 }
 
 /*
@@ -356,14 +369,19 @@ void serial_pl2303_break(struct tendril_serial *port, struct serial_op *op) {
     if (port->in_break) {
         duration = 0xffff;
     }
-    serial_op_add(op, REQ_CLASS_OUT, PSTN_SEND_BREAK, duration, port->intf->number, NULL, 0);
+    serial_op_add(
+        op, REQ_CLASS_OUT, PSTN_SEND_BREAK, duration, port->intf->number, NULL,
+        0
+    );
 }
 
 /*
  * Byte 8 of an interrupt packet holds TENDRIL_SERIAL_* bits (clean-room
  * specification).
  */
-void serial_pl2303_status(struct tendril_serial *port, const uint8_t *buf, size_t len) {
+void serial_pl2303_status(
+    struct tendril_serial *port, const uint8_t *buf, size_t len
+) {
     if (len <= 8) {
         return;
     }

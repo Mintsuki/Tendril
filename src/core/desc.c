@@ -28,8 +28,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../../include/tendril/spec.h"
 #include "../internal.h"
+#include <tendril/spec.h>
 
 /*
  * Returns the descriptor after `p`, or NULL at the end or on a malformed
@@ -47,7 +47,9 @@ const uint8_t *tendril_desc_next(const uint8_t *p, const uint8_t *end) {
 }
 
 /* Returns the first descriptor of `type` at or after `p`. */
-const uint8_t *tendril_desc_find(const uint8_t *p, const uint8_t *end, int type) {
+const uint8_t *tendril_desc_find(
+    const uint8_t *p, const uint8_t *end, int type
+) {
     while (p != NULL) {
         if (end - p >= 2 && p[0] >= 2 && end - p >= p[0] && p[1] == type) {
             return p;
@@ -58,7 +60,8 @@ const uint8_t *tendril_desc_find(const uint8_t *p, const uint8_t *end, int type)
 }
 
 bool tendril_config_valid(const uint8_t *config, size_t size) {
-    if (size < sizeof(struct tendril_config_descriptor) || config[1] != TENDRIL_DT_CONFIGURATION
+    if (size < sizeof(struct tendril_config_descriptor)
+     || config[1] != TENDRIL_DT_CONFIGURATION
      || config[0] < sizeof(struct tendril_config_descriptor)) {
         return false;
     }

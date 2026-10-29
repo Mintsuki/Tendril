@@ -25,13 +25,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_TENDRIL_HID_H
-#define TENDRIL_TENDRIL_HID_H
+#ifndef TENDRIL_HID_H
+#define TENDRIL_HID_H 1
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "tendril.h"
+#include <tendril/tendril.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,24 +134,44 @@ struct tendril_hid_report_desc {
     bool numbered;
 };
 
-int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_report_desc **out);
+int tendril_hid_parse(
+    const uint8_t *desc, size_t size, struct tendril_hid_report_desc **out
+);
 void tendril_hid_free(struct tendril_hid_report_desc *rd);
 /* Size in bytes of a report, without its report ID byte. */
-size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, int type, uint8_t id);
-uint32_t tendril_hid_extract(const uint8_t *data, size_t size, size_t bit_offset, size_t bit_size);
-void tendril_hid_insert(uint8_t *data, size_t size, size_t bit_offset, size_t bit_size, uint32_t value);
+size_t tendril_hid_report_size(
+    const struct tendril_hid_report_desc *rd, int type, uint8_t id
+);
+uint32_t tendril_hid_extract(
+    const uint8_t *data, size_t size, size_t bit_offset, size_t bit_size
+);
+void tendril_hid_insert(
+    uint8_t *data, size_t size, size_t bit_offset, size_t bit_size,
+    uint32_t value
+);
 /*
  * Element `index` of a field, sign-extended when the logical range is signed.
  */
-int32_t tendril_hid_field_get(const struct tendril_hid_field *f, const uint8_t *data, size_t size, size_t index);
-void tendril_hid_field_set(const struct tendril_hid_field *f, uint8_t *data, size_t size, size_t index, int32_t value);
+int32_t tendril_hid_field_get(
+    const struct tendril_hid_field *f, const uint8_t *data, size_t size,
+    size_t index
+);
+void tendril_hid_field_set(
+    const struct tendril_hid_field *f, uint8_t *data, size_t size,
+    size_t index, int32_t value
+);
 /* The usage of element `index` of a variable field. */
-uint32_t tendril_hid_field_usage(const struct tendril_hid_field *f, size_t index);
+uint32_t tendril_hid_field_usage(
+    const struct tendril_hid_field *f, size_t index
+);
 /* The usage an array field element value stands for, or 0. */
-uint32_t tendril_hid_array_usage(const struct tendril_hid_field *f, int32_t value);
+uint32_t tendril_hid_array_usage(
+    const struct tendril_hid_field *f, int32_t value
+);
 /* Finds the variable field element with `usage` in reports of `type`. */
 const struct tendril_hid_field *tendril_hid_find(
-    const struct tendril_hid_report_desc *rd, int type, uint32_t usage, size_t *index
+    const struct tendril_hid_report_desc *rd, int type, uint32_t usage,
+    size_t *index
 );
 
 /* Class driver */
@@ -189,10 +209,16 @@ struct tendril_hid_callbacks {
     /*
      * Every input report, without its report ID byte, which is passed as `id`.
      */
-    void (*report)(struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size);
+    void (*report)(
+        struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size
+    );
     /* A key, as a keyboard usage page ID, went down or up. */
-    void (*key)(struct tendril_hid *hid, uint16_t key, bool pressed, uint8_t modifiers);
-    void (*pointer)(struct tendril_hid *hid, const struct tendril_hid_pointer_event *ev);
+    void (*key)(
+        struct tendril_hid *hid, uint16_t key, bool pressed, uint8_t modifiers
+    );
+    void (*pointer)(
+        struct tendril_hid *hid, const struct tendril_hid_pointer_event *ev
+    );
 };
 
 /* Use the boot protocol on keyboards and mice that support it. */
@@ -201,12 +227,16 @@ struct tendril_hid_callbacks {
 /*
  * Registers the HID class driver; call before the first controller is added.
  */
-void tendril_hid_register(const struct tendril_hid_callbacks *callbacks, uint32_t flags);
+void tendril_hid_register(
+    const struct tendril_hid_callbacks *callbacks, uint32_t flags
+);
 
 struct tendril_interface *tendril_hid_interface(struct tendril_hid *hid);
 uint32_t tendril_hid_kinds(struct tendril_hid *hid);
 bool tendril_hid_boot_protocol(struct tendril_hid *hid);
-const struct tendril_hid_report_desc *tendril_hid_descriptor(struct tendril_hid *hid);
+const struct tendril_hid_report_desc *tendril_hid_descriptor(
+    struct tendril_hid *hid
+);
 void tendril_hid_set_user(struct tendril_hid *hid, void *user);
 void *tendril_hid_user(struct tendril_hid *hid);
 
@@ -219,8 +249,8 @@ int tendril_hid_get_report(
 );
 /* Output reports go to the interrupt OUT endpoint if there is one. */
 int tendril_hid_set_report(
-    struct tendril_hid *hid, int type, uint8_t id, const void *buf, size_t size, void (*done)(void *ctx, int status),
-    void *ctx
+    struct tendril_hid *hid, int type, uint8_t id, const void *buf,
+    size_t size, void (*done)(void *ctx, int status), void *ctx
 );
 
 #ifdef __cplusplus

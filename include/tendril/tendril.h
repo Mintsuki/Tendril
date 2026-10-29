@@ -155,13 +155,13 @@
  * SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_TENDRIL_TENDRIL_H
-#define TENDRIL_TENDRIL_TENDRIL_H
+#ifndef TENDRIL_TENDRIL_H
+#define TENDRIL_TENDRIL_H 1
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "spec.h"
+#include <tendril/spec.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -291,7 +291,9 @@ uint32_t tendril_pci_hc_quirks(int type, uint16_t vendor, uint16_t device);
  * Takes the controller over from firmware, resets and starts it. Enumeration
  * then proceeds as tendril_hc_poll() is called.
  */
-int tendril_hc_add(const struct tendril_hc_config *config, struct tendril_hc **hc);
+int tendril_hc_add(
+    const struct tendril_hc_config *config, struct tendril_hc **hc
+);
 
 /*
  * Halts and resets the controller, then detaches every device, whose transfers
@@ -344,7 +346,9 @@ int tendril_hc_resume(struct tendril_hc *hc);
 int tendril_hc_type(struct tendril_hc *hc);
 uint32_t tendril_hc_quirks(struct tendril_hc *hc);
 size_t tendril_hc_num_ports(struct tendril_hc *hc);
-struct tendril_device *tendril_hc_port_device(struct tendril_hc *hc, uint8_t port);
+struct tendril_device *tendril_hc_port_device(
+    struct tendril_hc *hc, uint8_t port
+);
 
 /*
  * The current frame, counting 1 ms frames in 32 bits; isochronous start frames
@@ -383,22 +387,36 @@ int tendril_device_speed(struct tendril_device *dev);
 uint8_t tendril_device_address(struct tendril_device *dev);
 uint32_t tendril_device_quirks(struct tendril_device *dev);
 bool tendril_device_gone(struct tendril_device *dev);
-const struct tendril_device_descriptor *tendril_device_descriptor(struct tendril_device *dev);
+const struct tendril_device_descriptor *tendril_device_descriptor(
+    struct tendril_device *dev
+);
 /* Configuration `index`, with all of its subordinate descriptors. */
-const struct tendril_config_descriptor *tendril_device_config_descriptor(struct tendril_device *dev, size_t index);
+const struct tendril_config_descriptor *tendril_device_config_descriptor(
+    struct tendril_device *dev, size_t index
+);
 /* The active configuration, or NULL if unconfigured. */
-const struct tendril_config_descriptor *tendril_device_active_config(struct tendril_device *dev);
-const struct tendril_bos_descriptor *tendril_device_bos(struct tendril_device *dev);
+const struct tendril_config_descriptor *tendril_device_active_config(
+    struct tendril_device *dev
+);
+const struct tendril_bos_descriptor *tendril_device_bos(
+    struct tendril_device *dev
+);
 /* UTF-8 strings read at enumeration, or NULL. */
 const char *tendril_device_manufacturer(struct tendril_device *dev);
 const char *tendril_device_product(struct tendril_device *dev);
 const char *tendril_device_serial(struct tendril_device *dev);
-struct tendril_device *tendril_device_child(struct tendril_device *hub, uint8_t port);
+struct tendril_device *tendril_device_child(
+    struct tendril_device *hub, uint8_t port
+);
 size_t tendril_device_num_ports(struct tendril_device *hub);
 struct tendril_endpoint *tendril_device_ep0(struct tendril_device *dev);
 size_t tendril_device_num_interfaces(struct tendril_device *dev);
-struct tendril_interface *tendril_device_interface(struct tendril_device *dev, size_t index);
-struct tendril_interface *tendril_device_find_interface(struct tendril_device *dev, uint8_t number);
+struct tendril_interface *tendril_device_interface(
+    struct tendril_device *dev, size_t index
+);
+struct tendril_interface *tendril_device_find_interface(
+    struct tendril_device *dev, uint8_t number
+);
 
 /* Keeps the device structure valid past its removal. */
 void tendril_device_ref(struct tendril_device *dev);
@@ -410,12 +428,14 @@ void tendril_device_unref(struct tendril_device *dev);
  * with TENDRIL_ERR_INVALID, leaving the device as it was.
  */
 int tendril_device_set_configuration(
-    struct tendril_device *dev, uint8_t value, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_device *dev, uint8_t value,
+    void (*done)(void *ctx, int status), void *ctx
 );
 
 /* Reads string descriptor `index` as UTF-8, in the device's first language. */
 int tendril_device_read_string(
-    struct tendril_device *dev, uint8_t index, char *buf, size_t size, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_device *dev, uint8_t index, char *buf, size_t size,
+    void (*done)(void *ctx, int status), void *ctx
 );
 
 /*
@@ -426,11 +446,14 @@ int tendril_device_read_string(
  * TENDRIL_ERR_SUSPENDED.
  */
 int tendril_device_suspend(
-    struct tendril_device *dev, bool remote_wake, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_device *dev, bool remote_wake,
+    void (*done)(void *ctx, int status), void *ctx
 );
 
 /* Resumes a suspended device, resuming its suspended hubs first. */
-int tendril_device_resume(struct tendril_device *dev, void (*done)(void *ctx, int status), void *ctx);
+int tendril_device_resume(
+    struct tendril_device *dev, void (*done)(void *ctx, int status), void *ctx
+);
 
 bool tendril_device_suspended(struct tendril_device *dev);
 /* Whether the active configuration supports remote wakeup. */
@@ -438,26 +461,38 @@ bool tendril_device_can_wake(struct tendril_device *dev);
 
 /* Interfaces */
 
-struct tendril_device *tendril_interface_device(struct tendril_interface *intf);
+struct tendril_device *tendril_interface_device(
+    struct tendril_interface *intf
+);
 /* The descriptor of the current alternate setting. */
-const struct tendril_interface_descriptor *tendril_interface_descriptor(struct tendril_interface *intf);
+const struct tendril_interface_descriptor *tendril_interface_descriptor(
+    struct tendril_interface *intf
+);
 /*
  * The descriptors of the current alternate setting: its interface descriptor
  * and everything following up to the next interface descriptor.
  */
-const uint8_t *tendril_interface_descriptors(struct tendril_interface *intf, size_t *size);
+const uint8_t *tendril_interface_descriptors(
+    struct tendril_interface *intf, size_t *size
+);
 /* The interface association covering this interface, or NULL. */
-const struct tendril_interface_assoc_descriptor *tendril_interface_association(struct tendril_interface *intf);
+const struct tendril_interface_assoc_descriptor *tendril_interface_association(
+    struct tendril_interface *intf
+);
 size_t tendril_interface_num_alts(struct tendril_interface *intf);
 const struct tendril_interface_descriptor *tendril_interface_alt_descriptor(
     struct tendril_interface *intf, size_t index
 );
 size_t tendril_interface_num_endpoints(struct tendril_interface *intf);
-struct tendril_endpoint *tendril_interface_endpoint(struct tendril_interface *intf, size_t index);
+struct tendril_endpoint *tendril_interface_endpoint(
+    struct tendril_interface *intf, size_t index
+);
 /*
  * The first endpoint of the current alternate setting of a type and direction.
  */
-struct tendril_endpoint *tendril_interface_find_endpoint(struct tendril_interface *intf, int type, int dir);
+struct tendril_endpoint *tendril_interface_find_endpoint(
+    struct tendril_interface *intf, int type, int dir
+);
 void tendril_interface_set_data(struct tendril_interface *intf, void *data);
 void *tendril_interface_data(struct tendril_interface *intf);
 
@@ -466,14 +501,19 @@ void *tendril_interface_data(struct tendril_interface *intf);
  * have completed first.
  */
 int tendril_interface_set_alt(
-    struct tendril_interface *intf, uint8_t alt, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_interface *intf, uint8_t alt,
+    void (*done)(void *ctx, int status), void *ctx
 );
 
 /* Endpoints */
 
 struct tendril_device *tendril_endpoint_device(struct tendril_endpoint *ep);
-const struct tendril_endpoint_descriptor *tendril_endpoint_descriptor(struct tendril_endpoint *ep);
-const struct tendril_ss_ep_companion_descriptor *tendril_endpoint_companion(struct tendril_endpoint *ep);
+const struct tendril_endpoint_descriptor *tendril_endpoint_descriptor(
+    struct tendril_endpoint *ep
+);
+const struct tendril_ss_ep_companion_descriptor *tendril_endpoint_companion(
+    struct tendril_endpoint *ep
+);
 uint8_t tendril_endpoint_address(struct tendril_endpoint *ep);
 int tendril_endpoint_type(struct tendril_endpoint *ep);
 size_t tendril_endpoint_max_packet(struct tendril_endpoint *ep);
@@ -481,14 +521,17 @@ size_t tendril_endpoint_max_packet(struct tendril_endpoint *ep);
 size_t tendril_endpoint_max_streams(struct tendril_endpoint *ep);
 
 /* Clears a halt on the device and resets the endpoint's data toggle. */
-int tendril_endpoint_clear_halt(struct tendril_endpoint *ep, void (*done)(void *ctx, int status), void *ctx);
+int tendril_endpoint_clear_halt(
+    struct tendril_endpoint *ep, void (*done)(void *ctx, int status), void *ctx
+);
 
 /*
  * Gives bulk endpoints `streams` streams (IDs 1 to `streams`), shrunk to what
  * the endpoints and controller support, in which case `*streams` is updated.
  */
 int tendril_endpoint_alloc_streams(
-    struct tendril_endpoint **eps, size_t count, size_t *streams, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_endpoint **eps, size_t count, size_t *streams,
+    void (*done)(void *ctx, int status), void *ctx
 );
 
 /* Transfers */
@@ -559,7 +602,9 @@ struct tendril_transfer {
     struct tendril_transfer_internal internal;
 };
 
-void tendril_transfer_init(struct tendril_transfer *xfer, struct tendril_endpoint *ep);
+void tendril_transfer_init(
+    struct tendril_transfer *xfer, struct tendril_endpoint *ep
+);
 int tendril_transfer_submit(struct tendril_transfer *xfer);
 /* Completes the transfer with TENDRIL_ERR_CANCELLED, asynchronously. */
 void tendril_transfer_cancel(struct tendril_transfer *xfer);
@@ -569,8 +614,9 @@ bool tendril_transfer_done(struct tendril_transfer *xfer);
 
 /* Synchronous control transfer on endpoint 0, by tendril_transfer_run(). */
 int tendril_control(
-    struct tendril_device *dev, uint8_t request_type, uint8_t request, uint16_t value, uint16_t index, void *data,
-    size_t length, size_t *actual, uint32_t timeout_ms
+    struct tendril_device *dev, uint8_t request_type, uint8_t request,
+    uint16_t value, uint16_t index, void *data, size_t length, size_t *actual,
+    uint32_t timeout_ms
 );
 
 /* Drivers */
@@ -609,7 +655,9 @@ struct tendril_driver {
 /* Drivers must be registered before the first controller is added. */
 void tendril_driver_register(struct tendril_driver *driver);
 /* Claims an interface besides the one probed, such as a CDC data interface. */
-bool tendril_interface_claim(struct tendril_interface *intf, struct tendril_driver *driver);
+bool tendril_interface_claim(
+    struct tendril_interface *intf, struct tendril_driver *driver
+);
 
 #ifdef __cplusplus
 }

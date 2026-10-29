@@ -160,9 +160,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../../include/tendril/spec.h"
-#include "../../include/tendril/tendril.h"
 #include "../internal.h"
+#include <tendril/spec.h>
+#include <tendril/tendril.h>
 
 /* BEGIN FreeBSD sys/dev/usb/usb.h, usb_request.c */
 /*
@@ -231,12 +231,16 @@ static struct tendril_hc *port_hc(struct tendril_port *port) {
     return port->hub->hc;
 }
 
-static const char *port_name(struct tendril_port *port, char *buf, size_t size) {
+static const char *port_name(
+    struct tendril_port *port, char *buf, size_t size
+) {
     struct tendril_device *hub = port->hub->dev;
     if (hub == NULL) {
         tendril_snprintf(buf, size, "root port %u", port->number);
     } else {
-        tendril_snprintf(buf, size, "hub %u port %u", hub->address, port->number);
+        tendril_snprintf(
+            buf, size, "hub %u port %u", hub->address, port->number
+        );
     }
     return buf;
 }
@@ -256,7 +260,8 @@ static const struct {
 };
 
 static int link_state(struct tendril_port *port) {
-    return (port->st.status & TENDRIL_SS_PORT_STAT_LINK_STATE_MASK) >> TENDRIL_SS_PORT_STAT_LINK_STATE_SHIFT;
+    return (port->st.status & TENDRIL_SS_PORT_STAT_LINK_STATE_MASK)
+        >> TENDRIL_SS_PORT_STAT_LINK_STATE_SHIFT;
 }
 
 static bool connected(struct tendril_port *port) {
@@ -275,7 +280,8 @@ static bool in_reset(struct tendril_port *port) {
 static bool link_active(struct tendril_port *port) {
     if (port->superspeed) {
         int ls = link_state(port);
-        return ls == TENDRIL_SS_LINK_U0 || ls == TENDRIL_SS_LINK_U1 || ls == TENDRIL_SS_LINK_U2;
+        return ls == TENDRIL_SS_LINK_U0 || ls == TENDRIL_SS_LINK_U1
+            || ls == TENDRIL_SS_LINK_U2;
     }
     return enabled(port) && (port->st.status & TENDRIL_PORT_STAT_SUSPEND) == 0;
 }
@@ -380,7 +386,9 @@ static void disconnect_device(struct tendril_port *port) {
 
 static void give_up(struct tendril_port *port) {
     char name[32];
-    LOG_WARN("%s: giving up on the device", port_name(port, name, sizeof(name)));
+    LOG_WARN(
+        "%s: giving up on the device", port_name(port, name, sizeof(name))
+    );
     port->state = PORT_DISABLED;
     if (!port->superspeed) {
         port->op = OP_DISABLE;
@@ -427,7 +435,9 @@ static void enum_release_locked(struct tendril_hc *hc) {
     hc->enum_port = NULL;
     hc->enum_dev = NULL;
     if (!list_empty(&hc->enum_queue)) {
-        struct tendril_port *next = CONTAINER_OF(hc->enum_queue.next, struct tendril_port, enum_node);
+        struct tendril_port *next = CONTAINER_OF(
+            hc->enum_queue.next, struct tendril_port, enum_node
+        );
         list_del(&next->enum_node);
         hc->enum_port = next;
         next->op = OP_ENUM_START;
@@ -476,17 +486,23 @@ static void evaluate(struct tendril_port *port) {
     uint16_t changes = port->changes;
     char name[32];
 
-    if ((changes & TENDRIL_PORT_STAT_C_OVER_CURRENT) != 0 && (port->st.status & TENDRIL_PORT_STAT_OVER_CURRENT) != 0) {
+    if ((changes & TENDRIL_PORT_STAT_C_OVER_CURRENT) != 0
+     && (port->st.status & TENDRIL_PORT_STAT_OVER_CURRENT) != 0) {
         LOG_WARN("%s: over-current", port_name(port, name, sizeof(name)));
     }
-    if ((changes & TENDRIL_PORT_STAT_C_CONFIG_ERROR) != 0 && port->superspeed) {
-        LOG_WARN("%s: link configuration error", port_name(port, name, sizeof(name)));
+    if ((changes & TENDRIL_PORT_STAT_C_CONFIG_ERROR) != 0
+     && port->superspeed) {
+        LOG_WARN(
+            "%s: link configuration error", port_name(port, name, sizeof(name))
+        );
     }
 
     bool conn = connected(port);
     if ((changes & TENDRIL_PORT_STAT_C_CONNECTION) != 0 || !conn) {
         if (port->device != NULL) {
-            LOG_INFO("%s: device disconnected", port_name(port, name, sizeof(name)));
+            LOG_INFO(
+                "%s: device disconnected", port_name(port, name, sizeof(name))
+            );
             disconnect_device(port);
         }
         if (port->state != PORT_DEBOUNCE) {
@@ -495,8 +511,9 @@ static void evaluate(struct tendril_port *port) {
         port->attempts = 0;
         port->restarts = 0;
         port->config_failed = false;
-    } else if (!port->superspeed && (changes & TENDRIL_PORT_STAT_C_ENABLE) != 0 && !enabled(port)
-            && port->state == PORT_ATTACHED && port->device != NULL) {
+    } else if (!port->superspeed && (changes & TENDRIL_PORT_STAT_C_ENABLE) != 0
+            && !enabled(port) && port->state == PORT_ATTACHED
+            && port->device != NULL) {
         /* BEGIN FreeBSD sys/dev/usb/usb_hub.c (and the condition above) */
         /*
          * The hub disabled the port on its own, after a babble or a port
@@ -505,22 +522,36 @@ static void evaluate(struct tendril_port *port) {
          */
         disconnect_device(port);
         if (++port->restarts > MAX_RESTARTS) {
-            LOG_WARN("%s: port error, giving up", port_name(port, name, sizeof(name)));
+            LOG_WARN(
+                "%s: port error, giving up",
+                port_name(port, name, sizeof(name))
+            );
             port->state = PORT_DISABLED;
         } else {
-            LOG_INFO("%s: port error, attaching the device again", port_name(port, name, sizeof(name)));
+            LOG_INFO(
+                "%s: port error, attaching the device again",
+                port_name(port, name, sizeof(name))
+            );
             port->state = PORT_IDLE;
         }
         /* END FreeBSD sys/dev/usb/usb_hub.c */
     } else if (port->superspeed && port->device != NULL) {
         int ls = link_state(port);
-        if (ls == TENDRIL_SS_LINK_INACTIVE || ls == TENDRIL_SS_LINK_COMPLIANCE) {
-            LOG_INFO("%s: link failed, recovering", port_name(port, name, sizeof(name)));
+        if (ls == TENDRIL_SS_LINK_INACTIVE
+         || ls == TENDRIL_SS_LINK_COMPLIANCE) {
+            LOG_INFO(
+                "%s: link failed, recovering",
+                port_name(port, name, sizeof(name))
+            );
             disconnect_device(port);
             port->state = PORT_IDLE;
         }
-    } else if (port->state == PORT_SUSPENDED && port->device != NULL && !enabled(port) && !link_suspended(port)) {
-        LOG_INFO("%s: suspended device lost, enumerating it again", port_name(port, name, sizeof(name)));
+    } else if (port->state == PORT_SUSPENDED && port->device != NULL
+            && !enabled(port) && !link_suspended(port)) {
+        LOG_INFO(
+            "%s: suspended device lost, enumerating it again",
+            port_name(port, name, sizeof(name))
+        );
         disconnect_device(port);
         port->state = PORT_IDLE;
     }
@@ -548,7 +579,10 @@ static void evaluate(struct tendril_port *port) {
             }
             if ((changes & TENDRIL_PORT_STAT_C_CONNECTION) != 0) {
                 if (elapsed_ms(port->debounce_first) > DEBOUNCE_MAX_MS) {
-                    LOG_WARN("%s: connection never settled", port_name(port, name, sizeof(name)));
+                    LOG_WARN(
+                        "%s: connection never settled",
+                        port_name(port, name, sizeof(name))
+                    );
                     port->state = PORT_DISABLED;
                     break;
                 }
@@ -560,7 +594,8 @@ static void evaluate(struct tendril_port *port) {
                 port->warm = false;
                 if (port->superspeed) {
                     int ls = link_state(port);
-                    port->warm = ls == TENDRIL_SS_LINK_INACTIVE || ls == TENDRIL_SS_LINK_COMPLIANCE;
+                    port->warm = ls == TENDRIL_SS_LINK_INACTIVE
+                        || ls == TENDRIL_SS_LINK_COMPLIANCE;
                 }
                 enum_request(port);
                 return;
@@ -576,7 +611,9 @@ static void evaluate(struct tendril_port *port) {
         }
         case PORT_SUSPENDED: {
             if (port->device != NULL && link_active(port)) {
-                LOG_DEBUG("%s: remote wakeup", port_name(port, name, sizeof(name)));
+                LOG_DEBUG(
+                    "%s: remote wakeup", port_name(port, name, sizeof(name))
+                );
                 port->woke = true;
                 port->state = PORT_RESUME_RECOVERY;
                 port_wait(port, RESUME_RECOVERY_MS);
@@ -596,7 +633,8 @@ static void status_done(struct tendril_port *port) {
         if (port->async.status != TENDRIL_ERR_NO_DEVICE) {
             char name[32];
             LOG_WARN(
-                "%s: status read failed: %s", port_name(port, name, sizeof(name)),
+                "%s: status read failed: %s",
+                port_name(port, name, sizeof(name)),
                 tendril_status_str(port->async.status)
             );
         }
@@ -626,7 +664,9 @@ static void reset_failed(struct tendril_port *port, const char *why) {
 
 static void issue_reset(struct tendril_port *port) {
     port->op = OP_RESET;
-    port->hub->ops->set_feature(port, port->warm ? TENDRIL_PORT_FEAT_BH_RESET : TENDRIL_PORT_FEAT_RESET);
+    port->hub->ops->set_feature(
+        port, port->warm ? TENDRIL_PORT_FEAT_BH_RESET : TENDRIL_PORT_FEAT_RESET
+    );
 }
 
 static void start_reset(struct tendril_port *port) {
@@ -652,7 +692,9 @@ static void reset_complete(struct tendril_port *port) {
     char name[32];
 
     if (!connected(port)) {
-        LOG_DEBUG("%s: device left during reset", port_name(port, name, sizeof(name)));
+        LOG_DEBUG(
+            "%s: device left during reset", port_name(port, name, sizeof(name))
+        );
         release_slot(port);
         port->state = PORT_IDLE;
         port_idle(port);
@@ -680,19 +722,24 @@ static void reset_status_done(struct tendril_port *port) {
         done = enabled(port) && link_state(port) == TENDRIL_SS_LINK_U0;
         if (!done && elapsed_ms(port->reset_start) > SS_ENABLE_WAIT_MS) {
             int ls = link_state(port);
-            port->warm = ls == TENDRIL_SS_LINK_INACTIVE || ls == TENDRIL_SS_LINK_COMPLIANCE;
+            port->warm = ls == TENDRIL_SS_LINK_INACTIVE
+                || ls == TENDRIL_SS_LINK_COMPLIANCE;
             port->reset_issued = true;
             port->reset_start = tendril_now();
             issue_reset(port);
             return;
         }
     } else {
-        done = !in_reset(port) && (port->st.change & (TENDRIL_PORT_STAT_C_RESET | TENDRIL_PORT_STAT_C_BH_RESET)) != 0;
+        done = !in_reset(port)
+            && (port->st.change
+                & (TENDRIL_PORT_STAT_C_RESET | TENDRIL_PORT_STAT_C_BH_RESET))
+                != 0;
         /*
          * PORT_RESET cleared with the port enabled ends the reset (USB 2.0
          * 11.24.2.7.1.5), C_PORT_RESET or not.
          */
-        if (!done && !in_reset(port) && enabled(port) && elapsed_ms(port->reset_start) > 50) {
+        if (!done && !in_reset(port) && enabled(port)
+         && elapsed_ms(port->reset_start) > 50) {
             done = true;
         }
     }
@@ -728,7 +775,9 @@ static void handle_enum_failure(struct tendril_port *port) {
     retry_later(port);
 }
 
-void tendril_enum_done(struct tendril_port *port, struct tendril_device *dev, int status) {
+void tendril_enum_done(
+    struct tendril_port *port, struct tendril_device *dev, int status
+) {
     char name[32];
 
     tendril_enum_release_dev(dev);
@@ -744,7 +793,10 @@ void tendril_enum_done(struct tendril_port *port, struct tendril_device *dev, in
         return;
     }
 
-    LOG_WARN("%s: enumeration failed: %s", port_name(port, name, sizeof(name)), tendril_status_str(status));
+    LOG_WARN(
+        "%s: enumeration failed: %s", port_name(port, name, sizeof(name)),
+        tendril_status_str(status)
+    );
     if (status != TENDRIL_ERR_NO_DEVICE) {
         tendril_hub_reset_tt(dev);
     }
@@ -766,7 +818,10 @@ static void pm_start(struct tendril_port *port) {
 
     if (request == PORT_PM_SUSPEND) {
         if (port->state != PORT_ATTACHED || port->device == NULL) {
-            pm_complete(port, port->device == NULL ? TENDRIL_ERR_NO_DEVICE : TENDRIL_ERR_BUSY);
+            pm_complete(
+                port,
+                port->device == NULL ? TENDRIL_ERR_NO_DEVICE : TENDRIL_ERR_BUSY
+            );
             port_idle(port);
             return;
         }
@@ -774,7 +829,10 @@ static void pm_start(struct tendril_port *port) {
         port->pm_start = tendril_now();
         port->op = OP_SUSPEND;
         if (port->superspeed) {
-            port->hub->ops->set_feature(port, PORT_FEATURE(TENDRIL_PORT_FEAT_LINK_STATE, TENDRIL_SS_LINK_U3));
+            port->hub->ops->set_feature(
+                port,
+                PORT_FEATURE(TENDRIL_PORT_FEAT_LINK_STATE, TENDRIL_SS_LINK_U3)
+            );
         } else {
             port->hub->ops->set_feature(port, TENDRIL_PORT_FEAT_SUSPEND);
         }
@@ -788,7 +846,10 @@ static void pm_start(struct tendril_port *port) {
             return;
         }
         if (port->state != PORT_SUSPENDED || port->device == NULL) {
-            pm_complete(port, port->device == NULL ? TENDRIL_ERR_NO_DEVICE : TENDRIL_ERR_BUSY);
+            pm_complete(
+                port,
+                port->device == NULL ? TENDRIL_ERR_NO_DEVICE : TENDRIL_ERR_BUSY
+            );
             port_idle(port);
             return;
         }
@@ -805,7 +866,10 @@ static void start_resume(struct tendril_port *port) {
     port->pm_start = tendril_now();
     port->op = OP_RESUME;
     if (port->superspeed) {
-        port->hub->ops->set_feature(port, PORT_FEATURE(TENDRIL_PORT_FEAT_LINK_STATE, TENDRIL_SS_LINK_U0));
+        port->hub->ops->set_feature(
+            port,
+            PORT_FEATURE(TENDRIL_PORT_FEAT_LINK_STATE, TENDRIL_SS_LINK_U0)
+        );
     } else {
         port->hub->ops->clear_feature(port, TENDRIL_PORT_FEAT_SUSPEND);
     }
@@ -833,7 +897,8 @@ static void suspend_status_done(struct tendril_port *port) {
         port_idle(port);
         return;
     }
-    if (!connected(port) || (port->st.change & TENDRIL_PORT_STAT_C_CONNECTION) != 0) {
+    if (!connected(port)
+     || (port->st.change & TENDRIL_PORT_STAT_C_CONNECTION) != 0) {
         pm_lost(port, TENDRIL_ERR_NO_DEVICE);
         return;
     }
@@ -843,7 +908,9 @@ static void suspend_status_done(struct tendril_port *port) {
         return;
     }
     if (elapsed_ms(port->pm_start) > SUSPEND_TIMEOUT_MS) {
-        LOG_WARN("%s: the port did not suspend", port_name(port, name, sizeof(name)));
+        LOG_WARN(
+            "%s: the port did not suspend", port_name(port, name, sizeof(name))
+        );
         pm_lost(port, TENDRIL_ERR_TIMEOUT);
         return;
     }
@@ -859,7 +926,8 @@ static void resume_status_done(struct tendril_port *port) {
         port_idle(port);
         return;
     }
-    if (!connected(port) || (port->st.change & TENDRIL_PORT_STAT_C_CONNECTION) != 0) {
+    if (!connected(port)
+     || (port->st.change & TENDRIL_PORT_STAT_C_CONNECTION) != 0) {
         pm_lost(port, TENDRIL_ERR_NO_DEVICE);
         return;
     }
@@ -904,7 +972,9 @@ static void resume_done(struct tendril_port *port) {
     port_idle(port);
 }
 
-void tendril_port_pm(struct tendril_port *port, int request, struct tendril_async *async) {
+void tendril_port_pm(
+    struct tendril_port *port, int request, struct tendril_async *async
+) {
     struct tendril_hc *hc = port_hc(port);
     hc_lock(hc);
     port->pm_request = request;
@@ -919,13 +989,16 @@ void tendril_port_pm(struct tendril_port *port, int request, struct tendril_asyn
 
 /* With the lock held. */
 bool tendril_port_idle(struct tendril_port *port) {
-    return !port->busy && !tendril_timer_armed(&port->timer) && port->pm_request == PORT_PM_NONE;
+    return !port->busy && !tendril_timer_armed(&port->timer)
+        && port->pm_request == PORT_PM_NONE;
 }
 
 /* Event handlers */
 
 static void port_timer(struct tendril_work *work) {
-    struct tendril_port *port = CONTAINER_OF(work, struct tendril_port, timer.work);
+    struct tendril_port *port = CONTAINER_OF(
+        work, struct tendril_port, timer.work
+    );
     struct tendril_hc *hc = port_hc(port);
 
     if (hc->removing || port->hub->stopping) {
@@ -971,7 +1044,9 @@ static void port_timer(struct tendril_work *work) {
             break;
         }
         case PORT_RECOVERY: {
-            struct tendril_device *dev = tendril_device_alloc(hc, port, port->st.speed);
+            struct tendril_device *dev = tendril_device_alloc(
+                hc, port, port->st.speed
+            );
             if (dev == NULL) {
                 release_slot(port);
                 give_up(port);
@@ -997,7 +1072,9 @@ static void port_timer(struct tendril_work *work) {
 }
 
 static void port_work(struct tendril_work *work) {
-    struct tendril_port *port = CONTAINER_OF(work, struct tendril_port, async.work);
+    struct tendril_port *port = CONTAINER_OF(
+        work, struct tendril_port, async.work
+    );
 
     switch (port->op) {
         case OP_KICK: {
@@ -1086,7 +1163,9 @@ static void hold_over(struct tendril_work *work) {
     (void)work;
 }
 
-void tendril_port_init(struct tendril_port *port, struct tendril_hub *hub, size_t number) {
+void tendril_port_init(
+    struct tendril_port *port, struct tendril_hub *hub, size_t number
+) {
     memset(port, 0, sizeof(struct tendril_port));
     port->hub = hub;
     port->number = (uint8_t)number;

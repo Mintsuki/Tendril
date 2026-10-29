@@ -25,13 +25,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_TENDRIL_MSC_H
-#define TENDRIL_TENDRIL_MSC_H
+#ifndef TENDRIL_MSC_H
+#define TENDRIL_MSC_H 1
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "tendril.h"
+#include <tendril/tendril.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -98,11 +98,17 @@ struct tendril_msc_request {
 };
 
 /* Queues a request; requests complete in order, through `done`. */
-int tendril_msc_submit(struct tendril_msc_lun *lun, struct tendril_msc_request *req);
+int tendril_msc_submit(
+    struct tendril_msc_lun *lun, struct tendril_msc_request *req
+);
 
 /* Synchronous helpers, running tendril_hc_poll() until done. */
-int tendril_msc_read(struct tendril_msc_lun *lun, uint64_t lba, size_t count, void *buf);
-int tendril_msc_write(struct tendril_msc_lun *lun, uint64_t lba, size_t count, const void *buf);
+int tendril_msc_read(
+    struct tendril_msc_lun *lun, uint64_t lba, size_t count, void *buf
+);
+int tendril_msc_write(
+    struct tendril_msc_lun *lun, uint64_t lba, size_t count, const void *buf
+);
 int tendril_msc_flush(struct tendril_msc_lun *lun);
 
 /*
@@ -110,14 +116,18 @@ int tendril_msc_flush(struct tendril_msc_lun *lun);
  * NULL, receives up to 32 bytes of sense data after a CHECK CONDITION.
  */
 int tendril_msc_command(
-    struct tendril_msc_lun *lun, const uint8_t *cdb, size_t cdb_len, void *data, size_t len, bool in, uint8_t *sense,
-    void (*done)(void *ctx, int status, int scsi_status, size_t actual), void *ctx
+    struct tendril_msc_lun *lun, const uint8_t *cdb, size_t cdb_len,
+    void *data, size_t len, bool in, uint8_t *sense,
+    void (*done)(void *ctx, int status, int scsi_status, size_t actual),
+    void *ctx
 );
 
 /*
  * Probes a removable medium again, reporting changes through medium_changed.
  */
-int tendril_msc_check_medium(struct tendril_msc_lun *lun, void (*done)(void *ctx, int status), void *ctx);
+int tendril_msc_check_medium(
+    struct tendril_msc_lun *lun, void (*done)(void *ctx, int status), void *ctx
+);
 
 #ifdef __cplusplus
 }

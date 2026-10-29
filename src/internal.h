@@ -26,18 +26,19 @@
  */
 
 #ifndef TENDRIL_INTERNAL_H
-#define TENDRIL_INTERNAL_H
+#define TENDRIL_INTERNAL_H 1
 
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../include/tendril/glue.h"
-#include "../include/tendril/spec.h"
-#include "../include/tendril/tendril.h"
+#include <tendril/glue.h>
+#include <tendril/spec.h>
+#include <tendril/tendril.h>
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-#define CONTAINER_OF(ptr, type, member) ((type *)(void *)((char *)(ptr) - offsetof(type, member)))
+#define CONTAINER_OF(ptr, type, member) \
+    ((type *)(void *)((char *)(ptr) - offsetof(type, member)))
 #define ALIGN_UP(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -61,18 +62,24 @@ static inline bool list_empty(const struct tendril_list *head) {
     return head->next == head;
 }
 
-static inline void list_insert(struct tendril_list *prev, struct tendril_list *node) {
+static inline void list_insert(
+    struct tendril_list *prev, struct tendril_list *node
+) {
     node->prev = prev;
     node->next = prev->next;
     prev->next->prev = node;
     prev->next = node;
 }
 
-static inline void list_add_tail(struct tendril_list *head, struct tendril_list *node) {
+static inline void list_add_tail(
+    struct tendril_list *head, struct tendril_list *node
+) {
     list_insert(head->prev, node);
 }
 
-static inline void list_add_head(struct tendril_list *head, struct tendril_list *node) {
+static inline void list_add_head(
+    struct tendril_list *head, struct tendril_list *node
+) {
     list_insert(head, node);
 }
 
@@ -91,16 +98,19 @@ static inline bool list_linked(const struct tendril_list *node) {
     for ((it) = (head)->next; (it) != (head); (it) = (it)->next)
 
 #define LIST_FOR_EACH_SAFE(it, tmp, head) \
-    for ((it) = (head)->next, (tmp) = (it)->next; (it) != (head); (it) = (tmp), (tmp) = (it)->next)
+    for ((it) = (head)->next, (tmp) = (it)->next; (it) != (head); \
+         (it) = (tmp), (tmp) = (it)->next)
 
 /* Logging */
 
 extern int tendril_log_threshold;
 
-void tendril_log(int level, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+void tendril_log(int level, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
 void tendril_vlog(int level, const char *fmt, va_list args);
 int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
-int tendril_snprintf(char *buf, size_t size, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
+int tendril_snprintf(char *buf, size_t size, const char *fmt, ...)
+    __attribute__((format(printf, 3, 4)));
 
 #define LOG_ERROR(...) tendril_log(TENDRIL_LOG_ERROR, __VA_ARGS__)
 #define LOG_WARN(...) tendril_log(TENDRIL_LOG_WARN, __VA_ARGS__)
@@ -134,13 +144,22 @@ struct tendril_dma_pool {
     struct tendril_dma_free *free;
 };
 
-void tendril_dma_pool_init(struct tendril_dma_pool *pool, struct tendril_hc *hc, size_t size, size_t align);
+void tendril_dma_pool_init(
+    struct tendril_dma_pool *pool, struct tendril_hc *hc, size_t size,
+    size_t align
+);
 void *tendril_dma_pool_alloc(struct tendril_dma_pool *pool, uint64_t *dma);
-void tendril_dma_pool_free(struct tendril_dma_pool *pool, void *ptr, uint64_t dma);
+void tendril_dma_pool_free(
+    struct tendril_dma_pool *pool, void *ptr, uint64_t dma
+);
 void tendril_dma_pool_destroy(struct tendril_dma_pool *pool);
 
-void *tendril_dma_alloc(struct tendril_hc *hc, size_t size, size_t align, uint64_t *dma);
-void *tendril_dma_alloc_limit(struct tendril_hc *hc, size_t size, size_t align, bool dma32, uint64_t *dma);
+void *tendril_dma_alloc(
+    struct tendril_hc *hc, size_t size, size_t align, uint64_t *dma
+);
+void *tendril_dma_alloc_limit(
+    struct tendril_hc *hc, size_t size, size_t align, bool dma32, uint64_t *dma
+);
 void tendril_dma_free(struct tendril_hc *hc, void *ptr, size_t size);
 
 /* Asynchronous completion for internal state machines. */
@@ -290,13 +309,17 @@ struct tendril_hub {
 };
 
 void tendril_port_kick(struct tendril_port *port);
-void tendril_port_init(struct tendril_port *port, struct tendril_hub *hub, size_t number);
+void tendril_port_init(
+    struct tendril_port *port, struct tendril_hub *hub, size_t number
+);
 void tendril_port_stop(struct tendril_port *port);
 /*
  * Suspends or resumes the port's device, completing `async` with the lock
  * held.
  */
-void tendril_port_pm(struct tendril_port *port, int request, struct tendril_async *async);
+void tendril_port_pm(
+    struct tendril_port *port, int request, struct tendril_async *async
+);
 bool tendril_port_idle(struct tendril_port *port);
 int tendril_roothub_init(struct tendril_hc *hc, size_t num_ports);
 void tendril_hub_start(struct tendril_device *dev);
@@ -313,7 +336,9 @@ void tendril_hub_resume(struct tendril_hub *hub);
  * After a failed transfer to a LS/FS device, frees the TT buffer it may have
  * left busy.
  */
-void tendril_hub_clear_tt(struct tendril_device *dev, struct tendril_endpoint *ep);
+void tendril_hub_clear_tt(
+    struct tendril_device *dev, struct tendril_endpoint *ep
+);
 /* Before a LS/FS device behind a TT is enumerated again. */
 void tendril_hub_reset_tt(struct tendril_device *dev);
 
@@ -470,39 +495,67 @@ struct tendril_hcd_ops {
     uint32_t (*frame_number)(struct tendril_hc *hc);
 
     /* Root hub, called with the lock held, completing immediately. */
-    void (*port_status)(struct tendril_hc *hc, uint8_t port, struct tendril_port_status *st);
+    void (*port_status)(
+        struct tendril_hc *hc, uint8_t port, struct tendril_port_status *st
+    );
     int (*port_set_feature)(struct tendril_hc *hc, uint8_t port, int feature);
-    int (*port_clear_feature)(struct tendril_hc *hc, uint8_t port, int feature);
+    int (*port_clear_feature)(
+        struct tendril_hc *hc, uint8_t port, int feature
+    );
 
     /*
      * Device and endpoint management. Asynchronous operations complete with
      * tendril_async_complete() on the given async, with the lock held.
      */
-    int (*device_init)(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async);
+    int (*device_init)(
+        struct tendril_hc *hc, struct tendril_device *dev,
+        struct tendril_async *async
+    );
     /* Controllers that assign addresses themselves; NULL means SET_ADDRESS. */
-    int (*device_address)(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async);
+    int (*device_address)(
+        struct tendril_hc *hc, struct tendril_device *dev,
+        struct tendril_async *async
+    );
     /* Endpoint 0 packet size or address changed. */
-    int (*ep0_update)(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async);
+    int (*ep0_update)(
+        struct tendril_hc *hc, struct tendril_device *dev,
+        struct tendril_async *async
+    );
     /* Hub fields changed, after the hub descriptor was read. */
-    int (*hub_update)(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async);
+    int (*hub_update)(
+        struct tendril_hc *hc, struct tendril_device *dev,
+        struct tendril_async *async
+    );
     /*
      * Drop then add endpoints, together, as for a configuration or alternate
      * setting change.
      */
     int (*configure)(
-        struct tendril_hc *hc, struct tendril_device *dev, struct tendril_endpoint **drop, size_t num_drop,
-        struct tendril_endpoint **add, size_t num_add, struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_device *dev,
+        struct tendril_endpoint **drop, size_t num_drop,
+        struct tendril_endpoint **add, size_t num_add,
+        struct tendril_async *async
     );
-    int (*endpoint_reset)(struct tendril_hc *hc, struct tendril_endpoint *ep, struct tendril_async *async);
+    int (*endpoint_reset)(
+        struct tendril_hc *hc, struct tendril_endpoint *ep,
+        struct tendril_async *async
+    );
     int (*alloc_streams)(
-        struct tendril_hc *hc, struct tendril_endpoint **eps, size_t count, size_t streams, struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_endpoint **eps, size_t count,
+        size_t streams, struct tendril_async *async
     );
-    void (*device_free)(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async);
+    void (*device_free)(
+        struct tendril_hc *hc, struct tendril_device *dev,
+        struct tendril_async *async
+    );
     /*
      * Prepares an idle device's endpoints for its link suspending; NULL if
      * nothing is needed.
      */
-    int (*device_suspend)(struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async);
+    int (*device_suspend)(
+        struct tendril_hc *hc, struct tendril_device *dev,
+        struct tendril_async *async
+    );
 
     /*
      * System sleep, with every port suspended or idle; resume() answers
@@ -567,18 +620,28 @@ static inline void hc_unlock(struct tendril_hc *hc) {
 
 /* Work and timers, with the lock held. */
 void tendril_queue_work(struct tendril_hc *hc, struct tendril_work *work);
-void tendril_work_init(struct tendril_work *work, void (*fn)(struct tendril_work *work));
-void tendril_timer_init(struct tendril_timer *timer, void (*fn)(struct tendril_work *work));
-void tendril_timer_arm(struct tendril_hc *hc, struct tendril_timer *timer, uint64_t delay_ns);
+void tendril_work_init(
+    struct tendril_work *work, void (*fn)(struct tendril_work *work)
+);
+void tendril_timer_init(
+    struct tendril_timer *timer, void (*fn)(struct tendril_work *work)
+);
+void tendril_timer_arm(
+    struct tendril_hc *hc, struct tendril_timer *timer, uint64_t delay_ns
+);
 void tendril_timer_cancel(struct tendril_hc *hc, struct tendril_timer *timer);
 bool tendril_timer_armed(struct tendril_timer *timer);
 
-static inline void tendril_async_init(struct tendril_async *async, void (*fn)(struct tendril_work *work)) {
+static inline void tendril_async_init(
+    struct tendril_async *async, void (*fn)(struct tendril_work *work)
+) {
     tendril_work_init(&async->work, fn);
     async->status = TENDRIL_OK;
 }
 
-void tendril_async_complete(struct tendril_hc *hc, struct tendril_async *async, int status);
+void tendril_async_complete(
+    struct tendril_hc *hc, struct tendril_async *async, int status
+);
 
 /* Root hub port change notification from controller drivers, lock held. */
 void tendril_roothub_changed(struct tendril_hc *hc, uint8_t port);
@@ -593,9 +656,16 @@ void tendril_roothub_changed(struct tendril_hc *hc, uint8_t port);
 void tendril_roothub_hold(struct tendril_hc *hc, uint8_t port, uint64_t ms);
 
 /* Transfer completion from controller drivers, lock held. */
-void tendril_transfer_complete(struct tendril_hc *hc, struct tendril_transfer *xfer, int status, size_t actual);
-void tendril_transfer_fail_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep, int status);
-void tendril_transfer_cancel_locked(struct tendril_hc *hc, struct tendril_transfer *xfer, int status);
+void tendril_transfer_complete(
+    struct tendril_hc *hc, struct tendril_transfer *xfer, int status,
+    size_t actual
+);
+void tendril_transfer_fail_endpoint(
+    struct tendril_hc *hc, struct tendril_endpoint *ep, int status
+);
+void tendril_transfer_cancel_locked(
+    struct tendril_hc *hc, struct tendril_transfer *xfer, int status
+);
 
 /* Address allocation for controllers without address assignment. */
 uint8_t tendril_address_alloc(struct tendril_hc *hc);
@@ -603,19 +673,25 @@ void tendril_address_free(struct tendril_hc *hc, uint8_t address);
 
 /* Devices */
 
-struct tendril_device *tendril_device_alloc(struct tendril_hc *hc, struct tendril_port *port, int speed);
+struct tendril_device *tendril_device_alloc(
+    struct tendril_hc *hc, struct tendril_port *port, int speed
+);
 void tendril_device_enumerate(struct tendril_device *dev);
 void tendril_device_disconnect(struct tendril_device *dev);
 void tendril_device_put(struct tendril_device *dev);
 void tendril_endpoint_setup(
-    struct tendril_endpoint *ep, struct tendril_device *dev, struct tendril_interface *intf,
+    struct tendril_endpoint *ep, struct tendril_device *dev,
+    struct tendril_interface *intf,
     const struct tendril_endpoint_descriptor *desc, const uint8_t *end
 );
-void tendril_enum_done(struct tendril_port *port, struct tendril_device *dev, int status);
+void tendril_enum_done(
+    struct tendril_port *port, struct tendril_device *dev, int status
+);
 void tendril_enum_release_dev(struct tendril_device *dev);
 bool tendril_device_is_ss(struct tendril_device *dev);
 int tendril_interface_build_endpoints(
-    struct tendril_interface *intf, size_t alt, struct tendril_endpoint **eps, size_t *count
+    struct tendril_interface *intf, size_t alt, struct tendril_endpoint **eps,
+    size_t *count
 );
 void tendril_device_hub_ready(struct tendril_device *dev, int status);
 void tendril_device_transfers_idle(struct tendril_device *dev);
@@ -624,8 +700,9 @@ void tendril_device_woke(struct tendril_device *dev);
 
 /* Asynchronous control transfer on endpoint 0 completing into `async`. */
 int tendril_control_async(
-    struct tendril_device *dev, struct tendril_transfer *xfer, uint8_t request_type, uint8_t request, uint16_t value,
-    uint16_t index, void *data, size_t length, struct tendril_async *async
+    struct tendril_device *dev, struct tendril_transfer *xfer,
+    uint8_t request_type, uint8_t request, uint16_t value, uint16_t index,
+    void *data, size_t length, struct tendril_async *async
 );
 
 /*
@@ -635,14 +712,17 @@ int tendril_control_async(
  * `size` bytes, for its data.
  */
 int tendril_msc_shuttle_init(
-    struct tendril_device *dev, uint8_t interface_number, struct tendril_transfer *xfer, uint8_t *buf, size_t size,
+    struct tendril_device *dev, uint8_t interface_number,
+    struct tendril_transfer *xfer, uint8_t *buf, size_t size,
     struct tendril_async *async
 );
 
 /* Descriptors */
 
 const uint8_t *tendril_desc_next(const uint8_t *p, const uint8_t *end);
-const uint8_t *tendril_desc_find(const uint8_t *p, const uint8_t *end, int type);
+const uint8_t *tendril_desc_find(
+    const uint8_t *p, const uint8_t *end, int type
+);
 bool tendril_config_valid(const uint8_t *config, size_t size);
 
 /* Drivers and quirks */
@@ -670,9 +750,12 @@ struct tendril_id_quirk {
 };
 
 uint32_t tendril_id_quirks(
-    const struct tendril_id_quirk *table, size_t count, const struct tendril_device_descriptor *desc
+    const struct tendril_id_quirk *table, size_t count,
+    const struct tendril_device_descriptor *desc
 );
-uint32_t tendril_device_quirk_lookup(const struct tendril_device_descriptor *desc);
+uint32_t tendril_device_quirk_lookup(
+    const struct tendril_device_descriptor *desc
+);
 uint32_t tendril_hc_quirk_lookup(struct tendril_hc *hc);
 
 /* Controller drivers */
@@ -695,7 +778,9 @@ static inline uint32_t hc_read32(struct tendril_hc *hc, uint32_t off) {
     return tendril_glue_read32(hc->ctx, off);
 }
 
-static inline void hc_write32(struct tendril_hc *hc, uint32_t off, uint32_t value) {
+static inline void hc_write32(
+    struct tendril_hc *hc, uint32_t off, uint32_t value
+) {
     tendril_glue_write32(hc->ctx, off, value);
 }
 
@@ -703,7 +788,9 @@ static inline uint16_t hc_read16(struct tendril_hc *hc, uint32_t off) {
     return tendril_glue_read16(hc->ctx, off);
 }
 
-static inline void hc_write16(struct tendril_hc *hc, uint32_t off, uint16_t value) {
+static inline void hc_write16(
+    struct tendril_hc *hc, uint32_t off, uint16_t value
+) {
     tendril_glue_write16(hc->ctx, off, value);
 }
 
@@ -715,11 +802,19 @@ static inline void dma_barrier(void) {
  * Brings hc->frame up to date from a reading of the controller's frame
  * counter, `mask` being its range; with the lock held, at least once a wrap.
  */
-uint32_t tendril_frame_update(struct tendril_hc *hc, uint32_t raw, uint32_t mask);
+uint32_t tendril_frame_update(
+    struct tendril_hc *hc, uint32_t raw, uint32_t mask
+);
 
 /* Waits up to `timeout_us` for (read32(off) & mask) == value. */
-bool tendril_hc_wait32(struct tendril_hc *hc, uint32_t off, uint32_t mask, uint32_t value, uint64_t timeout_us);
-bool tendril_hc_wait16(struct tendril_hc *hc, uint32_t off, uint16_t mask, uint16_t value, uint64_t timeout_us);
+bool tendril_hc_wait32(
+    struct tendril_hc *hc, uint32_t off, uint32_t mask, uint32_t value,
+    uint64_t timeout_us
+);
+bool tendril_hc_wait16(
+    struct tendril_hc *hc, uint32_t off, uint16_t mask, uint16_t value,
+    uint64_t timeout_us
+);
 
 /* The index of the highest set bit of a non-zero value. */
 static inline uint32_t ilog2(uint32_t v) {

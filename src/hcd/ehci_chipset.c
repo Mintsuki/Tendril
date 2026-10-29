@@ -28,8 +28,8 @@
 /* Chipset fixes for PCI EHCI controllers. */
 
 #include <stdint.h>
-#include "../../include/tendril/glue.h"
 #include "../internal.h"
+#include <tendril/glue.h>
 
 void tendril_ehci_chipset_fixes(void *ctx) {
     /* Type 0 header (PCI Local Bus Specification Revision 3.0, 6.2.1). */
@@ -45,7 +45,10 @@ void tendril_ehci_chipset_fixes(void *ctx) {
     if (vendor == 0x1002 && (device == 0x4386 || device == 0x4396)) {
         if (device == 0x4396) {
             uint8_t smbus_revision;
-            if (!tendril_glue_pci_find_read8(ctx, 0x1002, 0x4385, 0x08, &smbus_revision)
+            bool found = tendril_glue_pci_find_read8(
+                ctx, 0x1002, 0x4385, 0x08, &smbus_revision
+            );
+            if (!found
              || (smbus_revision != 0x3a && smbus_revision != 0x3b)) {
                 return;
             }

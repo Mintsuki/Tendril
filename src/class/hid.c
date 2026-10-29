@@ -189,10 +189,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../../include/tendril/hid.h"
-#include "../../include/tendril/spec.h"
-#include "../../include/tendril/tendril.h"
+#include <tendril/hid.h>
 #include "../internal.h"
+#include <tendril/spec.h>
+#include <tendril/tendril.h>
 
 /* HID 1.11 6.2.1: a HID descriptor with one class descriptor entry. */
 #define HID_DESCRIPTOR_MIN_SIZE 9
@@ -208,6 +208,7 @@
 #define PAGE_VENDOR_FIRST 0xff00
 #define BUTTON_SECONDARY 2
 #define BUTTON_TERTIARY 3
+#define GD_USAGE(id) TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, id)
 
 /* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.h, sys/dev/usb/input/ukbd.c */
 /*
@@ -243,7 +244,8 @@ static const struct tendril_id_quirk hid_quirks[] = {
     { 0x050d, 0x1100, 0x0000, 0xffff, HQ_IGNORE }, /* BELKIN F6C1100UNV */
     { 0x0764, 0x0005, 0x0000, 0xffff, HQ_IGNORE }, /* CYBERPOWER BC900D */
     { 0x0764, 0x0501, 0x0000, 0xffff, HQ_IGNORE }, /* CYBERPOWER 1500CAVRLCD */
-    { 0x0764, 0x0601, 0x0000, 0xffff, HQ_IGNORE }, /* CYBERPOWER OR2200LCDRM2U */
+    /* CYBERPOWER OR2200LCDRM2U */
+    { 0x0764, 0x0601, 0x0000, 0xffff, HQ_IGNORE },
     { 0x047c, 0xffff, 0x0000, 0xffff, HQ_IGNORE }, /* DELL2 VARIOUS_UPS */
     { 0x04b4, 0xfd13, 0x0000, 0xffff, HQ_IGNORE }, /* CYPRESS SILVERSHIELD */
     { 0x1163, 0x0100, 0x0000, 0xffff, HQ_IGNORE }, /* DELORME EARTHMATE */
@@ -255,23 +257,30 @@ static const struct tendril_id_quirk hid_quirks[] = {
     { 0x10af, 0x0001, 0x0000, 0xffff, HQ_IGNORE }, /* LIEBERT2 POWERSURE_PSA */
     { 0x0463, 0x0001, 0x0000, 0xffff, HQ_IGNORE }, /* MGE UPS1 */
     { 0x0463, 0xffff, 0x0000, 0xffff, HQ_IGNORE }, /* MGE UPS2 */
-    { 0x0d9f, 0x00a2, 0x0000, 0xffff, HQ_IGNORE }, /* POWERCOM IMPERIAL_SERIES */
-    { 0x0d9f, 0x00a3, 0x0000, 0xffff, HQ_IGNORE }, /* POWERCOM SMART_KING_PRO */
+    /* POWERCOM IMPERIAL_SERIES */
+    { 0x0d9f, 0x00a2, 0x0000, 0xffff, HQ_IGNORE },
+    /* POWERCOM SMART_KING_PRO */
+    { 0x0d9f, 0x00a3, 0x0000, 0xffff, HQ_IGNORE },
     { 0x0d9f, 0x00a4, 0x0000, 0xffff, HQ_IGNORE }, /* POWERCOM WOW */
     { 0x0d9f, 0x00a5, 0x0000, 0xffff, HQ_IGNORE }, /* POWERCOM VANGUARD */
-    { 0x0d9f, 0x00a6, 0x0000, 0xffff, HQ_IGNORE }, /* POWERCOM BLACK_KNIGHT_PRO */
+    /* POWERCOM BLACK_KNIGHT_PRO */
+    { 0x0d9f, 0x00a6, 0x0000, 0xffff, HQ_IGNORE },
     { 0x09ae, 0x1003, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 AVR550U */
     { 0x09ae, 0x1007, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 AVR750U */
     { 0x09ae, 0x1008, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 ECO550UPS */
     { 0x09ae, 0x1f06, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 T750_INTL */
-    { 0x09ae, 0x1f0a, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 RT_2200_INTL */
+    /* TRIPPLITE2 RT_2200_INTL */
+    { 0x09ae, 0x1f0a, 0x0000, 0xffff, HQ_IGNORE },
     { 0x09ae, 0x2005, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 OMNI1000LCD */
     { 0x09ae, 0x2007, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 OMNI900LCD */
-    { 0x09ae, 0x3012, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 SMART_2200RMXL2U */
+    /* TRIPPLITE2 SMART_2200RMXL2U */
+    { 0x09ae, 0x3012, 0x0000, 0xffff, HQ_IGNORE },
     { 0x09ae, 0x3014, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 UPS_3014 */
-    { 0x09ae, 0x4001, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 SU1500RTXL2UA */
+    /* TRIPPLITE2 SU1500RTXL2UA */
+    { 0x09ae, 0x4001, 0x0000, 0xffff, HQ_IGNORE },
     { 0x09ae, 0x4002, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 SU6000RT4U */
-    { 0x09ae, 0x4003, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 SU1500RTXL2UA_2 */
+    /* TRIPPLITE2 SU1500RTXL2UA_2 */
+    { 0x09ae, 0x4003, 0x0000, 0xffff, HQ_IGNORE },
     { 0x05ac, 0x1290, 0x0000, 0xffff, HQ_IGNORE }, /* APPLE IPHONE */
     { 0x05ac, 0x1292, 0x0000, 0xffff, HQ_IGNORE }, /* APPLE IPHONE_3G */
     { 0x0665, 0x5161, 0x0000, 0xffff, HQ_IGNORE }, /* MEGATEC UPS */
@@ -279,7 +288,8 @@ static const struct tendril_id_quirk hid_quirks[] = {
     { 0x1781, 0x083e, 0x0000, 0xffff, HQ_IGNORE }, /* METAGEEK WISPY1B */
     { 0x1781, 0x083f, 0x0000, 0xffff, HQ_IGNORE }, /* METAGEEK WISPY24X */
     { 0x1dd5, 0x5000, 0x0000, 0xffff, HQ_IGNORE }, /* METAGEEK2 WISPYDBX */
-    { 0x045e, 0x00db, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* MICROSOFT NATURAL4000 */
+    /* MICROSOFT NATURAL4000 */
+    { 0x045e, 0x00db, 0x0000, 0xffff, HQ_BOOT_PROTOCOL },
     { 0x1b1c, 0x0a60, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR K60 */
     { 0x1b1c, 0x1b3f, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR K68 */
     { 0x1b1c, 0x1b09, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR K70 */
@@ -287,43 +297,61 @@ static const struct tendril_id_quirk hid_quirks[] = {
     { 0x1b1c, 0x1b15, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR STRAFE */
     { 0x1b1c, 0x1b44, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR STRAFE2 */
     { 0x04d9, 0xa030, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* HOLTEK F85 */
-    { 0x047d, 0x2041, 0x0000, 0xffff, HQ_VENDOR_BUTTONS }, /* KENSINGTON SLIMBLADE */
+    /* KENSINGTON SLIMBLADE */
+    { 0x047d, 0x2041, 0x0000, 0xffff, HQ_VENDOR_BUTTONS },
     { 0x05ac, 0x020f, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE FOUNTAIN_ISO */
     { 0x05ac, 0x0215, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE GEYSER_ISO */
     { 0x05ac, 0x0218, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE GEYSER3_ISO */
     { 0x05ac, 0x021b, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE GEYSER4_ISO */
-    { 0x05ac, 0x022a, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE GEYSER4_HF_ISO */
+    /* APPLE GEYSER4_HF_ISO */
+    { 0x05ac, 0x022a, 0x0000, 0xffff, HQ_APPLE_SWAP },
     { 0x05ac, 0x021e, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE ALU_MINI_ISO */
     { 0x05ac, 0x0221, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE ALU_ISO */
     { 0x05ac, 0x0250, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE ALU_REVB_ISO */
-    { 0x05ac, 0x0224, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING_ISO */
-    { 0x05ac, 0x0231, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING2_ISO */
-    { 0x05ac, 0x0237, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING3_ISO */
-    { 0x05ac, 0x0240, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING4_ISO */
-    { 0x05ac, 0x0243, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING4A_ISO */
-    { 0x05ac, 0x0246, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING5_ISO */
-    { 0x05ac, 0x0253, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING5A_ISO */
-    { 0x05ac, 0x024d, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING6_ISO */
-    { 0x05ac, 0x024a, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING6A_ISO */
-    { 0x05ac, 0x0263, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING7_ISO */
-    { 0x05ac, 0x025a, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING7A_ISO */
-    { 0x05ac, 0x0291, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING8_ISO */
-    { 0x05ac, 0x0273, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE WELLSPRING9_ISO */
+    /* APPLE WELLSPRING_ISO */
+    { 0x05ac, 0x0224, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING2_ISO */
+    { 0x05ac, 0x0231, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING3_ISO */
+    { 0x05ac, 0x0237, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING4_ISO */
+    { 0x05ac, 0x0240, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING4A_ISO */
+    { 0x05ac, 0x0243, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING5_ISO */
+    { 0x05ac, 0x0246, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING5A_ISO */
+    { 0x05ac, 0x0253, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING6_ISO */
+    { 0x05ac, 0x024d, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING6A_ISO */
+    { 0x05ac, 0x024a, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING7_ISO */
+    { 0x05ac, 0x0263, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING7A_ISO */
+    { 0x05ac, 0x025a, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING8_ISO */
+    { 0x05ac, 0x0291, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    /* APPLE WELLSPRING9_ISO */
+    { 0x05ac, 0x0273, 0x0000, 0xffff, HQ_APPLE_SWAP },
 };
 /* END FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/input/ukbd.c, sys/dev/usb/usbdevs */
 
 /* HID 1.11 appendix B: the boot protocol report layouts. */
 static const uint8_t boot_keyboard_desc[] = {
-    0x05, 0x01, 0x09, 0x06, 0xa1, 0x01, 0x75, 0x01, 0x95, 0x08, 0x05, 0x07, 0x19, 0xe0, 0x29, 0xe7,
-    0x15, 0x00, 0x25, 0x01, 0x81, 0x02, 0x95, 0x01, 0x75, 0x08, 0x81, 0x01, 0x95, 0x05, 0x75, 0x01,
-    0x05, 0x08, 0x19, 0x01, 0x29, 0x05, 0x91, 0x02, 0x95, 0x01, 0x75, 0x03, 0x91, 0x01, 0x95, 0x06,
-    0x75, 0x08, 0x15, 0x00, 0x26, 0xff, 0x00, 0x05, 0x07, 0x19, 0x00, 0x29, 0xff, 0x81, 0x00, 0xc0
+    0x05, 0x01, 0x09, 0x06, 0xa1, 0x01, 0x75, 0x01, 0x95, 0x08, 0x05, 0x07,
+    0x19, 0xe0, 0x29, 0xe7, 0x15, 0x00, 0x25, 0x01, 0x81, 0x02, 0x95, 0x01,
+    0x75, 0x08, 0x81, 0x01, 0x95, 0x05, 0x75, 0x01, 0x05, 0x08, 0x19, 0x01,
+    0x29, 0x05, 0x91, 0x02, 0x95, 0x01, 0x75, 0x03, 0x91, 0x01, 0x95, 0x06,
+    0x75, 0x08, 0x15, 0x00, 0x26, 0xff, 0x00, 0x05, 0x07, 0x19, 0x00, 0x29,
+    0xff, 0x81, 0x00, 0xc0
 };
 
 static const uint8_t boot_mouse_desc[] = {
-    0x05, 0x01, 0x09, 0x02, 0xa1, 0x01, 0x09, 0x01, 0xa1, 0x00, 0x95, 0x03, 0x75, 0x01, 0x05, 0x09,
-    0x19, 0x01, 0x29, 0x03, 0x15, 0x00, 0x25, 0x01, 0x81, 0x02, 0x95, 0x01, 0x75, 0x05, 0x81, 0x01,
-    0x75, 0x08, 0x95, 0x02, 0x05, 0x01, 0x09, 0x30, 0x09, 0x31, 0x15, 0x81, 0x25, 0x7f, 0x81, 0x06,
+    0x05, 0x01, 0x09, 0x02, 0xa1, 0x01, 0x09, 0x01, 0xa1, 0x00, 0x95, 0x03,
+    0x75, 0x01, 0x05, 0x09, 0x19, 0x01, 0x29, 0x03, 0x15, 0x00, 0x25, 0x01,
+    0x81, 0x02, 0x95, 0x01, 0x75, 0x05, 0x81, 0x01, 0x75, 0x08, 0x95, 0x02,
+    0x05, 0x01, 0x09, 0x30, 0x09, 0x31, 0x15, 0x81, 0x25, 0x7f, 0x81, 0x06,
     0xc0, 0xc0
 };
 
@@ -405,7 +433,8 @@ static size_t button_number(const struct tendril_hid *hid, uint32_t usage) {
      * The buttons FreeBSD's sys/dev/hid/hms.c (BSD-2-Clause) maps these usages
      * to.
      */
-    if ((hid->quirks & HQ_VENDOR_BUTTONS) != 0 && (usage >> 16) == PAGE_VENDOR_FIRST) {
+    if ((hid->quirks & HQ_VENDOR_BUTTONS) != 0
+     && (usage >> 16) == PAGE_VENDOR_FIRST) {
         if (n == 1) {
             return BUTTON_SECONDARY;
         }
@@ -417,7 +446,9 @@ static size_t button_number(const struct tendril_hid *hid, uint32_t usage) {
     return 0;
 }
 
-static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size) {
+static void process_keys(
+    struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size
+) {
     const struct tendril_hid_report_desc *rd = hid->rd;
     uint8_t now[32] = { 0 };
     uint8_t covered[32] = { 0 };
@@ -425,13 +456,15 @@ static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *dat
 
     for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
-        if (f->type != TENDRIL_HID_INPUT || f->report_id != id || (f->flags & TENDRIL_HID_CONSTANT) != 0) {
+        if (f->type != TENDRIL_HID_INPUT || f->report_id != id
+         || (f->flags & TENDRIL_HID_CONSTANT) != 0) {
             continue;
         }
         if ((f->flags & TENDRIL_HID_VARIABLE) != 0) {
             for (size_t e = 0; e < f->count; e++) {
                 uint32_t usage = tendril_hid_field_usage(f, e);
-                if ((usage >> 16) != TENDRIL_HID_PAGE_KEYBOARD || (usage & 0xffff) > 0xff) {
+                if ((usage >> 16) != TENDRIL_HID_PAGE_KEYBOARD
+                 || (usage & 0xffff) > 0xff) {
                     continue;
                 }
                 any = true;
@@ -447,11 +480,14 @@ static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *dat
             continue;
         }
         any = true;
-        for (size_t u = f->usage_min & 0xffff; u <= (f->usage_max & 0xffff) && u <= 0xff; u++) {
+        for (size_t u = f->usage_min & 0xffff;
+             u <= (f->usage_max & 0xffff) && u <= 0xff; u++) {
             bit_set(covered, apple_swap(hid, u));
         }
         for (size_t e = 0; e < f->count; e++) {
-            uint32_t usage = tendril_hid_array_usage(f, tendril_hid_field_get(f, data, size, e));
+            uint32_t usage = tendril_hid_array_usage(
+                f, tendril_hid_field_get(f, data, size, e)
+            );
             size_t key = usage & 0xffff;
             if ((usage >> 16) != TENDRIL_HID_PAGE_KEYBOARD || key > 0xff) {
                 continue;
@@ -474,7 +510,8 @@ static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *dat
 
     uint8_t mods = 0;
     for (size_t k = 0; k < 8; k++) {
-        bool down = bit_get(covered, KEY_LEFT_CTRL + k) ? bit_get(now, KEY_LEFT_CTRL + k)
+        bool down = bit_get(covered, KEY_LEFT_CTRL + k)
+            ? bit_get(now, KEY_LEFT_CTRL + k)
             : ((hid->modifiers >> k) & 1) != 0;
         if (down) {
             mods |= (uint8_t)((uint32_t)1 << k);
@@ -501,7 +538,9 @@ static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *dat
     hid->modifiers = mods;
 }
 
-static void process_pointer(struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size) {
+static void process_pointer(
+    struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size
+) {
     const struct tendril_hid_report_desc *rd = hid->rd;
     struct tendril_hid_pointer_event ev;
     bool have = false;
@@ -509,12 +548,15 @@ static void process_pointer(struct tendril_hid *hid, uint8_t id, const uint8_t *
     memset(&ev, 0, sizeof(struct tendril_hid_pointer_event));
     for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
-        if (f->type != TENDRIL_HID_INPUT || f->report_id != id || (f->flags & TENDRIL_HID_CONSTANT) != 0) {
+        if (f->type != TENDRIL_HID_INPUT || f->report_id != id
+         || (f->flags & TENDRIL_HID_CONSTANT) != 0) {
             continue;
         }
         if ((f->flags & TENDRIL_HID_VARIABLE) == 0) {
             for (size_t e = 0; e < f->count; e++) {
-                uint32_t usage = tendril_hid_array_usage(f, tendril_hid_field_get(f, data, size, e));
+                uint32_t usage = tendril_hid_array_usage(
+                    f, tendril_hid_field_get(f, data, size, e)
+                );
                 size_t n = button_number(hid, usage);
                 if (n != 0) {
                     ev.buttons |= (uint32_t)1 << (n - 1);
@@ -528,7 +570,7 @@ static void process_pointer(struct tendril_hid *hid, uint8_t id, const uint8_t *
             uint32_t usage = tendril_hid_field_usage(f, e);
             int32_t v = tendril_hid_field_get(f, data, size, e);
             switch (usage) {
-                case TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x30): {
+                case GD_USAGE(0x30): {
                     if (relative) {
                         ev.dx += v;
                     } else {
@@ -540,7 +582,7 @@ static void process_pointer(struct tendril_hid *hid, uint8_t id, const uint8_t *
                     have = true;
                     break;
                 }
-                case TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x31): {
+                case GD_USAGE(0x31): {
                     if (relative) {
                         ev.dy += v;
                     } else {
@@ -552,7 +594,7 @@ static void process_pointer(struct tendril_hid *hid, uint8_t id, const uint8_t *
                     have = true;
                     break;
                 }
-                case TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x38): {
+                case GD_USAGE(0x38): {
                     ev.wheel += v;
                     have = true;
                     break;
@@ -612,7 +654,8 @@ static void in_done(struct tendril_transfer *xfer) {
             if ((hid->kinds & TENDRIL_HID_KEYBOARD) != 0) {
                 process_keys(hid, id, data, size);
             }
-            if ((hid->kinds & (TENDRIL_HID_MOUSE | TENDRIL_HID_ABSOLUTE)) != 0) {
+            if ((hid->kinds & (TENDRIL_HID_MOUSE | TENDRIL_HID_ABSOLUTE))
+             != 0) {
                 process_pointer(hid, id, data, size);
             }
             break;
@@ -624,7 +667,10 @@ static void in_done(struct tendril_transfer *xfer) {
         }
         default: {
             if (++hid->errors > HID_MAX_ERRORS) {
-                LOG_WARN("HID: input keeps failing (%s), giving up", tendril_status_str(xfer->status));
+                LOG_WARN(
+                    "HID: input keeps failing (%s), giving up",
+                    tendril_status_str(xfer->status)
+                );
                 return;
             }
             if (xfer->status == TENDRIL_ERR_STALL) {
@@ -642,7 +688,9 @@ static void in_done(struct tendril_transfer *xfer) {
 }
 
 static void retry_work(struct tendril_work *work) {
-    struct tendril_hid *hid = CONTAINER_OF(work, struct tendril_hid, retry.work);
+    struct tendril_hid *hid = CONTAINER_OF(
+        work, struct tendril_hid, retry.work
+    );
     if (!hid->stopped && !hid->suspended) {
         in_submit(hid);
     }
@@ -671,22 +719,26 @@ static uint32_t classify(const struct tendril_hid_report_desc *rd) {
             continue;
         }
         switch (f->application) {
-            case TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x06):
-            case TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x07): {
+            case GD_USAGE(0x06):
+            case GD_USAGE(0x07): {
                 kinds |= TENDRIL_HID_KEYBOARD;
                 break;
             }
-            case TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x01):
-            case TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x02): {
-                for (size_t e = 0; e < f->count && (f->flags & TENDRIL_HID_VARIABLE) != 0; e++) {
-                    if (tendril_hid_field_usage(f, e) == TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x30)) {
-                        kinds |= (f->flags & TENDRIL_HID_RELATIVE) != 0 ? TENDRIL_HID_MOUSE : TENDRIL_HID_ABSOLUTE;
+            case GD_USAGE(0x01):
+            case GD_USAGE(0x02): {
+                for (size_t e = 0;
+                     e < f->count && (f->flags & TENDRIL_HID_VARIABLE) != 0;
+                     e++) {
+                    if (tendril_hid_field_usage(f, e) == GD_USAGE(0x30)) {
+                        kinds |= (f->flags & TENDRIL_HID_RELATIVE) != 0
+                            ? TENDRIL_HID_MOUSE
+                            : TENDRIL_HID_ABSOLUTE;
                     }
                 }
                 break;
             }
-            case TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x04):
-            case TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, 0x05): {
+            case GD_USAGE(0x04):
+            case GD_USAGE(0x05): {
                 kinds |= TENDRIL_HID_GAMEPAD;
                 break;
             }
@@ -737,7 +789,8 @@ static void hid_ready(struct tendril_hid *hid) {
         (hid->kinds & TENDRIL_HID_MOUSE) != 0 ? " mouse" : "",
         (hid->kinds & TENDRIL_HID_ABSOLUTE) != 0 ? " absolute pointer" : "",
         (hid->kinds & TENDRIL_HID_GAMEPAD) != 0 ? " gamepad" : "",
-        (hid->kinds & TENDRIL_HID_CONSUMER) != 0 ? " consumer" : "", hid->boot ? " (boot protocol)" : ""
+        (hid->kinds & TENDRIL_HID_CONSUMER) != 0 ? " consumer" : "",
+        hid->boot ? " (boot protocol)" : ""
     );
     if (callbacks->attach != NULL) {
         callbacks->attach(hid);
@@ -755,11 +808,13 @@ static void hid_fail(struct tendril_hid *hid, int st, const char *what) {
 }
 
 static void ctrl(
-    struct tendril_hid *hid, int step, uint8_t request_type, uint8_t request, uint16_t value, void *data, size_t length
+    struct tendril_hid *hid, int step, uint8_t request_type, uint8_t request,
+    uint16_t value, void *data, size_t length
 ) {
     hid->step = step;
     int st = tendril_control_async(
-        hid->dev, &hid->ctrl, request_type, request, value, hid->intf->number, data, length, &hid->async
+        hid->dev, &hid->ctrl, request_type, request, value, hid->intf->number,
+        data, length, &hid->async
     );
     if (st != TENDRIL_OK) {
         hid->async.status = st;
@@ -770,8 +825,9 @@ static void ctrl(
 static void set_idle(struct tendril_hid *hid) {
     /* HID 1.11 7.2.4: duration 0, report only on change. */
     ctrl(
-        hid, STEP_SET_IDLE, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE, TENDRIL_HID_REQ_SET_IDLE,
-        0, NULL, 0
+        hid, STEP_SET_IDLE,
+        TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
+        TENDRIL_HID_REQ_SET_IDLE, 0, NULL, 0
     );
 }
 
@@ -785,7 +841,8 @@ static bool boot_capable(int subclass, int protocol) {
 static void start_boot(struct tendril_hid *hid) {
     hid->boot = true;
     ctrl(
-        hid, STEP_SET_BOOT, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
+        hid, STEP_SET_BOOT,
+        TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
         TENDRIL_HID_REQ_SET_PROTOCOL, 0, NULL, 0
     );
 }
@@ -797,12 +854,17 @@ static void start_boot(struct tendril_hid *hid) {
  * protocol instead, as FreeBSD's sys/dev/hid/hkbd.c and hms.c (BSD-2-Clause)
  * do.
  */
-static void report_fallback(struct tendril_hid *hid, int st, const char *what) {
+static void report_fallback(
+    struct tendril_hid *hid, int st, const char *what
+) {
     if (!boot_capable(hid->subclass, hid->protocol)) {
         hid_fail(hid, st, what);
         return;
     }
-    LOG_WARN("HID: %s failed: %s; using the boot protocol", what, tendril_status_str(st));
+    LOG_WARN(
+        "HID: %s failed: %s; using the boot protocol", what,
+        tendril_status_str(st)
+    );
     tendril_hid_free(hid->rd);
     hid->rd = NULL;
     start_boot(hid);
@@ -811,7 +873,8 @@ static void report_fallback(struct tendril_hid *hid, int st, const char *what) {
 static bool has_keys(const struct tendril_hid_report_desc *rd) {
     for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
-        if (f->type == TENDRIL_HID_INPUT && (f->flags & TENDRIL_HID_CONSTANT) == 0
+        if (f->type == TENDRIL_HID_INPUT
+         && (f->flags & TENDRIL_HID_CONSTANT) == 0
          && (f->usage_min >> 16) == TENDRIL_HID_PAGE_KEYBOARD) {
             return true;
         }
@@ -821,7 +884,9 @@ static bool has_keys(const struct tendril_hid_report_desc *rd) {
 /* END FreeBSD sys/dev/hid/hkbd.c, hms.c */
 
 static void init_step(struct tendril_work *work) {
-    struct tendril_hid *hid = CONTAINER_OF(work, struct tendril_hid, async.work);
+    struct tendril_hid *hid = CONTAINER_OF(
+        work, struct tendril_hid, async.work
+    );
     int st = hid->async.status;
 
     if (hid->stopped || hid->dev->gone || st == TENDRIL_ERR_NO_DEVICE) {
@@ -831,8 +896,10 @@ static void init_step(struct tendril_work *work) {
     switch (hid->step) {
         case STEP_SET_BOOT: {
             /* A failure is ignored, as FreeBSD's hkbd.c does. */
-            const uint8_t *desc = hid->protocol == 1 ? boot_keyboard_desc : boot_mouse_desc;
-            size_t len = hid->protocol == 1 ? sizeof(boot_keyboard_desc) : sizeof(boot_mouse_desc);
+            const uint8_t *desc = hid->protocol == 1 ? boot_keyboard_desc
+                : boot_mouse_desc;
+            size_t len = hid->protocol == 1 ? sizeof(boot_keyboard_desc)
+                : sizeof(boot_mouse_desc);
             st = tendril_hid_parse(desc, len, &hid->rd);
             if (st != TENDRIL_OK) {
                 hid_fail(hid, st, "boot descriptor parsing");
@@ -852,14 +919,20 @@ static void init_step(struct tendril_work *work) {
                 report_fallback(hid, st, "report descriptor parsing");
                 return;
             }
-            if (hid->subclass == 1 && hid->protocol == 1 && !has_keys(hid->rd)) {
-                report_fallback(hid, TENDRIL_ERR_UNSUPPORTED, "finding keys in the report descriptor");
+            if (hid->subclass == 1 && hid->protocol == 1
+             && !has_keys(hid->rd)) {
+                report_fallback(
+                    hid, TENDRIL_ERR_UNSUPPORTED,
+                    "finding keys in the report descriptor"
+                );
                 return;
             }
             /* END FreeBSD sys/dev/hid/hkbd.c, hms.c */
             if (hid->subclass == 1) {
                 ctrl(
-                    hid, STEP_SET_REPORT_PROTOCOL, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
+                    hid, STEP_SET_REPORT_PROTOCOL,
+                    TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS
+                        | TENDRIL_RECIP_INTERFACE,
                     TENDRIL_HID_REQ_SET_PROTOCOL, 1, NULL, 0
                 );
                 return;
@@ -896,7 +969,8 @@ static const uint8_t *find_hid_descriptor(struct tendril_interface *intf) {
     size_t size;
     const uint8_t *p = tendril_interface_descriptors(intf, &size);
     const uint8_t *end = p + size;
-    for (const uint8_t *q = tendril_desc_next(p, end); q != NULL; q = tendril_desc_next(q, end)) {
+    for (const uint8_t *q = tendril_desc_next(p, end); q != NULL;
+         q = tendril_desc_next(q, end)) {
         if (q[1] == TENDRIL_DT_HID && q[0] >= HID_DESCRIPTOR_MIN_SIZE) {
             return q;
         }
@@ -906,15 +980,20 @@ static const uint8_t *find_hid_descriptor(struct tendril_interface *intf) {
 /* END FreeBSD sys/dev/usb/usb_hid.c */
 
 static bool hid_probe(struct tendril_interface *intf) {
-    const struct tendril_interface_descriptor *id = tendril_interface_descriptor(intf);
+    const struct tendril_interface_descriptor *id
+        = tendril_interface_descriptor(intf);
     if (id->interface_class != TENDRIL_CLASS_HID) {
         return false;
     }
-    uint32_t quirks = tendril_id_quirks(hid_quirks, ARRAY_SIZE(hid_quirks), &intf->dev->desc);
+    uint32_t quirks = tendril_id_quirks(
+        hid_quirks, ARRAY_SIZE(hid_quirks), &intf->dev->desc
+    );
     if ((quirks & HQ_IGNORE) != 0) {
         return false;
     }
-    struct tendril_endpoint *in_ep = tendril_interface_find_endpoint(intf, TENDRIL_ENDPOINT_XFER_INT, TENDRIL_DIR_IN);
+    struct tendril_endpoint *in_ep = tendril_interface_find_endpoint(
+        intf, TENDRIL_ENDPOINT_XFER_INT, TENDRIL_DIR_IN
+    );
     if (in_ep == NULL) {
         return false;
     }
@@ -955,7 +1034,9 @@ static bool hid_probe(struct tendril_interface *intf) {
     hid->intf = intf;
     hid->dev = intf->dev;
     hid->in_ep = in_ep;
-    hid->out_ep = tendril_interface_find_endpoint(intf, TENDRIL_ENDPOINT_XFER_INT, TENDRIL_DIR_OUT);
+    hid->out_ep = tendril_interface_find_endpoint(
+        intf, TENDRIL_ENDPOINT_XFER_INT, TENDRIL_DIR_OUT
+    );
     hid->subclass = id->interface_subclass;
     hid->protocol = id->interface_protocol;
     hid->quirks = quirks;
@@ -969,14 +1050,18 @@ static bool hid_probe(struct tendril_interface *intf) {
      * keyboards.
      */
     if (desc_len == 0
-     || (boot && ((hid_flags & TENDRIL_HID_BOOT_PROTOCOL) != 0 || (quirks & HQ_BOOT_PROTOCOL) != 0))) {
+     || (boot
+      && ((hid_flags & TENDRIL_HID_BOOT_PROTOCOL) != 0
+       || (quirks & HQ_BOOT_PROTOCOL) != 0))) {
         start_boot(hid);
         return true;
     }
     /* END FreeBSD sys/dev/hid/hkbd.c */
     ctrl(
-        hid, STEP_GET_REPORT_DESC, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_INTERFACE,
-        TENDRIL_REQ_GET_DESCRIPTOR, TENDRIL_DT_HID_REPORT << 8, hid->desc_buf, (uint16_t)hid->desc_len
+        hid, STEP_GET_REPORT_DESC,
+        TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_INTERFACE,
+        TENDRIL_REQ_GET_DESCRIPTOR, TENDRIL_DT_HID_REPORT << 8, hid->desc_buf,
+        (uint16_t)hid->desc_len
     );
     return true;
 }
@@ -1043,7 +1128,9 @@ static struct tendril_driver hid_driver = {
     .resume = hid_resume
 };
 
-void tendril_hid_register(const struct tendril_hid_callbacks *cb, uint32_t flags) {
+void tendril_hid_register(
+    const struct tendril_hid_callbacks *cb, uint32_t flags
+) {
     callbacks = cb;
     hid_flags = flags;
     tendril_driver_register(&hid_driver);
@@ -1061,7 +1148,9 @@ bool tendril_hid_boot_protocol(struct tendril_hid *hid) {
     return hid->boot;
 }
 
-const struct tendril_hid_report_desc *tendril_hid_descriptor(struct tendril_hid *hid) {
+const struct tendril_hid_report_desc *tendril_hid_descriptor(
+    struct tendril_hid *hid
+) {
     return hid->rd;
 }
 
@@ -1094,7 +1183,9 @@ static void report_op_done(struct tendril_transfer *xfer) {
     struct report_op *op = xfer->context;
     int st = xfer->status;
     if (op->get_done != NULL) {
-        size_t n = xfer->actual > op->prefix ? MIN(xfer->actual - op->prefix, op->size) : 0;
+        size_t n = xfer->actual > op->prefix
+            ? MIN(xfer->actual - op->prefix, op->size)
+            : 0;
         memcpy(op->user_buf, op->buf + op->prefix, n);
         op->get_done(op->ctx, st, n);
     } else if (op->set_done != NULL) {
@@ -1147,7 +1238,8 @@ int tendril_hid_get_report(
     op->user_buf = buf;
     struct tendril_transfer *xfer = &op->xfer;
     tendril_transfer_init(xfer, tendril_device_ep0(hid->dev));
-    xfer->setup.request_type = TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE;
+    xfer->setup.request_type = TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS
+        | TENDRIL_RECIP_INTERFACE;
     xfer->setup.request = TENDRIL_HID_REQ_GET_REPORT;
     xfer->setup.value = tendril_le16((uint16_t)(type << 8 | id));
     xfer->setup.index = tendril_le16(hid->intf->number);
@@ -1161,8 +1253,8 @@ int tendril_hid_get_report(
 }
 
 int tendril_hid_set_report(
-    struct tendril_hid *hid, int type, uint8_t id, const void *buf, size_t size, void (*done)(void *ctx, int status),
-    void *ctx
+    struct tendril_hid *hid, int type, uint8_t id, const void *buf,
+    size_t size, void (*done)(void *ctx, int status), void *ctx
 ) {
     if (hid->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
@@ -1186,7 +1278,8 @@ int tendril_hid_set_report(
         tendril_transfer_init(xfer, hid->out_ep);
     } else {
         tendril_transfer_init(xfer, tendril_device_ep0(hid->dev));
-        xfer->setup.request_type = TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE;
+        xfer->setup.request_type = TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS
+            | TENDRIL_RECIP_INTERFACE;
         xfer->setup.request = TENDRIL_HID_REQ_SET_REPORT;
         xfer->setup.value = tendril_le16((uint16_t)(type << 8 | id));
         xfer->setup.index = tendril_le16(hid->intf->number);
@@ -1225,7 +1318,8 @@ int tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds) {
     const struct tendril_hid_report_desc *rd = hid->rd;
     for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
-        if (f->type != TENDRIL_HID_OUTPUT || (f->usage_min >> 16) != TENDRIL_HID_PAGE_LED) {
+        if (f->type != TENDRIL_HID_OUTPUT
+         || (f->usage_min >> 16) != TENDRIL_HID_PAGE_LED) {
             continue;
         }
         uint8_t id = f->report_id;
@@ -1236,19 +1330,25 @@ int tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds) {
         memset(hid->led_buf, 0, sizeof(hid->led_buf));
         for (size_t j = 0; j < rd->num_fields; j++) {
             const struct tendril_hid_field *g = &rd->fields[j];
-            if (g->type != TENDRIL_HID_OUTPUT || g->report_id != id || (g->flags & TENDRIL_HID_VARIABLE) == 0) {
+            if (g->type != TENDRIL_HID_OUTPUT || g->report_id != id
+             || (g->flags & TENDRIL_HID_VARIABLE) == 0) {
                 continue;
             }
             for (size_t e = 0; e < g->count; e++) {
                 uint32_t usage = tendril_hid_field_usage(g, e);
                 size_t n = usage & 0xffff;
-                if ((usage >> 16) == TENDRIL_HID_PAGE_LED && n >= 1 && n <= 5) {
-                    tendril_hid_field_set(g, hid->led_buf, size, e, (leds >> (n - 1)) & 1);
+                if ((usage >> 16) == TENDRIL_HID_PAGE_LED && n >= 1
+                 && n <= 5) {
+                    tendril_hid_field_set(
+                        g, hid->led_buf, size, e, (leds >> (n - 1)) & 1
+                    );
                 }
             }
         }
         hid->led_busy = true;
-        int st = tendril_hid_set_report(hid, TENDRIL_HID_OUTPUT, id, hid->led_buf, size, led_done, hid);
+        int st = tendril_hid_set_report(
+            hid, TENDRIL_HID_OUTPUT, id, hid->led_buf, size, led_done, hid
+        );
         if (st != TENDRIL_OK) {
             hid->led_busy = false;
         }

@@ -28,9 +28,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../../include/tendril/hid.h"
-#include "../../include/tendril/tendril.h"
 #include "../internal.h"
+#include <tendril/hid.h>
+#include <tendril/tendril.h>
 
 /* HID 1.11 6.2.2: report descriptor items. */
 
@@ -143,14 +143,20 @@ static int trim(void **array, size_t cap, size_t count, size_t elem) {
     return TENDRIL_OK;
 }
 
-static struct tendril_hid_report_info *report_info(struct parser *p, int type, uint8_t id) {
+static struct tendril_hid_report_info *report_info(
+    struct parser *p, int type, uint8_t id
+) {
     struct tendril_hid_report_desc *rd = p->rd;
     for (size_t i = 0; i < rd->num_reports; i++) {
         if (rd->reports[i].type == type && rd->reports[i].id == id) {
             return &rd->reports[i];
         }
     }
-    if (!grow((void **)&rd->reports, &p->cap_reports, rd->num_reports, sizeof(struct tendril_hid_report_info))) {
+    bool grown = grow(
+        (void **)&rd->reports, &p->cap_reports, rd->num_reports,
+        sizeof(struct tendril_hid_report_info)
+    );
+    if (!grown) {
         return NULL;
     }
     struct tendril_hid_report_info *r = &rd->reports[rd->num_reports++];
@@ -217,8 +223,14 @@ static int add_field(struct parser *p, int type, uint32_t flags) {
     if (bits == 0) {
         return TENDRIL_OK;
     }
-    if (rd->num_fields >= MAX_FIELDS
-     || !grow((void **)&rd->fields, &p->cap_fields, rd->num_fields, sizeof(struct tendril_hid_field))) {
+    if (rd->num_fields >= MAX_FIELDS) {
+        return TENDRIL_ERR_NO_MEMORY;
+    }
+    bool grown = grow(
+        (void **)&rd->fields, &p->cap_fields, rd->num_fields,
+        sizeof(struct tendril_hid_field)
+    );
+    if (!grown) {
         return TENDRIL_ERR_NO_MEMORY;
     }
 
@@ -296,14 +308,22 @@ void tendril_hid_free(struct tendril_hid_report_desc *rd) {
         return;
     }
     for (size_t i = 0; i < rd->num_fields; i++) {
-        tendril_free(rd->fields[i].usages, rd->fields[i].num_usages * sizeof(uint32_t));
+        tendril_free(
+            rd->fields[i].usages, rd->fields[i].num_usages * sizeof(uint32_t)
+        );
     }
-    tendril_free(rd->fields, rd->num_fields * sizeof(struct tendril_hid_field));
-    tendril_free(rd->reports, rd->num_reports * sizeof(struct tendril_hid_report_info));
+    tendril_free(
+        rd->fields, rd->num_fields * sizeof(struct tendril_hid_field)
+    );
+    tendril_free(
+        rd->reports, rd->num_reports * sizeof(struct tendril_hid_report_info)
+    );
     tendril_free(rd, sizeof(struct tendril_hid_report_desc));
 }
 
-int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_report_desc **out) {
+int tendril_hid_parse(
+    const uint8_t *desc, size_t size, struct tendril_hid_report_desc **out
+) {
     struct parser *p = tendril_zalloc(sizeof(struct parser));
     if (p == NULL) {
         return TENDRIL_ERR_NO_MEMORY;
@@ -401,7 +421,9 @@ int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_repor
                 }
                 case GLOBAL_UNIT_EXPONENT: {
                     /* HID 1.11 6.2.2.7: a 4-bit two's complement value. */
-                    g->unit_exponent = v <= 0xf ? (v < 8 ? (int32_t)v : (int32_t)v - 16) : sign_extend(v, len);
+                    g->unit_exponent = v <= 0xf
+                        ? (v < 8 ? (int32_t)v : (int32_t)v - 16)
+                        : sign_extend(v, len);
                     break;
                 }
                 case GLOBAL_UNIT: {
@@ -445,7 +467,8 @@ int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_repor
              * 16-bit usages take the current usage page; 32-bit ones carry
              * their own.
              */
-            uint32_t usage = len == 4 ? v : (g->usage_page << 16) | (v & 0xffff);
+            uint32_t usage = len == 4 ? v
+                : (g->usage_page << 16) | (v & 0xffff);
             switch (tag) {
                 case LOCAL_USAGE: {
                     add_usage(p, usage, usage);
@@ -478,17 +501,31 @@ int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_repor
     /* Trim the arrays to their counts, which tendril_hid_free() relies on. */
     struct tendril_hid_report_desc *rd = p->rd;
     if (st == TENDRIL_OK) {
-        st = trim((void **)&rd->fields, p->cap_fields, rd->num_fields, sizeof(struct tendril_hid_field));
+        st = trim(
+            (void **)&rd->fields, p->cap_fields, rd->num_fields,
+            sizeof(struct tendril_hid_field)
+        );
     }
     if (st == TENDRIL_OK) {
-        st = trim((void **)&rd->reports, p->cap_reports, rd->num_reports, sizeof(struct tendril_hid_report_info));
+        st = trim(
+            (void **)&rd->reports, p->cap_reports, rd->num_reports,
+            sizeof(struct tendril_hid_report_info)
+        );
     }
     if (st != TENDRIL_OK) {
         for (size_t f = 0; f < rd->num_fields; f++) {
-            tendril_free(rd->fields[f].usages, rd->fields[f].num_usages * sizeof(uint32_t));
+            tendril_free(
+                rd->fields[f].usages,
+                rd->fields[f].num_usages * sizeof(uint32_t)
+            );
         }
-        tendril_free(rd->fields, p->cap_fields * sizeof(struct tendril_hid_field));
-        tendril_free(rd->reports, p->cap_reports * sizeof(struct tendril_hid_report_info));
+        tendril_free(
+            rd->fields, p->cap_fields * sizeof(struct tendril_hid_field)
+        );
+        tendril_free(
+            rd->reports,
+            p->cap_reports * sizeof(struct tendril_hid_report_info)
+        );
         tendril_free(rd, sizeof(struct tendril_hid_report_desc));
         tendril_free(p, sizeof(struct parser));
         return st;
@@ -498,7 +535,9 @@ int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_repor
     return TENDRIL_OK;
 }
 
-size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, int type, uint8_t id) {
+size_t tendril_hid_report_size(
+    const struct tendril_hid_report_desc *rd, int type, uint8_t id
+) {
     for (size_t i = 0; i < rd->num_reports; i++) {
         if (rd->reports[i].type == type && rd->reports[i].id == id) {
             return (rd->reports[i].bits + 7) / 8;
@@ -507,7 +546,9 @@ size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, int typ
     return 0;
 }
 
-uint32_t tendril_hid_extract(const uint8_t *data, size_t size, size_t bit_offset, size_t bit_size) {
+uint32_t tendril_hid_extract(
+    const uint8_t *data, size_t size, size_t bit_offset, size_t bit_size
+) {
     uint32_t v = 0;
     for (size_t b = 0; b < bit_size && b < 32; b++) {
         size_t bit = bit_offset + b;
@@ -521,7 +562,10 @@ uint32_t tendril_hid_extract(const uint8_t *data, size_t size, size_t bit_offset
     return v;
 }
 
-void tendril_hid_insert(uint8_t *data, size_t size, size_t bit_offset, size_t bit_size, uint32_t value) {
+void tendril_hid_insert(
+    uint8_t *data, size_t size, size_t bit_offset, size_t bit_size,
+    uint32_t value
+) {
     for (size_t b = 0; b < bit_size && b < 32; b++) {
         size_t bit = bit_offset + b;
         if (bit / 8 >= size) {
@@ -535,31 +579,46 @@ void tendril_hid_insert(uint8_t *data, size_t size, size_t bit_offset, size_t bi
     }
 }
 
-int32_t tendril_hid_field_get(const struct tendril_hid_field *f, const uint8_t *data, size_t size, size_t index) {
-    uint32_t v = tendril_hid_extract(data, size, f->bit_offset + (uint32_t)index * f->bit_size, f->bit_size);
-    if (f->logical_min < 0 && f->bit_size < 32 && (v & ((uint32_t)1 << (f->bit_size - 1))) != 0) {
+int32_t tendril_hid_field_get(
+    const struct tendril_hid_field *f, const uint8_t *data, size_t size,
+    size_t index
+) {
+    uint32_t v = tendril_hid_extract(
+        data, size, f->bit_offset + (uint32_t)index * f->bit_size, f->bit_size
+    );
+    if (f->logical_min < 0 && f->bit_size < 32
+     && (v & ((uint32_t)1 << (f->bit_size - 1))) != 0) {
         v |= ~(uint32_t)0 << f->bit_size;
     }
     return (int32_t)v;
 }
 
 void tendril_hid_field_set(
-    const struct tendril_hid_field *f, uint8_t *data, size_t size, size_t index, int32_t value
+    const struct tendril_hid_field *f, uint8_t *data, size_t size,
+    size_t index, int32_t value
 ) {
-    tendril_hid_insert(data, size, f->bit_offset + (uint32_t)index * f->bit_size, f->bit_size, (uint32_t)value);
+    tendril_hid_insert(
+        data, size, f->bit_offset + (uint32_t)index * f->bit_size, f->bit_size,
+        (uint32_t)value
+    );
 }
 
-uint32_t tendril_hid_field_usage(const struct tendril_hid_field *f, size_t index) {
+uint32_t tendril_hid_field_usage(
+    const struct tendril_hid_field *f, size_t index
+) {
     if (f->num_usages != 0) {
         return f->usages[MIN(index, (size_t)f->num_usages - 1)];
     }
     if (f->usage_max < f->usage_min) {
         return f->usage_min;
     }
-    return index > f->usage_max - f->usage_min ? f->usage_max : f->usage_min + (uint32_t)index;
+    return index > f->usage_max - f->usage_min ? f->usage_max
+        : f->usage_min + (uint32_t)index;
 }
 
-uint32_t tendril_hid_array_usage(const struct tendril_hid_field *f, int32_t value) {
+uint32_t tendril_hid_array_usage(
+    const struct tendril_hid_field *f, int32_t value
+) {
     if (value < f->logical_min || value > f->logical_max) {
         return 0;
     }
@@ -574,11 +633,13 @@ uint32_t tendril_hid_array_usage(const struct tendril_hid_field *f, int32_t valu
 }
 
 const struct tendril_hid_field *tendril_hid_find(
-    const struct tendril_hid_report_desc *rd, int type, uint32_t usage, size_t *index
+    const struct tendril_hid_report_desc *rd, int type, uint32_t usage,
+    size_t *index
 ) {
     for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
-        if (f->type != type || (f->flags & TENDRIL_HID_VARIABLE) == 0 || (f->flags & TENDRIL_HID_CONSTANT) != 0) {
+        if (f->type != type || (f->flags & TENDRIL_HID_VARIABLE) == 0
+         || (f->flags & TENDRIL_HID_CONSTANT) != 0) {
             continue;
         }
         for (size_t e = 0; e < f->count; e++) {

@@ -27,8 +27,8 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include "../../include/tendril/tendril.h"
 #include "../internal.h"
+#include <tendril/tendril.h>
 
 struct tendril_driver *tendril_drivers;
 
@@ -44,10 +44,13 @@ void tendril_driver_register(struct tendril_driver *driver) {
     *p = driver;
 }
 
-bool tendril_interface_claim(struct tendril_interface *intf, struct tendril_driver *driver) {
+bool tendril_interface_claim(
+    struct tendril_interface *intf, struct tendril_driver *driver
+) {
     struct tendril_device *dev = intf->dev;
     if (intf->driver != NULL) {
-        return intf->driver == driver && intf->primary == (dev->probing != NULL ? dev->probing : intf);
+        return intf->driver == driver
+            && intf->primary == (dev->probing != NULL ? dev->probing : intf);
     }
     intf->driver = driver;
     intf->primary = dev->probing != NULL ? dev->probing : intf;
@@ -60,7 +63,8 @@ void tendril_bind_interfaces(struct tendril_device *dev) {
         if (intf->driver != NULL || (dev->hub != NULL && i == 0)) {
             continue;
         }
-        for (struct tendril_driver *drv = tendril_drivers; drv != NULL; drv = drv->next) {
+        for (struct tendril_driver *drv = tendril_drivers; drv != NULL;
+             drv = drv->next) {
             if (drv->probe == NULL) {
                 continue;
             }
@@ -109,7 +113,8 @@ void tendril_unbind_interfaces(struct tendril_device *dev) {
 }
 
 void tendril_notify_added(struct tendril_device *dev) {
-    for (struct tendril_driver *drv = tendril_drivers; drv != NULL && !dev->gone; drv = drv->next) {
+    for (struct tendril_driver *drv = tendril_drivers;
+         drv != NULL && !dev->gone; drv = drv->next) {
         if (drv->device_added != NULL) {
             drv->device_added(dev);
         }
@@ -117,7 +122,8 @@ void tendril_notify_added(struct tendril_device *dev) {
 }
 
 void tendril_notify_removed(struct tendril_device *dev) {
-    for (struct tendril_driver *drv = tendril_drivers; drv != NULL; drv = drv->next) {
+    for (struct tendril_driver *drv = tendril_drivers; drv != NULL;
+         drv = drv->next) {
         if (drv->device_removed != NULL) {
             drv->device_removed(dev);
         }
@@ -125,7 +131,8 @@ void tendril_notify_removed(struct tendril_device *dev) {
 }
 
 void tendril_notify_woke(struct tendril_device *dev) {
-    for (struct tendril_driver *drv = tendril_drivers; drv != NULL && !dev->gone; drv = drv->next) {
+    for (struct tendril_driver *drv = tendril_drivers;
+         drv != NULL && !dev->gone; drv = drv->next) {
         if (drv->device_woke != NULL) {
             drv->device_woke(dev);
         }

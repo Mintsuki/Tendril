@@ -25,13 +25,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_TENDRIL_SERIAL_H
-#define TENDRIL_TENDRIL_SERIAL_H
+#ifndef TENDRIL_SERIAL_H
+#define TENDRIL_SERIAL_H 1
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "tendril.h"
+#include <tendril/tendril.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,7 +72,9 @@ struct tendril_serial_callbacks {
     /* The port is gone; its writes and operations have all completed. */
     void (*detach)(struct tendril_serial *port);
     /* Received data, valid only during the call. */
-    void (*receive)(struct tendril_serial *port, const uint8_t *data, size_t len);
+    void (*receive)(
+        struct tendril_serial *port, const uint8_t *data, size_t len
+    );
     void (*status)(struct tendril_serial *port, uint32_t status);
 };
 
@@ -108,25 +110,34 @@ struct tendril_serial_config {
  * away.
  */
 int tendril_serial_configure(
-    struct tendril_serial *port, const struct tendril_serial_config *config, void (*done)(void *ctx, int status),
-    void *ctx
+    struct tendril_serial *port, const struct tendril_serial_config *config,
+    void (*done)(void *ctx, int status), void *ctx
 );
 int tendril_serial_set_lines(
-    struct tendril_serial *port, bool dtr, bool rts, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_serial *port, bool dtr, bool rts,
+    void (*done)(void *ctx, int status), void *ctx
 );
-int tendril_serial_set_break(struct tendril_serial *port, bool on, void (*done)(void *ctx, int status), void *ctx);
+int tendril_serial_set_break(
+    struct tendril_serial *port, bool on, void (*done)(void *ctx, int status),
+    void *ctx
+);
 
 /*
  * Queues `len` bytes, which must stay valid until `done`; writes go out in
  * order.
  */
 int tendril_serial_write(
-    struct tendril_serial *port, const void *data, size_t len, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_serial *port, const void *data, size_t len,
+    void (*done)(void *ctx, int status), void *ctx
 );
 
 /* Synchronous helpers, running tendril_hc_poll() until done. */
-int tendril_serial_configure_sync(struct tendril_serial *port, const struct tendril_serial_config *config);
-int tendril_serial_write_sync(struct tendril_serial *port, const void *data, size_t len);
+int tendril_serial_configure_sync(
+    struct tendril_serial *port, const struct tendril_serial_config *config
+);
+int tendril_serial_write_sync(
+    struct tendril_serial *port, const void *data, size_t len
+);
 
 struct tendril_device *tendril_serial_device(struct tendril_serial *port);
 int tendril_serial_kind(struct tendril_serial *port);

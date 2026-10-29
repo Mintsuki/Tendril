@@ -29,9 +29,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../../include/tendril/glue.h"
-#include "../../include/tendril/tendril.h"
 #include "../internal.h"
+#include <tendril/glue.h>
+#include <tendril/tendril.h>
 
 int tendril_log_threshold = TENDRIL_LOG_INFO;
 
@@ -65,7 +65,8 @@ static void out_pad(struct out *o, char c, int count) {
 #define FLAG_ALT 0x10
 
 static void out_number(
-    struct out *o, uint64_t value, bool negative, unsigned int base, bool upper, int flags, int width, int precision
+    struct out *o, uint64_t value, bool negative, unsigned int base,
+    bool upper, int flags, int width, int precision
 ) {
     const char *digits = upper ? "0123456789ABCDEF" : "0123456789abcdef";
     char tmp[24];
@@ -187,7 +188,9 @@ static int64_t fetch_signed(va_list *args, int len) {
     }
 }
 
-int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args_in) {
+int tendril_vsnprintf(
+    char *buf, size_t size, const char *fmt, va_list args_in
+) {
     struct out o = { buf, size, 0 };
     va_list args;
 
@@ -286,21 +289,32 @@ int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args_in) 
                 break;
             }
             case 'u': {
-                out_number(&o, fetch_unsigned(&args, len), false, 10, false, flags, width, precision);
+                out_number(
+                    &o, fetch_unsigned(&args, len), false, 10, false, flags,
+                    width, precision
+                );
                 break;
             }
             case 'o': {
-                out_number(&o, fetch_unsigned(&args, len), false, 8, false, flags, width, precision);
+                out_number(
+                    &o, fetch_unsigned(&args, len), false, 8, false, flags,
+                    width, precision
+                );
                 break;
             }
             case 'x':
             case 'X': {
-                out_number(&o, fetch_unsigned(&args, len), false, 16, conv == 'X', flags, width, precision);
+                out_number(
+                    &o, fetch_unsigned(&args, len), false, 16, conv == 'X',
+                    flags, width, precision
+                );
                 break;
             }
             case 'p': {
                 uintptr_t p = (uintptr_t)va_arg(args, void *);
-                out_number(&o, p, false, 16, false, flags | FLAG_ALT, width, precision);
+                out_number(
+                    &o, p, false, 16, false, flags | FLAG_ALT, width, precision
+                );
                 break;
             }
             case 'c': {
@@ -319,7 +333,8 @@ int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args_in) 
                     s = "(null)";
                 }
                 size_t n = 0;
-                while (s[n] != '\0' && (precision < 0 || n < (size_t)precision)) {
+                while (s[n] != '\0'
+                    && (precision < 0 || n < (size_t)precision)) {
                     n++;
                 }
                 if ((flags & FLAG_LEFT) == 0) {

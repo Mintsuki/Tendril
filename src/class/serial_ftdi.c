@@ -68,11 +68,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../../include/tendril/serial.h"
-#include "../../include/tendril/spec.h"
-#include "../../include/tendril/tendril.h"
 #include "../internal.h"
 #include "serial_internal.h"
+#include <tendril/serial.h>
+#include <tendril/spec.h>
+#include <tendril/tendril.h>
 
 /* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
 #define FTDI_FT232A 0
@@ -137,10 +137,13 @@ static bool fast_clock(int chip) {
 /* END FreeBSD sys/dev/usb/serial/uftdi.c */
 
 static uint16_t req_index(const struct tendril_serial *port, uint8_t high) {
-    return (uint16_t)((uint32_t)high << 8 | (port->port_index & (uint32_t)0xff));
+    return (uint16_t)((uint32_t)high << 8
+        | (port->port_index & (uint32_t)0xff));
 }
 
-static void ftdi_req(struct serial_op *op, uint8_t request, uint16_t value, uint16_t index) {
+static void ftdi_req(
+    struct serial_op *op, uint8_t request, uint16_t value, uint16_t index
+) {
     serial_op_add(op, REQ_VENDOR_OUT, request, value, index, NULL, 0);
 }
 
@@ -228,7 +231,9 @@ static bool encode_baud(int chip, uint32_t rate, uint32_t *encoded) {
      * Moves sixteenths to the nearest fraction the FT232A has: 0, 1/8, 1/4, or
      * 1/2.
      */
-    static const int8_t roundoff[16] = { 0, 1, 0, 1, 0, -1, 2, 1, 0, -1, -2, -3, 4, 3, 2, 1 };
+    static const int roundoff[16] = {
+        0, 1, 0, 1, 0, -1, 2, 1, 0, -1, -2, -3, 4, 3, 2, 1
+    };
     bool fast = fast_clock(chip) && rate >= 1200;
     uint32_t clock = fast ? (uint32_t)12000000 : (uint32_t)3000000;
 
@@ -276,11 +281,13 @@ static bool data_value(const struct tendril_serial *port, uint16_t *value) {
     const struct tendril_serial_config *config = &port->config;
 
     if (config->data_bits < 5 || config->data_bits > 8
-     || config->parity > TENDRIL_SERIAL_PARITY_SPACE || config->stop_bits > TENDRIL_SERIAL_STOP_2) {
+     || config->parity > TENDRIL_SERIAL_PARITY_SPACE
+     || config->stop_bits > TENDRIL_SERIAL_STOP_2) {
         return false;
     }
 
-    uint32_t v = (uint32_t)config->data_bits | (uint32_t)config->parity << 8 | (uint32_t)config->stop_bits << 11;
+    uint32_t v = (uint32_t)config->data_bits | (uint32_t)config->parity << 8
+        | (uint32_t)config->stop_bits << 11;
     if (port->in_break) {
         v |= FTDI_DATA_BREAK;
     }
@@ -303,7 +310,8 @@ void serial_ftdi_line(struct tendril_serial *port, struct serial_op *op) {
     uint32_t divisor;
     uint16_t data;
 
-    if (!encode_baud(port->chip, port->config.baud, &divisor) || !data_value(port, &data)) {
+    if (!encode_baud(port->chip, port->config.baud, &divisor)
+     || !data_value(port, &data)) {
         op->status = TENDRIL_ERR_INVALID;
         return;
     }
@@ -321,7 +329,10 @@ void serial_ftdi_line(struct tendril_serial *port, struct serial_op *op) {
         flow = FTDI_FLOW_RTS_CTS;
     }
 
-    ftdi_req(op, FTDI_SET_BAUD_RATE, (uint16_t)(divisor & (uint32_t)0xffff), baud_index);
+    ftdi_req(
+        op, FTDI_SET_BAUD_RATE, (uint16_t)(divisor & (uint32_t)0xffff),
+        baud_index
+    );
     ftdi_req(op, FTDI_SET_DATA, data, req_index(port, 0));
     ftdi_req(op, FTDI_SET_FLOW_CTRL, 0, req_index(port, flow));
 }
@@ -382,7 +393,9 @@ static uint32_t status_bits(uint8_t modem, uint8_t line) {
 /*
  * Every packet starts with two status bytes (FTDI AN232B-04 Version 1.1, 3.1).
  */
-void serial_ftdi_receive(struct tendril_serial *port, const uint8_t *buf, size_t len) {
+void serial_ftdi_receive(
+    struct tendril_serial *port, const uint8_t *buf, size_t len
+) {
     size_t chunk = port->in_ep->max_packet;
     size_t off = 0;
 

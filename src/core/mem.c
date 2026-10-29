@@ -28,8 +28,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../../include/tendril/glue.h"
 #include "../internal.h"
+#include <tendril/glue.h>
 
 #define CHUNK_SIZE 4096
 
@@ -81,17 +81,23 @@ void tendril_strfree(char *s) {
     }
 }
 
-void *tendril_dma_alloc(struct tendril_hc *hc, size_t size, size_t align, uint64_t *dma) {
+void *tendril_dma_alloc(
+    struct tendril_hc *hc, size_t size, size_t align, uint64_t *dma
+) {
     return tendril_dma_alloc_limit(hc, size, align, hc->dma32, dma);
 }
 
-void *tendril_dma_alloc_limit(struct tendril_hc *hc, size_t size, size_t align, bool dma32, uint64_t *dma) {
+void *tendril_dma_alloc_limit(
+    struct tendril_hc *hc, size_t size, size_t align, bool dma32, uint64_t *dma
+) {
     void *p = tendril_glue_dma_alloc(hc->ctx, size, align, dma32, dma);
     if (p == NULL) {
         return NULL;
     }
     if (dma32 && *dma + size > (uint64_t)0x100000000) {
-        LOG_ERROR("DMA memory at 0x%llx is above 4 GiB", (unsigned long long)*dma);
+        LOG_ERROR(
+            "DMA memory at 0x%llx is above 4 GiB", (unsigned long long)*dma
+        );
         tendril_glue_dma_free(hc->ctx, p, size);
         return NULL;
     }
@@ -105,10 +111,15 @@ void tendril_dma_free(struct tendril_hc *hc, void *ptr, size_t size) {
     }
 }
 
-void tendril_dma_pool_init(struct tendril_dma_pool *pool, struct tendril_hc *hc, size_t size, size_t align) {
+void tendril_dma_pool_init(
+    struct tendril_dma_pool *pool, struct tendril_hc *hc, size_t size,
+    size_t align
+) {
     pool->hc = hc;
     pool->align = align;
-    pool->size = ALIGN_UP(MAX(size, sizeof(struct tendril_dma_free)), MAX(align, (size_t)8));
+    pool->size = ALIGN_UP(
+        MAX(size, sizeof(struct tendril_dma_free)), MAX(align, (size_t)8)
+    );
     pool->chunks = NULL;
     pool->free = NULL;
 }
@@ -118,15 +129,23 @@ void tendril_dma_pool_init(struct tendril_dma_pool *pool, struct tendril_hc *hc,
  * descriptors start their blocks, and a controller that still reads one after
  * it is freed must find an inactive descriptor, not the bits of a pointer.
  */
-static struct tendril_dma_free *free_node(struct tendril_dma_pool *pool, void *block) {
-    return (struct tendril_dma_free *)(void *)((char *)block + pool->size - sizeof(struct tendril_dma_free));
+static struct tendril_dma_free *free_node(
+    struct tendril_dma_pool *pool, void *block
+) {
+    return (struct tendril_dma_free *)(void *)(
+        (char *)block + pool->size - sizeof(struct tendril_dma_free)
+    );
 }
 
-static void *node_block(struct tendril_dma_pool *pool, struct tendril_dma_free *f) {
+static void *node_block(
+    struct tendril_dma_pool *pool, struct tendril_dma_free *f
+) {
     return (char *)f - (pool->size - sizeof(struct tendril_dma_free));
 }
 
-static void push_free(struct tendril_dma_pool *pool, void *block, uint64_t dma) {
+static void push_free(
+    struct tendril_dma_pool *pool, void *block, uint64_t dma
+) {
     memset(block, 0, pool->size);
     struct tendril_dma_free *f = free_node(pool, block);
     f->dma = dma;
@@ -138,11 +157,15 @@ static bool pool_grow(struct tendril_dma_pool *pool) {
     if (pool->size > CHUNK_SIZE) {
         return false;
     }
-    struct tendril_dma_chunk *chunk = tendril_zalloc(sizeof(struct tendril_dma_chunk));
+    struct tendril_dma_chunk *chunk = tendril_zalloc(
+        sizeof(struct tendril_dma_chunk)
+    );
     if (chunk == NULL) {
         return false;
     }
-    chunk->virt = tendril_dma_alloc(pool->hc, CHUNK_SIZE, CHUNK_SIZE, &chunk->dma);
+    chunk->virt = tendril_dma_alloc(
+        pool->hc, CHUNK_SIZE, CHUNK_SIZE, &chunk->dma
+    );
     if (chunk->virt == NULL) {
         tendril_free(chunk, sizeof(struct tendril_dma_chunk));
         return false;
@@ -168,7 +191,9 @@ void *tendril_dma_pool_alloc(struct tendril_dma_pool *pool, uint64_t *dma) {
     return block;
 }
 
-void tendril_dma_pool_free(struct tendril_dma_pool *pool, void *ptr, uint64_t dma) {
+void tendril_dma_pool_free(
+    struct tendril_dma_pool *pool, void *ptr, uint64_t dma
+) {
     if (ptr != NULL) {
         push_free(pool, ptr, dma);
     }

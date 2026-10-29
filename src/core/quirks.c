@@ -159,9 +159,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "../../include/tendril/spec.h"
-#include "../../include/tendril/tendril.h"
 #include "../internal.h"
+#include <tendril/spec.h>
+#include <tendril/tendril.h>
 
 #define ANY 0xffff
 
@@ -178,7 +178,8 @@ struct hc_quirk {
  * (BSD-2-Clause), the latter's "dropped interrupts workaround".
  */
 #define INTEL_LP \
-    (TENDRIL_HC_QUIRK_INTEL_PORT_ROUTING | TENDRIL_HC_QUIRK_XHCI_CTRL_STEP | TENDRIL_HC_QUIRK_XHCI_IMOD_LP)
+    (TENDRIL_HC_QUIRK_INTEL_PORT_ROUTING | TENDRIL_HC_QUIRK_XHCI_CTRL_STEP \
+        | TENDRIL_HC_QUIRK_XHCI_IMOD_LP)
 
 static const struct hc_quirk hc_quirks[] = {
     { 0x1033, 0x0194, TENDRIL_HC_XHCI, TENDRIL_HC_QUIRK_NO_64BIT },
@@ -201,19 +202,32 @@ static const struct hc_quirk hc_quirks[] = {
  * as its sys/dev/usb/usbdevs (BSD-2-Clause) does.
  */
 static const struct tendril_id_quirk device_quirks[] = {
-    { 0x1608, 0x0001, 0x0094, 0x0094, TENDRIL_DEV_QUIRK_SWAP_UNICODE }, /* INSIDEOUT EDGEPORT4 */
-    { 0x046d, 0xc032, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_NO_STRINGS }, /* LOGITECH UN53B */
-    { 0x0bda, 0x8196, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 }, /* REALTEK RTL8196EU */
-    { 0x05cc, 0x2265, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 }, /* ELSA MODEM1 */
-    { 0x2019, 0xab2f, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 }, /* PLANEX2 MZKUE150N */
-    { 0x13b1, 0x0041, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 }, /* CISCOLINKSYS USB3GIGV1 */
-    { 0x19d2, 0x1420, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_0 }, /* QUALCOMMINC ZTE_MF730M */
-    { 0x0a4a, 0xc150, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 }, /* PLOYTEC SPL_CRIMSON_1 */
-    { 0x17ef, 0x3069, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 }, /* LENOVO TBT3LAN */
-    { 0x0bda, 0x8153, 0x31fd, 0x31fd, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 }, /* REALTEK RTL8153 */
-    { 0x0711, 0x0100, 0x0102, 0x0102, TENDRIL_DEV_QUIRK_BUS_POWERED }, /* MCT HUB0100 */
-    { 0x0711, 0x0210, 0x0102, 0x0102, TENDRIL_DEV_QUIRK_BUS_POWERED }, /* MCT USB232 */
-    { 0x0922, 0x1001, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_DYMO_EJECT }, /* DYMO LABELMANAGERPNP */
+    /* INSIDEOUT EDGEPORT4 */
+    { 0x1608, 0x0001, 0x0094, 0x0094, TENDRIL_DEV_QUIRK_SWAP_UNICODE },
+    /* LOGITECH UN53B */
+    { 0x046d, 0xc032, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_NO_STRINGS },
+    /* REALTEK RTL8196EU */
+    { 0x0bda, 0x8196, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
+    /* ELSA MODEM1 */
+    { 0x05cc, 0x2265, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
+    /* PLANEX2 MZKUE150N */
+    { 0x2019, 0xab2f, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
+    /* CISCOLINKSYS USB3GIGV1 */
+    { 0x13b1, 0x0041, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
+    /* QUALCOMMINC ZTE_MF730M */
+    { 0x19d2, 0x1420, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_0 },
+    /* PLOYTEC SPL_CRIMSON_1 */
+    { 0x0a4a, 0xc150, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
+    /* LENOVO TBT3LAN */
+    { 0x17ef, 0x3069, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
+    /* REALTEK RTL8153 */
+    { 0x0bda, 0x8153, 0x31fd, 0x31fd, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
+    /* MCT HUB0100 */
+    { 0x0711, 0x0100, 0x0102, 0x0102, TENDRIL_DEV_QUIRK_BUS_POWERED },
+    /* MCT USB232 */
+    { 0x0711, 0x0210, 0x0102, 0x0102, TENDRIL_DEV_QUIRK_BUS_POWERED },
+    /* DYMO LABELMANAGERPNP */
+    { 0x0922, 0x1001, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_DYMO_EJECT },
 };
 /* END FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs */
 
@@ -235,11 +249,14 @@ uint32_t tendril_hc_quirk_lookup(struct tendril_hc *hc) {
     if (!hc->config.pci) {
         return 0;
     }
-    return tendril_pci_hc_quirks(hc->config.type, hc->pci_vendor, hc->pci_device);
+    return tendril_pci_hc_quirks(
+        hc->config.type, hc->pci_vendor, hc->pci_device
+    );
 }
 
 uint32_t tendril_id_quirks(
-    const struct tendril_id_quirk *table, size_t count, const struct tendril_device_descriptor *desc
+    const struct tendril_id_quirk *table, size_t count,
+    const struct tendril_device_descriptor *desc
 ) {
     uint16_t vendor = tendril_le16(desc->vendor_id);
     uint16_t product = tendril_le16(desc->product_id);
@@ -247,14 +264,16 @@ uint32_t tendril_id_quirks(
     uint32_t quirks = 0;
     for (size_t i = 0; i < count; i++) {
         const struct tendril_id_quirk *q = &table[i];
-        if (q->vendor == vendor && (q->product == ANY || q->product == product) && bcd >= q->bcd_min
-         && bcd <= q->bcd_max) {
+        if (q->vendor == vendor && (q->product == ANY || q->product == product)
+         && bcd >= q->bcd_min && bcd <= q->bcd_max) {
             quirks |= q->quirks;
         }
     }
     return quirks;
 }
 
-uint32_t tendril_device_quirk_lookup(const struct tendril_device_descriptor *desc) {
+uint32_t tendril_device_quirk_lookup(
+    const struct tendril_device_descriptor *desc
+) {
     return tendril_id_quirks(device_quirks, ARRAY_SIZE(device_quirks), desc);
 }
