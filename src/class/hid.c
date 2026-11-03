@@ -186,6 +186,10 @@
  * SUCH DAMAGE.
  */
 
+#ifdef __cplusplus
+#   error "this file is C, not C++"
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -194,7 +198,7 @@
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
 
-/* HID 1.11 6.2.1: a HID descriptor with one class descriptor entry. */
+// HID 1.11 6.2.1: a HID descriptor with one class descriptor entry.
 #define HID_DESCRIPTOR_MIN_SIZE 9
 #define HID_CTRL_TIMEOUT_MS 5000
 #define HID_RETRY_MS 20
@@ -204,140 +208,136 @@
 #define KEY_GRAVE_ACCENT 0x35
 #define KEY_NON_US_BACKSLASH 0x64
 #define KEY_LEFT_CTRL 0xe0
-/* HID Usage Tables 1.7, table 3.1: the first vendor-defined usage page. */
+// HID Usage Tables 1.7, table 3.1: the first vendor-defined usage page.
 #define PAGE_VENDOR_FIRST 0xff00
 #define BUTTON_SECONDARY 2
 #define BUTTON_TERTIARY 3
 #define GD_USAGE(id) TENDRIL_HID_USAGE(TENDRIL_HID_PAGE_GENERIC_DESKTOP, id)
 
-/* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.h, sys/dev/usb/input/ukbd.c */
-/*
- * HID quirks: FreeBSD's UQ_HID_IGNORE, UQ_KBD_BOOTPROTO, and UQ_MS_VENDOR_BTN
- * (sys/dev/usb/quirk/usb_quirk.h, BSD-2-Clause), and the Apple ISO keyboards
- * whose two keys its sys/dev/usb/input/ukbd.c (BSD-2-Clause) swaps back.
- */
+// BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.h, sys/dev/usb/input/ukbd.c
+// HID quirks: FreeBSD's UQ_HID_IGNORE, UQ_KBD_BOOTPROTO, and UQ_MS_VENDOR_BTN
+// (sys/dev/usb/quirk/usb_quirk.h, BSD-2-Clause), and the Apple ISO keyboards
+// whose two keys its sys/dev/usb/input/ukbd.c (BSD-2-Clause) swaps back.
 #define HQ_IGNORE ((uint32_t)1 << 0)
 #define HQ_BOOT_PROTOCOL ((uint32_t)1 << 1)
 #define HQ_VENDOR_BUTTONS ((uint32_t)1 << 2)
 #define HQ_APPLE_SWAP ((uint32_t)1 << 3)
-/* END FreeBSD sys/dev/usb/quirk/usb_quirk.h, sys/dev/usb/input/ukbd.c */
+// END FreeBSD sys/dev/usb/quirk/usb_quirk.h, sys/dev/usb/input/ukbd.c
 
-/* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/input/ukbd.c, sys/dev/usb/usbdevs */
-/*
- * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c and, for HQ_APPLE_SWAP, the
- * ukbd_apple_iso_models[] of its sys/dev/usb/input/ukbd.c (both BSD-2-Clause),
- * naming the IDs as its sys/dev/usb/usbdevs (BSD-2-Clause) does.
- */
+// BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/input/ukbd.c, sys/dev/usb/usbdevs
+// From FreeBSD's sys/dev/usb/quirk/usb_quirk.c and, for HQ_APPLE_SWAP, the
+// ukbd_apple_iso_models[] of its sys/dev/usb/input/ukbd.c (both BSD-2-Clause),
+// naming the IDs as its sys/dev/usb/usbdevs (BSD-2-Clause) does.
 static const struct tendril_id_quirk hid_quirks[] = {
-    { 0x0b05, 0x1726, 0x0000, 0xffff, HQ_IGNORE }, /* ASUS LCM */
-    { 0x046d, 0xc22d, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* LOGITECH G510S */
-    { 0x051d, 0x0002, 0x0000, 0xffff, HQ_IGNORE }, /* APC UPS */
-    { 0x051d, 0x0003, 0x0000, 0xffff, HQ_IGNORE }, /* APC UPS1000 */
-    { 0x050d, 0x0375, 0x0000, 0xffff, HQ_IGNORE }, /* BELKIN F6H375USB */
-    { 0x050d, 0x0551, 0x0000, 0xffff, HQ_IGNORE }, /* BELKIN F6C550AVR */
-    { 0x050d, 0x0750, 0x0000, 0xffff, HQ_IGNORE }, /* BELKIN F6C1250TWRK */
-    { 0x050d, 0x0751, 0x0000, 0xffff, HQ_IGNORE }, /* BELKIN F6C1500TWRK */
-    { 0x050d, 0x0900, 0x0000, 0xffff, HQ_IGNORE }, /* BELKIN F6C900UNV */
-    { 0x050d, 0x0910, 0x0000, 0xffff, HQ_IGNORE }, /* BELKIN F6C100UNV */
-    { 0x050d, 0x0912, 0x0000, 0xffff, HQ_IGNORE }, /* BELKIN F6C120UNV */
-    { 0x050d, 0x0980, 0x0000, 0xffff, HQ_IGNORE }, /* BELKIN F6C800UNV */
-    { 0x050d, 0x1100, 0x0000, 0xffff, HQ_IGNORE }, /* BELKIN F6C1100UNV */
-    { 0x0764, 0x0005, 0x0000, 0xffff, HQ_IGNORE }, /* CYBERPOWER BC900D */
-    { 0x0764, 0x0501, 0x0000, 0xffff, HQ_IGNORE }, /* CYBERPOWER 1500CAVRLCD */
-    /* CYBERPOWER OR2200LCDRM2U */
+    { 0x0b05, 0x1726, 0x0000, 0xffff, HQ_IGNORE }, // ASUS LCM
+    { 0x046d, 0xc22d, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, // LOGITECH G510S
+    { 0x051d, 0x0002, 0x0000, 0xffff, HQ_IGNORE }, // APC UPS
+    { 0x051d, 0x0003, 0x0000, 0xffff, HQ_IGNORE }, // APC UPS1000
+    { 0x050d, 0x0375, 0x0000, 0xffff, HQ_IGNORE }, // BELKIN F6H375USB
+    { 0x050d, 0x0551, 0x0000, 0xffff, HQ_IGNORE }, // BELKIN F6C550AVR
+    { 0x050d, 0x0750, 0x0000, 0xffff, HQ_IGNORE }, // BELKIN F6C1250TWRK
+    { 0x050d, 0x0751, 0x0000, 0xffff, HQ_IGNORE }, // BELKIN F6C1500TWRK
+    { 0x050d, 0x0900, 0x0000, 0xffff, HQ_IGNORE }, // BELKIN F6C900UNV
+    { 0x050d, 0x0910, 0x0000, 0xffff, HQ_IGNORE }, // BELKIN F6C100UNV
+    { 0x050d, 0x0912, 0x0000, 0xffff, HQ_IGNORE }, // BELKIN F6C120UNV
+    { 0x050d, 0x0980, 0x0000, 0xffff, HQ_IGNORE }, // BELKIN F6C800UNV
+    { 0x050d, 0x1100, 0x0000, 0xffff, HQ_IGNORE }, // BELKIN F6C1100UNV
+    { 0x0764, 0x0005, 0x0000, 0xffff, HQ_IGNORE }, // CYBERPOWER BC900D
+    { 0x0764, 0x0501, 0x0000, 0xffff, HQ_IGNORE }, // CYBERPOWER 1500CAVRLCD
+    // CYBERPOWER OR2200LCDRM2U
     { 0x0764, 0x0601, 0x0000, 0xffff, HQ_IGNORE },
-    { 0x047c, 0xffff, 0x0000, 0xffff, HQ_IGNORE }, /* DELL2 VARIOUS_UPS */
-    { 0x04b4, 0xfd13, 0x0000, 0xffff, HQ_IGNORE }, /* CYPRESS SILVERSHIELD */
-    { 0x1163, 0x0100, 0x0000, 0xffff, HQ_IGNORE }, /* DELORME EARTHMATE */
-    { 0x1d34, 0x0004, 0x0000, 0xffff, HQ_IGNORE }, /* DREAMLINK DL100B */
-    { 0x04d8, 0x0002, 0x0000, 0xffff, HQ_IGNORE }, /* MICROCHIP PICOLCD20X2 */
-    { 0x04d8, 0xc001, 0x0000, 0xffff, HQ_IGNORE }, /* MICROCHIP PICOLCD4X20 */
-    { 0x06da, 0xffff, 0x0000, 0xffff, HQ_IGNORE }, /* LIEBERT POWERSURE_PXT */
-    { 0x10af, 0x0004, 0x0000, 0xffff, HQ_IGNORE }, /* LIEBERT2 PSI1000 */
-    { 0x10af, 0x0001, 0x0000, 0xffff, HQ_IGNORE }, /* LIEBERT2 POWERSURE_PSA */
-    { 0x0463, 0x0001, 0x0000, 0xffff, HQ_IGNORE }, /* MGE UPS1 */
-    { 0x0463, 0xffff, 0x0000, 0xffff, HQ_IGNORE }, /* MGE UPS2 */
-    /* POWERCOM IMPERIAL_SERIES */
+    { 0x047c, 0xffff, 0x0000, 0xffff, HQ_IGNORE }, // DELL2 VARIOUS_UPS
+    { 0x04b4, 0xfd13, 0x0000, 0xffff, HQ_IGNORE }, // CYPRESS SILVERSHIELD
+    { 0x1163, 0x0100, 0x0000, 0xffff, HQ_IGNORE }, // DELORME EARTHMATE
+    { 0x1d34, 0x0004, 0x0000, 0xffff, HQ_IGNORE }, // DREAMLINK DL100B
+    { 0x04d8, 0x0002, 0x0000, 0xffff, HQ_IGNORE }, // MICROCHIP PICOLCD20X2
+    { 0x04d8, 0xc001, 0x0000, 0xffff, HQ_IGNORE }, // MICROCHIP PICOLCD4X20
+    { 0x06da, 0xffff, 0x0000, 0xffff, HQ_IGNORE }, // LIEBERT POWERSURE_PXT
+    { 0x10af, 0x0004, 0x0000, 0xffff, HQ_IGNORE }, // LIEBERT2 PSI1000
+    { 0x10af, 0x0001, 0x0000, 0xffff, HQ_IGNORE }, // LIEBERT2 POWERSURE_PSA
+    { 0x0463, 0x0001, 0x0000, 0xffff, HQ_IGNORE }, // MGE UPS1
+    { 0x0463, 0xffff, 0x0000, 0xffff, HQ_IGNORE }, // MGE UPS2
+    // POWERCOM IMPERIAL_SERIES
     { 0x0d9f, 0x00a2, 0x0000, 0xffff, HQ_IGNORE },
-    /* POWERCOM SMART_KING_PRO */
+    // POWERCOM SMART_KING_PRO
     { 0x0d9f, 0x00a3, 0x0000, 0xffff, HQ_IGNORE },
-    { 0x0d9f, 0x00a4, 0x0000, 0xffff, HQ_IGNORE }, /* POWERCOM WOW */
-    { 0x0d9f, 0x00a5, 0x0000, 0xffff, HQ_IGNORE }, /* POWERCOM VANGUARD */
-    /* POWERCOM BLACK_KNIGHT_PRO */
+    { 0x0d9f, 0x00a4, 0x0000, 0xffff, HQ_IGNORE }, // POWERCOM WOW
+    { 0x0d9f, 0x00a5, 0x0000, 0xffff, HQ_IGNORE }, // POWERCOM VANGUARD
+    // POWERCOM BLACK_KNIGHT_PRO
     { 0x0d9f, 0x00a6, 0x0000, 0xffff, HQ_IGNORE },
-    { 0x09ae, 0x1003, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 AVR550U */
-    { 0x09ae, 0x1007, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 AVR750U */
-    { 0x09ae, 0x1008, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 ECO550UPS */
-    { 0x09ae, 0x1f06, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 T750_INTL */
-    /* TRIPPLITE2 RT_2200_INTL */
+    { 0x09ae, 0x1003, 0x0000, 0xffff, HQ_IGNORE }, // TRIPPLITE2 AVR550U
+    { 0x09ae, 0x1007, 0x0000, 0xffff, HQ_IGNORE }, // TRIPPLITE2 AVR750U
+    { 0x09ae, 0x1008, 0x0000, 0xffff, HQ_IGNORE }, // TRIPPLITE2 ECO550UPS
+    { 0x09ae, 0x1f06, 0x0000, 0xffff, HQ_IGNORE }, // TRIPPLITE2 T750_INTL
+    // TRIPPLITE2 RT_2200_INTL
     { 0x09ae, 0x1f0a, 0x0000, 0xffff, HQ_IGNORE },
-    { 0x09ae, 0x2005, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 OMNI1000LCD */
-    { 0x09ae, 0x2007, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 OMNI900LCD */
-    /* TRIPPLITE2 SMART_2200RMXL2U */
+    { 0x09ae, 0x2005, 0x0000, 0xffff, HQ_IGNORE }, // TRIPPLITE2 OMNI1000LCD
+    { 0x09ae, 0x2007, 0x0000, 0xffff, HQ_IGNORE }, // TRIPPLITE2 OMNI900LCD
+    // TRIPPLITE2 SMART_2200RMXL2U
     { 0x09ae, 0x3012, 0x0000, 0xffff, HQ_IGNORE },
-    { 0x09ae, 0x3014, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 UPS_3014 */
-    /* TRIPPLITE2 SU1500RTXL2UA */
+    { 0x09ae, 0x3014, 0x0000, 0xffff, HQ_IGNORE }, // TRIPPLITE2 UPS_3014
+    // TRIPPLITE2 SU1500RTXL2UA
     { 0x09ae, 0x4001, 0x0000, 0xffff, HQ_IGNORE },
-    { 0x09ae, 0x4002, 0x0000, 0xffff, HQ_IGNORE }, /* TRIPPLITE2 SU6000RT4U */
-    /* TRIPPLITE2 SU1500RTXL2UA_2 */
+    { 0x09ae, 0x4002, 0x0000, 0xffff, HQ_IGNORE }, // TRIPPLITE2 SU6000RT4U
+    // TRIPPLITE2 SU1500RTXL2UA_2
     { 0x09ae, 0x4003, 0x0000, 0xffff, HQ_IGNORE },
-    { 0x05ac, 0x1290, 0x0000, 0xffff, HQ_IGNORE }, /* APPLE IPHONE */
-    { 0x05ac, 0x1292, 0x0000, 0xffff, HQ_IGNORE }, /* APPLE IPHONE_3G */
-    { 0x0665, 0x5161, 0x0000, 0xffff, HQ_IGNORE }, /* MEGATEC UPS */
-    { 0x04b4, 0x0bad, 0x0000, 0xffff, HQ_IGNORE }, /* CYPRESS WISPY1A */
-    { 0x1781, 0x083e, 0x0000, 0xffff, HQ_IGNORE }, /* METAGEEK WISPY1B */
-    { 0x1781, 0x083f, 0x0000, 0xffff, HQ_IGNORE }, /* METAGEEK WISPY24X */
-    { 0x1dd5, 0x5000, 0x0000, 0xffff, HQ_IGNORE }, /* METAGEEK2 WISPYDBX */
-    /* MICROSOFT NATURAL4000 */
+    { 0x05ac, 0x1290, 0x0000, 0xffff, HQ_IGNORE }, // APPLE IPHONE
+    { 0x05ac, 0x1292, 0x0000, 0xffff, HQ_IGNORE }, // APPLE IPHONE_3G
+    { 0x0665, 0x5161, 0x0000, 0xffff, HQ_IGNORE }, // MEGATEC UPS
+    { 0x04b4, 0x0bad, 0x0000, 0xffff, HQ_IGNORE }, // CYPRESS WISPY1A
+    { 0x1781, 0x083e, 0x0000, 0xffff, HQ_IGNORE }, // METAGEEK WISPY1B
+    { 0x1781, 0x083f, 0x0000, 0xffff, HQ_IGNORE }, // METAGEEK WISPY24X
+    { 0x1dd5, 0x5000, 0x0000, 0xffff, HQ_IGNORE }, // METAGEEK2 WISPYDBX
+    // MICROSOFT NATURAL4000
     { 0x045e, 0x00db, 0x0000, 0xffff, HQ_BOOT_PROTOCOL },
-    { 0x1b1c, 0x0a60, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR K60 */
-    { 0x1b1c, 0x1b3f, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR K68 */
-    { 0x1b1c, 0x1b09, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR K70 */
-    { 0x1b1c, 0x1b13, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR K70_RGB */
-    { 0x1b1c, 0x1b15, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR STRAFE */
-    { 0x1b1c, 0x1b44, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* CORSAIR STRAFE2 */
-    { 0x04d9, 0xa030, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, /* HOLTEK F85 */
-    /* KENSINGTON SLIMBLADE */
+    { 0x1b1c, 0x0a60, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, // CORSAIR K60
+    { 0x1b1c, 0x1b3f, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, // CORSAIR K68
+    { 0x1b1c, 0x1b09, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, // CORSAIR K70
+    { 0x1b1c, 0x1b13, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, // CORSAIR K70_RGB
+    { 0x1b1c, 0x1b15, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, // CORSAIR STRAFE
+    { 0x1b1c, 0x1b44, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, // CORSAIR STRAFE2
+    { 0x04d9, 0xa030, 0x0000, 0xffff, HQ_BOOT_PROTOCOL }, // HOLTEK F85
+    // KENSINGTON SLIMBLADE
     { 0x047d, 0x2041, 0x0000, 0xffff, HQ_VENDOR_BUTTONS },
-    { 0x05ac, 0x020f, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE FOUNTAIN_ISO */
-    { 0x05ac, 0x0215, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE GEYSER_ISO */
-    { 0x05ac, 0x0218, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE GEYSER3_ISO */
-    { 0x05ac, 0x021b, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE GEYSER4_ISO */
-    /* APPLE GEYSER4_HF_ISO */
+    { 0x05ac, 0x020f, 0x0000, 0xffff, HQ_APPLE_SWAP }, // APPLE FOUNTAIN_ISO
+    { 0x05ac, 0x0215, 0x0000, 0xffff, HQ_APPLE_SWAP }, // APPLE GEYSER_ISO
+    { 0x05ac, 0x0218, 0x0000, 0xffff, HQ_APPLE_SWAP }, // APPLE GEYSER3_ISO
+    { 0x05ac, 0x021b, 0x0000, 0xffff, HQ_APPLE_SWAP }, // APPLE GEYSER4_ISO
+    // APPLE GEYSER4_HF_ISO
     { 0x05ac, 0x022a, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    { 0x05ac, 0x021e, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE ALU_MINI_ISO */
-    { 0x05ac, 0x0221, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE ALU_ISO */
-    { 0x05ac, 0x0250, 0x0000, 0xffff, HQ_APPLE_SWAP }, /* APPLE ALU_REVB_ISO */
-    /* APPLE WELLSPRING_ISO */
+    { 0x05ac, 0x021e, 0x0000, 0xffff, HQ_APPLE_SWAP }, // APPLE ALU_MINI_ISO
+    { 0x05ac, 0x0221, 0x0000, 0xffff, HQ_APPLE_SWAP }, // APPLE ALU_ISO
+    { 0x05ac, 0x0250, 0x0000, 0xffff, HQ_APPLE_SWAP }, // APPLE ALU_REVB_ISO
+    // APPLE WELLSPRING_ISO
     { 0x05ac, 0x0224, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING2_ISO */
+    // APPLE WELLSPRING2_ISO
     { 0x05ac, 0x0231, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING3_ISO */
+    // APPLE WELLSPRING3_ISO
     { 0x05ac, 0x0237, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING4_ISO */
+    // APPLE WELLSPRING4_ISO
     { 0x05ac, 0x0240, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING4A_ISO */
+    // APPLE WELLSPRING4A_ISO
     { 0x05ac, 0x0243, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING5_ISO */
+    // APPLE WELLSPRING5_ISO
     { 0x05ac, 0x0246, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING5A_ISO */
+    // APPLE WELLSPRING5A_ISO
     { 0x05ac, 0x0253, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING6_ISO */
+    // APPLE WELLSPRING6_ISO
     { 0x05ac, 0x024d, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING6A_ISO */
+    // APPLE WELLSPRING6A_ISO
     { 0x05ac, 0x024a, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING7_ISO */
+    // APPLE WELLSPRING7_ISO
     { 0x05ac, 0x0263, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING7A_ISO */
+    // APPLE WELLSPRING7A_ISO
     { 0x05ac, 0x025a, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING8_ISO */
+    // APPLE WELLSPRING8_ISO
     { 0x05ac, 0x0291, 0x0000, 0xffff, HQ_APPLE_SWAP },
-    /* APPLE WELLSPRING9_ISO */
-    { 0x05ac, 0x0273, 0x0000, 0xffff, HQ_APPLE_SWAP },
+    // APPLE WELLSPRING9_ISO
+    { 0x05ac, 0x0273, 0x0000, 0xffff, HQ_APPLE_SWAP }
 };
-/* END FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/input/ukbd.c, sys/dev/usb/usbdevs */
+// END FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/input/ukbd.c, sys/dev/usb/usbdevs
 
-/* HID 1.11 appendix B: the boot protocol report layouts. */
+// HID 1.11 appendix B: the boot protocol report layouts.
 static const uint8_t boot_keyboard_desc[] = {
     0x05, 0x01, 0x09, 0x06, 0xa1, 0x01, 0x75, 0x01, 0x95, 0x08, 0x05, 0x07,
     0x19, 0xe0, 0x29, 0xe7, 0x15, 0x00, 0x25, 0x01, 0x81, 0x02, 0x95, 0x01,
@@ -405,9 +405,9 @@ static void bit_set(uint8_t *map, size_t k) {
     map[k / 8] |= (uint8_t)((uint32_t)1 << (k % 8));
 }
 
-/* Input processing */
+// Input processing
 
-/* BEGIN FreeBSD sys/dev/usb/input/ukbd.c */
+// BEGIN FreeBSD sys/dev/usb/input/ukbd.c
 static size_t apple_swap(const struct tendril_hid *hid, size_t key) {
     if ((hid->quirks & HQ_APPLE_SWAP) == 0) {
         return key;
@@ -420,19 +420,17 @@ static size_t apple_swap(const struct tendril_hid *hid, size_t key) {
     }
     return key;
 }
-/* END FreeBSD sys/dev/usb/input/ukbd.c */
+// END FreeBSD sys/dev/usb/input/ukbd.c
 
-/* The number, from 1, of the button a usage reports, or 0. */
+// The number, from 1, of the button a usage reports, or 0.
 static size_t button_number(const struct tendril_hid *hid, uint32_t usage) {
     size_t n = usage & 0xffff;
     if ((usage >> 16) == TENDRIL_HID_PAGE_BUTTON) {
         return n <= 32 ? n : 0;
     }
-    /* BEGIN FreeBSD sys/dev/hid/hms.c */
-    /*
-     * The buttons FreeBSD's sys/dev/hid/hms.c (BSD-2-Clause) maps these usages
-     * to.
-     */
+    // BEGIN FreeBSD sys/dev/hid/hms.c
+    // The buttons FreeBSD's sys/dev/hid/hms.c (BSD-2-Clause) maps these usages
+    // to.
     if ((hid->quirks & HQ_VENDOR_BUTTONS) != 0
      && (usage >> 16) == PAGE_VENDOR_FIRST) {
         if (n == 1) {
@@ -442,13 +440,11 @@ static size_t button_number(const struct tendril_hid *hid, uint32_t usage) {
             return BUTTON_TERTIARY;
         }
     }
-    /* END FreeBSD sys/dev/hid/hms.c */
+    // END FreeBSD sys/dev/hid/hms.c
     return 0;
 }
 
-static void process_keys(
-    struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size
-) {
+static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size) {
     const struct tendril_hid_report_desc *rd = hid->rd;
     uint8_t now[32] = { 0 };
     uint8_t covered[32] = { 0 };
@@ -480,22 +476,17 @@ static void process_keys(
             continue;
         }
         any = true;
-        for (size_t u = f->usage_min & 0xffff;
-             u <= (f->usage_max & 0xffff) && u <= 0xff; u++) {
+        for (size_t u = f->usage_min & 0xffff; u <= (f->usage_max & 0xffff) && u <= 0xff; u++) {
             bit_set(covered, apple_swap(hid, u));
         }
         for (size_t e = 0; e < f->count; e++) {
-            uint32_t usage = tendril_hid_array_usage(
-                f, tendril_hid_field_get(f, data, size, e)
-            );
+            uint32_t usage = tendril_hid_array_usage(f, tendril_hid_field_get(f, data, size, e));
             size_t key = usage & 0xffff;
             if ((usage >> 16) != TENDRIL_HID_PAGE_KEYBOARD || key > 0xff) {
                 continue;
             }
-            /*
-             * HID Usage Tables 1.7, 10: ErrorRollOver to ErrorUndefined mean
-             * the report is unusable.
-             */
+            // HID Usage Tables 1.7, 10: ErrorRollOver to ErrorUndefined mean
+            // the report is unusable.
             if (key >= KEY_ERROR_ROLLOVER && key <= KEY_ERROR_UNDEFINED) {
                 return;
             }
@@ -511,14 +502,14 @@ static void process_keys(
     uint8_t mods = 0;
     for (size_t k = 0; k < 8; k++) {
         bool down = bit_get(covered, KEY_LEFT_CTRL + k)
-            ? bit_get(now, KEY_LEFT_CTRL + k)
-            : ((hid->modifiers >> k) & 1) != 0;
+                  ? bit_get(now, KEY_LEFT_CTRL + k)
+                  : ((hid->modifiers >> k) & 1) != 0;
         if (down) {
             mods |= (uint8_t)((uint32_t)1 << k);
         }
     }
 
-    /* Releases first, so a quick re-press of a key is never lost. */
+    // Releases first, so a quick re-press of a key is never lost.
     for (size_t k = 0; k < 256; k++) {
         if (bit_get(covered, k) && bit_get(hid->keys, k) && !bit_get(now, k)) {
             hid->keys[k / 8] &= (uint8_t)~((uint32_t)1 << (k % 8));
@@ -688,9 +679,7 @@ static void in_done(struct tendril_transfer *xfer) {
 }
 
 static void retry_work(struct tendril_work *work) {
-    struct tendril_hid *hid = CONTAINER_OF(
-        work, struct tendril_hid, retry.work
-    );
+    struct tendril_hid *hid = CONTAINER_OF(work, struct tendril_hid, retry.work);
     if (!hid->stopped && !hid->suspended) {
         in_submit(hid);
     }
@@ -709,7 +698,7 @@ static void in_submit(struct tendril_hid *hid) {
     }
 }
 
-/* Setup */
+// Setup
 
 static uint32_t classify(const struct tendril_hid_report_desc *rd) {
     uint32_t kinds = 0;
@@ -726,13 +715,11 @@ static uint32_t classify(const struct tendril_hid_report_desc *rd) {
             }
             case GD_USAGE(0x01):
             case GD_USAGE(0x02): {
-                for (size_t e = 0;
-                     e < f->count && (f->flags & TENDRIL_HID_VARIABLE) != 0;
-                     e++) {
+                for (size_t e = 0; e < f->count && (f->flags & TENDRIL_HID_VARIABLE) != 0; e++) {
                     if (tendril_hid_field_usage(f, e) == GD_USAGE(0x30)) {
                         kinds |= (f->flags & TENDRIL_HID_RELATIVE) != 0
-                            ? TENDRIL_HID_MOUSE
-                            : TENDRIL_HID_ABSOLUTE;
+                               ? TENDRIL_HID_MOUSE
+                               : TENDRIL_HID_ABSOLUTE;
                     }
                 }
                 break;
@@ -772,10 +759,8 @@ static void hid_ready(struct tendril_hid *hid) {
     hid->kinds = classify(hid->rd);
     size_t report = largest_input(hid->rd);
     size_t mps = hid->in_ep->max_packet;
-    /*
-     * A full-size report ends the transfer only if the transfer is exactly
-     * that long.
-     */
+    // A full-size report ends the transfer only if the transfer is exactly
+    // that long.
     hid->in_size = report >= mps ? report : mps;
     hid->in_buf = tendril_zalloc(hid->in_size);
     if (hid->in_buf == NULL) {
@@ -808,13 +793,13 @@ static void hid_fail(struct tendril_hid *hid, int st, const char *what) {
 }
 
 static void ctrl(
-    struct tendril_hid *hid, int step, uint8_t request_type, uint8_t request,
-    uint16_t value, void *data, size_t length
+    struct tendril_hid *hid, int step, uint8_t request_type, uint8_t request, uint16_t value,
+    void *data, size_t length
 ) {
     hid->step = step;
     int st = tendril_control_async(
-        hid->dev, &hid->ctrl, request_type, request, value, hid->intf->number,
-        data, length, &hid->async
+        hid->dev, &hid->ctrl, request_type, request, value, hid->intf->number, data, length,
+        &hid->async
     );
     if (st != TENDRIL_OK) {
         hid->async.status = st;
@@ -823,17 +808,14 @@ static void ctrl(
 }
 
 static void set_idle(struct tendril_hid *hid) {
-    /* HID 1.11 7.2.4: duration 0, report only on change. */
+    // HID 1.11 7.2.4: duration 0, report only on change.
     ctrl(
-        hid, STEP_SET_IDLE,
-        TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
+        hid, STEP_SET_IDLE, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
         TENDRIL_HID_REQ_SET_IDLE, 0, NULL, 0
     );
 }
 
-/*
- * HID 1.11 4.2 and 4.3: a keyboard or a mouse of the boot interface subclass.
- */
+// HID 1.11 4.2 and 4.3: a keyboard or a mouse of the boot interface subclass.
 static bool boot_capable(int subclass, int protocol) {
     return subclass == 1 && (protocol == 1 || protocol == 2);
 }
@@ -841,30 +823,22 @@ static bool boot_capable(int subclass, int protocol) {
 static void start_boot(struct tendril_hid *hid) {
     hid->boot = true;
     ctrl(
-        hid, STEP_SET_BOOT,
-        TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
+        hid, STEP_SET_BOOT, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
         TENDRIL_HID_REQ_SET_PROTOCOL, 0, NULL, 0
     );
 }
 
-/* BEGIN FreeBSD sys/dev/hid/hkbd.c, hms.c */
-/*
- * A boot keyboard or mouse whose report descriptor cannot be read or parsed,
- * and a boot keyboard whose report descriptor has no keys, use the boot
- * protocol instead, as FreeBSD's sys/dev/hid/hkbd.c and hms.c (BSD-2-Clause)
- * do.
- */
-static void report_fallback(
-    struct tendril_hid *hid, int st, const char *what
-) {
+// BEGIN FreeBSD sys/dev/hid/hkbd.c, hms.c
+// A boot keyboard or mouse whose report descriptor cannot be read or parsed,
+// and a boot keyboard whose report descriptor has no keys, use the boot
+// protocol instead, as FreeBSD's sys/dev/hid/hkbd.c and hms.c (BSD-2-Clause)
+// do.
+static void report_fallback(struct tendril_hid *hid, int st, const char *what) {
     if (!boot_capable(hid->subclass, hid->protocol)) {
         hid_fail(hid, st, what);
         return;
     }
-    LOG_WARN(
-        "HID: %s failed: %s; using the boot protocol", what,
-        tendril_status_str(st)
-    );
+    LOG_WARN("HID: %s failed: %s; using the boot protocol", what, tendril_status_str(st));
     tendril_hid_free(hid->rd);
     hid->rd = NULL;
     start_boot(hid);
@@ -881,12 +855,10 @@ static bool has_keys(const struct tendril_hid_report_desc *rd) {
     }
     return false;
 }
-/* END FreeBSD sys/dev/hid/hkbd.c, hms.c */
+// END FreeBSD sys/dev/hid/hkbd.c, hms.c
 
 static void init_step(struct tendril_work *work) {
-    struct tendril_hid *hid = CONTAINER_OF(
-        work, struct tendril_hid, async.work
-    );
+    struct tendril_hid *hid = CONTAINER_OF(work, struct tendril_hid, async.work);
     int st = hid->async.status;
 
     if (hid->stopped || hid->dev->gone || st == TENDRIL_ERR_NO_DEVICE) {
@@ -895,11 +867,11 @@ static void init_step(struct tendril_work *work) {
     }
     switch (hid->step) {
         case STEP_SET_BOOT: {
-            /* A failure is ignored, as FreeBSD's hkbd.c does. */
+            // A failure is ignored, as FreeBSD's hkbd.c does.
             const uint8_t *desc = hid->protocol == 1 ? boot_keyboard_desc
-                : boot_mouse_desc;
+                                : boot_mouse_desc;
             size_t len = hid->protocol == 1 ? sizeof(boot_keyboard_desc)
-                : sizeof(boot_mouse_desc);
+                       : sizeof(boot_mouse_desc);
             st = tendril_hid_parse(desc, len, &hid->rd);
             if (st != TENDRIL_OK) {
                 hid_fail(hid, st, "boot descriptor parsing");
@@ -909,7 +881,7 @@ static void init_step(struct tendril_work *work) {
             return;
         }
         case STEP_GET_REPORT_DESC: {
-            /* BEGIN FreeBSD sys/dev/hid/hkbd.c, hms.c */
+            // BEGIN FreeBSD sys/dev/hid/hkbd.c, hms.c
             if (st != TENDRIL_OK && st != TENDRIL_ERR_SHORT) {
                 report_fallback(hid, st, "reading the report descriptor");
                 return;
@@ -922,18 +894,16 @@ static void init_step(struct tendril_work *work) {
             if (hid->subclass == 1 && hid->protocol == 1
              && !has_keys(hid->rd)) {
                 report_fallback(
-                    hid, TENDRIL_ERR_UNSUPPORTED,
-                    "finding keys in the report descriptor"
+                    hid, TENDRIL_ERR_UNSUPPORTED, "finding keys in the report descriptor"
                 );
                 return;
             }
-            /* END FreeBSD sys/dev/hid/hkbd.c, hms.c */
+            // END FreeBSD sys/dev/hid/hkbd.c, hms.c
             if (hid->subclass == 1) {
                 ctrl(
                     hid, STEP_SET_REPORT_PROTOCOL,
                     TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS
-                        | TENDRIL_RECIP_INTERFACE,
-                    TENDRIL_HID_REQ_SET_PROTOCOL, 1, NULL, 0
+                  | TENDRIL_RECIP_INTERFACE, TENDRIL_HID_REQ_SET_PROTOCOL, 1, NULL, 0
                 );
                 return;
             }
@@ -945,10 +915,8 @@ static void init_step(struct tendril_work *work) {
             return;
         }
         case STEP_SET_IDLE: {
-            /*
-             * Without SET_IDLE the device reports at its default rate, which
-             * works too.
-             */
+            // Without SET_IDLE the device reports at its default rate, which
+            // works too.
             hid_ready(hid);
             return;
         }
@@ -958,26 +926,23 @@ static void init_step(struct tendril_work *work) {
     }
 }
 
-/* BEGIN FreeBSD sys/dev/usb/usb_hid.c */
-/*
- * The first HID descriptor among the interface's descriptors, before or after
- * its endpoint descriptors, with room for a class descriptor entry, as
- * hid_get_descriptor_from_usb() in FreeBSD's sys/dev/usb/usb_hid.c
- * (BSD-2-Clause) finds it.
- */
+// BEGIN FreeBSD sys/dev/usb/usb_hid.c
+// The first HID descriptor among the interface's descriptors, before or after
+// its endpoint descriptors, with room for a class descriptor entry, as
+// hid_get_descriptor_from_usb() in FreeBSD's sys/dev/usb/usb_hid.c
+// (BSD-2-Clause) finds it.
 static const uint8_t *find_hid_descriptor(struct tendril_interface *intf) {
     size_t size;
     const uint8_t *p = tendril_interface_descriptors(intf, &size);
     const uint8_t *end = p + size;
-    for (const uint8_t *q = tendril_desc_next(p, end); q != NULL;
-         q = tendril_desc_next(q, end)) {
+    for (const uint8_t *q = tendril_desc_next(p, end); q != NULL; q = tendril_desc_next(q, end)) {
         if (q[1] == TENDRIL_DT_HID && q[0] >= HID_DESCRIPTOR_MIN_SIZE) {
             return q;
         }
     }
     return NULL;
 }
-/* END FreeBSD sys/dev/usb/usb_hid.c */
+// END FreeBSD sys/dev/usb/usb_hid.c
 
 static bool hid_probe(struct tendril_interface *intf) {
     const struct tendril_interface_descriptor *id
@@ -985,9 +950,7 @@ static bool hid_probe(struct tendril_interface *intf) {
     if (id->interface_class != TENDRIL_CLASS_HID) {
         return false;
     }
-    uint32_t quirks = tendril_id_quirks(
-        hid_quirks, ARRAY_SIZE(hid_quirks), &intf->dev->desc
-    );
+    uint32_t quirks = tendril_id_quirks(hid_quirks, ARRAY_SIZE(hid_quirks), &intf->dev->desc);
     if ((quirks & HQ_IGNORE) != 0) {
         return false;
     }
@@ -1001,10 +964,8 @@ static bool hid_probe(struct tendril_interface *intf) {
     size_t desc_len = 0;
     const uint8_t *hd = find_hid_descriptor(intf);
     if (hd != NULL) {
-        /*
-         * HID 1.11 6.2.1: (bDescriptorType, wDescriptorLength) entries from
-         * offset 6.
-         */
+        // HID 1.11 6.2.1: (bDescriptorType, wDescriptorLength) entries from
+        // offset 6.
         size_t n = hd[5];
         for (size_t i = 0; i < n && 6 + i * 3 + 2 < hd[0]; i++) {
             if (hd[6 + i * 3] == TENDRIL_DT_HID_REPORT) {
@@ -1044,11 +1005,9 @@ static bool hid_probe(struct tendril_interface *intf) {
     tendril_timer_init(&hid->retry, retry_work);
     tendril_interface_set_data(intf, hid);
 
-    /* BEGIN FreeBSD sys/dev/hid/hkbd.c */
-    /*
-     * As FreeBSD's sys/dev/hid/hkbd.c (BSD-2-Clause) does for HQ_KBD_BOOTPROTO
-     * keyboards.
-     */
+    // BEGIN FreeBSD sys/dev/hid/hkbd.c
+    // As FreeBSD's sys/dev/hid/hkbd.c (BSD-2-Clause) does for HQ_KBD_BOOTPROTO
+    // keyboards.
     if (desc_len == 0
      || (boot
       && ((hid_flags & TENDRIL_HID_BOOT_PROTOCOL) != 0
@@ -1056,7 +1015,7 @@ static bool hid_probe(struct tendril_interface *intf) {
         start_boot(hid);
         return true;
     }
-    /* END FreeBSD sys/dev/hid/hkbd.c */
+    // END FreeBSD sys/dev/hid/hkbd.c
     ctrl(
         hid, STEP_GET_REPORT_DESC,
         TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_INTERFACE,
@@ -1098,7 +1057,7 @@ static bool hid_suspend(struct tendril_interface *intf) {
         return true;
     }
     if (hid->step != STEP_RUNNING) {
-        /* Still setting the device up. */
+        // Still setting the device up.
         return false;
     }
     hid->suspended = true;
@@ -1134,9 +1093,7 @@ static struct tendril_driver hid_driver = {
     .resume = hid_resume
 };
 
-void tendril_hid_register(
-    const struct tendril_hid_callbacks *cb, uint32_t flags
-) {
+void tendril_hid_register(const struct tendril_hid_callbacks *cb, uint32_t flags) {
     callbacks = cb;
     hid_flags = flags;
     tendril_driver_register(&hid_driver);
@@ -1154,9 +1111,7 @@ bool tendril_hid_boot_protocol(struct tendril_hid *hid) {
     return hid->boot;
 }
 
-const struct tendril_hid_report_desc *tendril_hid_descriptor(
-    struct tendril_hid *hid
-) {
+const struct tendril_hid_report_desc *tendril_hid_descriptor(struct tendril_hid *hid) {
     return hid->rd;
 }
 
@@ -1168,12 +1123,10 @@ void *tendril_hid_user(struct tendril_hid *hid) {
     return hid->user;
 }
 
-/* Reports over the control pipe or the interrupt OUT endpoint */
+// Reports over the control pipe or the interrupt OUT endpoint
 
-/*
- * HID 1.11 5.6: a numbered report starts with its report ID byte, which the
- * driver adds or removes; the caller's buffer holds the rest.
- */
+// HID 1.11 5.6: a numbered report starts with its report ID byte, which the
+// driver adds or removes; the caller's buffer holds the rest.
 struct report_op {
     struct tendril_transfer xfer;
     void (*get_done)(void *ctx, int status, size_t actual);
@@ -1190,8 +1143,8 @@ static void report_op_done(struct tendril_transfer *xfer) {
     int st = xfer->status;
     if (op->get_done != NULL) {
         size_t n = xfer->actual > op->prefix
-            ? MIN(xfer->actual - op->prefix, op->size)
-            : 0;
+                 ? MIN(xfer->actual - op->prefix, op->size)
+                 : 0;
         memcpy(op->user_buf, op->buf + op->prefix, n);
         op->get_done(op->ctx, st, n);
     } else if (op->set_done != NULL) {
@@ -1245,7 +1198,7 @@ int tendril_hid_get_report(
     struct tendril_transfer *xfer = &op->xfer;
     tendril_transfer_init(xfer, tendril_device_ep0(hid->dev));
     xfer->setup.request_type = TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS
-        | TENDRIL_RECIP_INTERFACE;
+                             | TENDRIL_RECIP_INTERFACE;
     xfer->setup.request = TENDRIL_HID_REQ_GET_REPORT;
     xfer->setup.value = tendril_le16((uint16_t)(type << 8 | id));
     xfer->setup.index = tendril_le16(hid->intf->number);
@@ -1259,8 +1212,8 @@ int tendril_hid_get_report(
 }
 
 int tendril_hid_set_report(
-    struct tendril_hid *hid, int type, uint8_t id, const void *buf,
-    size_t size, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_hid *hid, int type, uint8_t id, const void *buf, size_t size,
+    void (*done)(void *ctx, int status), void *ctx
 ) {
     if (hid->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
@@ -1276,16 +1229,14 @@ int tendril_hid_set_report(
     op->set_done = done;
     op->ctx = ctx;
     struct tendril_transfer *xfer = &op->xfer;
-    /*
-     * HID 1.11 4.4: output reports go to the interrupt OUT endpoint if there
-     * is one.
-     */
+    // HID 1.11 4.4: output reports go to the interrupt OUT endpoint if there
+    // is one.
     if (type == TENDRIL_HID_OUTPUT && hid->out_ep != NULL) {
         tendril_transfer_init(xfer, hid->out_ep);
     } else {
         tendril_transfer_init(xfer, tendril_device_ep0(hid->dev));
         xfer->setup.request_type = TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS
-            | TENDRIL_RECIP_INTERFACE;
+                                 | TENDRIL_RECIP_INTERFACE;
         xfer->setup.request = TENDRIL_HID_REQ_SET_REPORT;
         xfer->setup.value = tendril_le16((uint16_t)(type << 8 | id));
         xfer->setup.index = tendril_le16(hid->intf->number);
@@ -1317,7 +1268,7 @@ int tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds) {
         return TENDRIL_ERR_NO_DEVICE;
     }
     if (hid->led_busy || hid->suspended) {
-        /* Sent once the current update finishes, or the device resumes. */
+        // Sent once the current update finishes, or the device resumes.
         hid->led_dirty = true;
         return TENDRIL_OK;
     }
@@ -1345,9 +1296,7 @@ int tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds) {
                 size_t n = usage & 0xffff;
                 if ((usage >> 16) == TENDRIL_HID_PAGE_LED && n >= 1
                  && n <= 5) {
-                    tendril_hid_field_set(
-                        g, hid->led_buf, size, e, (leds >> (n - 1)) & 1
-                    );
+                    tendril_hid_field_set(g, hid->led_buf, size, e, (leds >> (n - 1)) & 1);
                 }
             }
         }

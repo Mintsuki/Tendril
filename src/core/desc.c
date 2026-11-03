@@ -25,16 +25,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef __cplusplus
+#   error "this file is C, not C++"
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "../internal.h"
 #include <tendril/spec.h>
 
-/*
- * Returns the descriptor after `p`, or NULL at the end or on a malformed
- * length.
- */
+// Returns the descriptor after `p`, or NULL at the end or on a malformed
+// length.
 const uint8_t *tendril_desc_next(const uint8_t *p, const uint8_t *end) {
     if (p == NULL || end - p < 2 || p[0] < 2 || end - p < p[0]) {
         return NULL;
@@ -46,10 +48,8 @@ const uint8_t *tendril_desc_next(const uint8_t *p, const uint8_t *end) {
     return p;
 }
 
-/* Returns the first descriptor of `type` at or after `p`. */
-const uint8_t *tendril_desc_find(
-    const uint8_t *p, const uint8_t *end, int type
-) {
+// Returns the first descriptor of `type` at or after `p`.
+const uint8_t *tendril_desc_find(const uint8_t *p, const uint8_t *end, int type) {
     while (p != NULL) {
         if (end - p >= 2 && p[0] >= 2 && end - p >= p[0] && p[1] == type) {
             return p;
@@ -65,7 +65,7 @@ bool tendril_config_valid(const uint8_t *config, size_t size) {
      || config[0] < sizeof(struct tendril_config_descriptor)) {
         return false;
     }
-    /* Walk every descriptor; a bad length anywhere makes the rest unusable. */
+    // Walk every descriptor; a bad length anywhere makes the rest unusable.
     const uint8_t *end = config + size;
     const uint8_t *p = config;
     size_t walked = 0;

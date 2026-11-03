@@ -25,11 +25,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Ethernet adapters: the CDC Ethernet Control Model (CDC ECM 1.2) and Network
- * Control Model (CDC NCM 1.0 Errata 1), with the notifications of CDC 1.2, and
- * RNDIS ([MS-RNDIS] v20130118).
- */
+// Ethernet adapters: the CDC Ethernet Control Model (CDC ECM 1.2) and Network
+// Control Model (CDC NCM 1.0 Errata 1), with the notifications of CDC 1.2, and
+// RNDIS ([MS-RNDIS] v20130118).
 
 /*
  * Parts of this file are derived from FreeBSD's sys/dev/usb/net/if_urndis.c
@@ -130,6 +128,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#ifdef __cplusplus
+#   error "this file is C, not C++"
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -159,7 +161,7 @@
 #define NOTIFY_HEADER_LEN 8
 #define NOTIFY_BUF_SIZE 128
 
-/* CDC 1.2, 4.3 and 5.2.3 */
+// CDC 1.2, 4.3 and 5.2.3
 #define CDC_SUBCLASS_MDLM 0x0a
 #define CDC_SUBCLASS_ECM 0x06
 #define CDC_SUBCLASS_NCM 0x0d
@@ -174,7 +176,7 @@
     (TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE)
 #define REQ_IN (TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE)
 
-/* CDC ECM 1.2, 6.2, and CDC NCM 1.0 Errata 1, 6.2 */
+// CDC ECM 1.2, 6.2, and CDC NCM 1.0 Errata 1, 6.2
 #define SET_ETHERNET_MULTICAST_FILTERS 0x40
 #define SET_ETHERNET_PACKET_FILTER 0x43
 #define GET_NTB_PARAMETERS 0x80
@@ -182,15 +184,15 @@
 #define SET_NTB_INPUT_SIZE 0x86
 #define GET_MAX_DATAGRAM_SIZE 0x87
 
-/* CDC 1.2, 6.3 */
+// CDC 1.2, 6.3
 #define NOTIFY_NETWORK_CONNECTION 0x00
 #define NOTIFY_SPEED_CHANGE 0x2a
 
-/* bmNetworkCapabilities (CDC NCM 1.0 Errata 1, 5.2.1, Table 5-2) */
+// bmNetworkCapabilities (CDC NCM 1.0 Errata 1, 5.2.1, Table 5-2)
 #define NCM_CAP_PACKET_FILTER ((uint32_t)1 << 0)
 #define NCM_CAP_MAX_DATAGRAM ((uint32_t)1 << 3)
 
-/* CDC NCM 1.0 Errata 1, 3 and 6.2.1 */
+// CDC NCM 1.0 Errata 1, 3 and 6.2.1
 #define NTB_PARAMS_LEN 28
 #define NTB_FORMAT_32 ((uint32_t)1 << 1)
 #define NTB_SIZE_LIMIT 16384
@@ -208,11 +210,11 @@
 #define NDP16_MIN_LEN 16
 #define NDP16_ENTRY_LEN 4
 
-/* CDC 1.2, 6.2.1 and 6.2.2 */
+// CDC 1.2, 6.2.1 and 6.2.2
 #define SEND_ENCAPSULATED_COMMAND 0x00
 #define GET_ENCAPSULATED_RESPONSE 0x01
 
-/* [MS-RNDIS] v20130118, 2.2 */
+// [MS-RNDIS] v20130118, 2.2
 #define RNDIS_PACKET_MSG ((uint32_t)0x00000001)
 #define RNDIS_INITIALIZE_MSG ((uint32_t)0x00000002)
 #define RNDIS_HALT_MSG ((uint32_t)0x00000003)
@@ -232,33 +234,31 @@
 #define RNDIS_KEEPALIVE_CMPLT_LEN 16
 #define RNDIS_KEEPALIVE_LEN 12
 #define RNDIS_RESET_LEN 12
-/* Windows' KeepAliveTimer (3.1.2, footnote <16>). */
+// Windows' KeepAliveTimer (3.1.2, footnote <16>).
 #define RNDIS_KEEPALIVE_MS 5000
 #define RNDIS_PACKET_HEADER_LEN 44
-/* What Windows asks for in REMOTE_NDIS_INITIALIZE_MSG (footnote <3>). */
+// What Windows asks for in REMOTE_NDIS_INITIALIZE_MSG (footnote <3>).
 #define RNDIS_MAX_TRANSFER 16384
-/* BEGIN FreeBSD sys/dev/usb/net/if_urndis.c */
-/*
- * The largest frame FreeBSD's sys/dev/usb/net/if_urndis.c (ISC license)
- * accepts: MCLBYTES - ETHER_ALIGN.
- */
+// BEGIN FreeBSD sys/dev/usb/net/if_urndis.c
+// The largest frame FreeBSD's sys/dev/usb/net/if_urndis.c (ISC license)
+// accepts: MCLBYTES - ETHER_ALIGN.
 #define RNDIS_MAX_FRAME 2046
-/* END FreeBSD sys/dev/usb/net/if_urndis.c */
+// END FreeBSD sys/dev/usb/net/if_urndis.c
 #define RNDIS_MIN_FRAME 64
 #define RNDIS_MIN_TRANSFER (RNDIS_PACKET_HEADER_LEN + 60)
 #define RNDIS_MAX_MC 64
 #define RNDIS_RX_XFERS 8
 #define RNDIS_TX_XFERS 8
-/* Windows' ControlTimeoutTimer (3.1.2, footnote <17>). */
+// Windows' ControlTimeoutTimer (3.1.2, footnote <17>).
 #define RNDIS_TIMEOUT_MS 8000
 #define RNDIS_REREAD_MS 10
-/* BEGIN OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c */
-/* The response buffer of OpenBSD's and FreeBSD's if_urndis.c (ISC license). */
+// BEGIN OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c
+// The response buffer of OpenBSD's and FreeBSD's if_urndis.c (ISC license).
 #define RNDIS_RESPONSE_SIZE 1024
-/* END OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c */
+// END OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c
 
-/* BEGIN OpenBSD sys/dev/rndis.h */
-/* NDIS values, from OpenBSD's sys/dev/rndis.h (ISC license) */
+// BEGIN OpenBSD sys/dev/rndis.h
+// NDIS values, from OpenBSD's sys/dev/rndis.h (ISC license)
 #define OID_GEN_MAXIMUM_FRAME_SIZE ((uint32_t)0x00010106)
 #define OID_GEN_LINK_SPEED ((uint32_t)0x00010107)
 #define OID_GEN_CURRENT_PACKET_FILTER ((uint32_t)0x0001010e)
@@ -273,35 +273,35 @@
 #define NDIS_PACKET_TYPE_ALL_MULTICAST ((uint32_t)0x04)
 #define NDIS_PACKET_TYPE_BROADCAST ((uint32_t)0x08)
 #define NDIS_PACKET_TYPE_PROMISCUOUS ((uint32_t)0x20)
-/* END OpenBSD sys/dev/rndis.h */
+// END OpenBSD sys/dev/rndis.h
 
-/* Device quirks (clean-room specification). */
+// Device quirks (clean-room specification).
 #define QUIRK_NO_UNION ((uint32_t)1 << 0)
 #define QUIRK_CRC32 ((uint32_t)1 << 1)
 
-/* BEGIN FreeBSD sys/dev/usb/usbdevs */
-/* Names as FreeBSD's sys/dev/usb/usbdevs (BSD-2-Clause) gives the IDs. */
+// BEGIN FreeBSD sys/dev/usb/usbdevs
+// Names as FreeBSD's sys/dev/usb/usbdevs (BSD-2-Clause) gives the IDs.
 static const struct tendril_id_quirk net_quirks[] = {
-    { 0x0402, 0x5632, 0x0000, 0xffff, QUIRK_NO_UNION }, /* ACERLABS M5632 */
-    { 0x0bb2, 0x6098, 0x0000, 0xffff, QUIRK_NO_UNION }, /* AMBIT NTL_250 */
-    { 0x049f, 0x505a, 0x0000, 0xffff, QUIRK_NO_UNION }, /* COMPAQ IPAQLINUX */
-    { 0x0e7e, 0x1001, 0x0000, 0xffff, QUIRK_NO_UNION }, /* GMATE YP3X00 */
-    /* MOTOROLA2 USBLAN */
+    { 0x0402, 0x5632, 0x0000, 0xffff, QUIRK_NO_UNION }, // ACERLABS M5632
+    { 0x0bb2, 0x6098, 0x0000, 0xffff, QUIRK_NO_UNION }, // AMBIT NTL_250
+    { 0x049f, 0x505a, 0x0000, 0xffff, QUIRK_NO_UNION }, // COMPAQ IPAQLINUX
+    { 0x0e7e, 0x1001, 0x0000, 0xffff, QUIRK_NO_UNION }, // GMATE YP3X00
+    // MOTOROLA2 USBLAN
     { 0x22b8, 0x600c, 0x0000, 0xffff, QUIRK_CRC32 | QUIRK_NO_UNION },
-    /* MOTOROLA2 USBLAN2 */
+    // MOTOROLA2 USBLAN2
     { 0x22b8, 0x6027, 0x0000, 0xffff, QUIRK_CRC32 | QUIRK_NO_UNION },
-    { 0x067b, 0x2501, 0x0000, 0xffff, QUIRK_NO_UNION }, /* PROLIFIC PL2501 */
-    { 0x04dd, 0x8004, 0x0000, 0xffff, QUIRK_CRC32 }, /* SHARP SL5500 */
-    /* SHARP SLA300 */
+    { 0x067b, 0x2501, 0x0000, 0xffff, QUIRK_NO_UNION }, // PROLIFIC PL2501
+    { 0x04dd, 0x8004, 0x0000, 0xffff, QUIRK_CRC32 }, // SHARP SL5500
+    // SHARP SLA300
     { 0x04dd, 0x8005, 0x0000, 0xffff, QUIRK_CRC32 | QUIRK_NO_UNION },
-    /* SHARP SL5600 */
+    // SHARP SL5600
     { 0x04dd, 0x8006, 0x0000, 0xffff, QUIRK_CRC32 | QUIRK_NO_UNION },
-    /* SHARP SLC700 */
+    // SHARP SLC700
     { 0x04dd, 0x8007, 0x0000, 0xffff, QUIRK_CRC32 | QUIRK_NO_UNION },
-    /* SHARP SLC750 */
+    // SHARP SLC750
     { 0x04dd, 0x9031, 0x0000, 0xffff, QUIRK_CRC32 | QUIRK_NO_UNION }
 };
-/* END FreeBSD sys/dev/usb/usbdevs */
+// END FreeBSD sys/dev/usb/usbdevs
 
 #define STEP_MAC 0
 #define STEP_NTB_PARAMS 1
@@ -312,20 +312,18 @@ static const struct tendril_id_quirk net_quirks[] = {
 #define STEP_FILTER 6
 #define STEP_DONE 7
 
-/* A frame queued by tendril_net_send(). */
+// A frame queued by tendril_net_send().
 struct net_frame {
     struct tendril_list node;
     const uint8_t *data;
     size_t len;
     void (*done)(void *ctx, int status);
     void *ctx;
-    /* What `done` reports, once the frame is finished. */
+    // What `done` reports, once the frame is finished.
     int status;
 };
 
-/*
- * A queued control request: a class request of the API, or an RNDIS message.
- */
+// A queued control request: a class request of the API, or an RNDIS message.
 struct net_op {
     struct tendril_list node;
     uint8_t request;
@@ -334,17 +332,13 @@ struct net_op {
     size_t length;
     void (*done)(void *ctx, int status);
     void *ctx;
-    /*
-     * RNDIS: `data` holds the message, answered by its completion unless
-     * no_reply.
-     */
+    // RNDIS: `data` holds the message, answered by its completion unless
+    // no_reply.
     uint32_t rndis_type;
     uint32_t rndis_id;
     bool no_reply;
-    /* Reads the completion, valid only during the call, before `done` runs. */
-    void (*answer)(
-        struct tendril_net *net, int status, const uint8_t *msg, size_t len
-    );
+    // Reads the completion, valid only during the call, before `done` runs.
+    void (*answer)(struct tendril_net *net, int status, const uint8_t *msg, size_t len);
 };
 
 struct net_rx {
@@ -352,16 +346,16 @@ struct net_rx {
     struct tendril_transfer xfer;
     uint8_t *buf;
     bool busy;
-    /* Failed, and resubmitted by the retry timer. */
+    // Failed, and resubmitted by the retry timer.
     bool waiting;
 };
 
 struct net_tx {
     struct tendril_net *net;
     struct tendril_transfer xfer;
-    /* The NTB (NCM) or the frame and its CRC (ECM with CRC32), else NULL. */
+    // The NTB (NCM) or the frame and its CRC (ECM with CRC32), else NULL.
     uint8_t *buf;
-    /* The frames the transfer carries, in queue order. */
+    // The frames the transfer carries, in queue order.
     struct tendril_list frames;
     bool busy;
 };
@@ -372,7 +366,7 @@ struct tendril_net {
     struct tendril_interface *ctrl_intf;
     struct tendril_interface *data_intf;
     int kind;
-    /* Matched by the Huawei rule: carries on as ECM without NTB parameters. */
+    // Matched by the Huawei rule: carries on as ECM without NTB parameters.
     bool vendor_ncm;
     bool crc32;
     size_t data_alt_index;
@@ -382,7 +376,7 @@ struct tendril_net {
     struct tendril_endpoint *intr_ep;
     void *user;
 
-    /* From the functional descriptors. */
+    // From the functional descriptors.
     uint8_t mac_string;
     size_t mc_filters;
     uint8_t ncm_caps;
@@ -390,7 +384,7 @@ struct tendril_net {
     uint8_t mac[MAC_LEN];
     size_t max_frame;
 
-    /* NCM parameters, from GET_NTB_PARAMETERS. */
+    // NCM parameters, from GET_NTB_PARAMETERS.
     uint16_t ntb_formats;
     size_t ntb_in_max;
     size_t ntb_out_max;
@@ -403,12 +397,12 @@ struct tendril_net {
     size_t ntb_out_datagrams;
     uint16_t ntb_sequence;
 
-    /* Setup, and the control transfer it shares with the operations. */
+    // Setup, and the control transfer it shares with the operations.
     int step;
     bool stopped;
     bool ready;
     bool attached;
-    /* Between the suspend() and resume() hooks: nothing is submitted. */
+    // Between the suspend() and resume() hooks: nothing is submitted.
     bool suspended;
     struct tendril_transfer ctrl;
     uint8_t ctrl_buf[NTB_PARAMS_LEN];
@@ -428,7 +422,7 @@ struct tendril_net {
     size_t intr_asked;
     uint8_t notify_buf[NOTIFY_BUF_SIZE];
     size_t notify_len;
-    /* What is left of a notification too long for the buffer. */
+    // What is left of a notification too long for the buffer.
     size_t notify_skip;
     bool intr_busy;
     bool intr_waiting;
@@ -439,14 +433,14 @@ struct tendril_net {
     size_t num_tx;
     struct net_tx tx[MAX_XFERS];
     size_t tx_buf_size;
-    /* Frames not yet handed to a transfer. */
+    // Frames not yet handed to a transfer.
     struct tendril_list frames;
     bool tx_clearing;
 
-    /* Resubmits failed receive and interrupt transfers. */
+    // Resubmits failed receive and interrupt transfers.
     struct tendril_timer retry_timer;
 
-    /* RNDIS, from REMOTE_NDIS_INITIALIZE_CMPLT and the filters last set. */
+    // RNDIS, from REMOTE_NDIS_INITIALIZE_CMPLT and the filters last set.
     uint32_t rndis_next_id;
     size_t rndis_max_packets;
     size_t rndis_max_transfer;
@@ -455,19 +449,17 @@ struct tendril_net {
     uint8_t rndis_mc[RNDIS_MAX_MC * MAC_LEN];
     size_t rndis_mc_count;
     bool rndis_mc_set;
-    /* Malformed REMOTE_NDIS_PACKET_MSG messages received, for the log. */
+    // Malformed REMOTE_NDIS_PACKET_MSG messages received, for the log.
     size_t rndis_rx_bad;
-    /*
-     * The control channel is in an exchange (the outstanding request's, or
-     * unsolicited reads without one), and a transfer of it is in flight.
-     */
+    // The control channel is in an exchange (the outstanding request's, or
+    // unsolicited reads without one), and a transfer of it is in flight.
     bool ctrl_busy;
     bool ctrl_pending;
     bool rndis_timed_out;
     struct tendril_timer rndis_read_timer;
     struct tendril_timer rndis_timeout_timer;
     struct tendril_timer rndis_keepalive_timer;
-    /* When a receive transfer completed or a control message came last. */
+    // When a receive transfer completed or a control message came last.
     uint64_t rndis_last_rx;
     uint8_t rndis_buf[RNDIS_RESPONSE_SIZE];
 
@@ -482,7 +474,7 @@ static uint16_t get_le16(const uint8_t *p) {
 
 static uint32_t get_le32(const uint8_t *p) {
     return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16
-        | (uint32_t)p[3] << 24;
+         | (uint32_t)p[3] << 24;
 }
 
 static void put_le16(uint8_t *p, uint16_t v) {
@@ -497,10 +489,8 @@ static void put_le32(uint8_t *p, uint32_t v) {
     p[3] = (uint8_t)(v >> 24);
 }
 
-/*
- * IEEE 802.3: reflected polynomial 0xedb88320, preset to all ones, result
- * complemented.
- */
+// IEEE 802.3: reflected polynomial 0xedb88320, preset to all ones, result
+// complemented.
 static uint32_t ether_crc32(const uint8_t *data, size_t len) {
     uint32_t crc = (uint32_t)0xffffffff;
 
@@ -529,10 +519,8 @@ static void rndis_setup(struct tendril_net *net);
 static int rndis_send(struct tendril_net *net, struct net_op *op);
 static void rndis_poll(struct tendril_net *net);
 
-/*
- * The first class-specific interface descriptor of `subtype` at least
- * `min_len` bytes long.
- */
+// The first class-specific interface descriptor of `subtype` at least
+// `min_len` bytes long.
 static const uint8_t *find_cs_desc(
     const uint8_t *p, const uint8_t *end, int subtype, size_t min_len
 ) {
@@ -566,10 +554,8 @@ static bool has_bulk_pair(const uint8_t *p, const uint8_t *end) {
     return in && out;
 }
 
-/*
- * The first alternate setting with a bulk IN and a bulk OUT endpoint (CDC ECM
- * 1.2, 3.3; CDC NCM 1.0 Errata 1, 5.3).
- */
+// The first alternate setting with a bulk IN and a bulk OUT endpoint (CDC ECM
+// 1.2, 3.3; CDC NCM 1.0 Errata 1, 5.3).
 static bool find_data_alt(struct tendril_interface *intf, size_t *alt) {
     for (size_t a = 0; a < intf->num_alts; a++) {
         const uint8_t *p = (const uint8_t *)intf->alts[a];
@@ -582,8 +568,8 @@ static bool find_data_alt(struct tendril_interface *intf, size_t *alt) {
 }
 
 static bool match_class(
-    struct tendril_device *dev, const struct tendril_interface_descriptor *id,
-    int *kind, bool *vendor_ncm
+    struct tendril_device *dev, const struct tendril_interface_descriptor *id, int *kind,
+    bool *vendor_ncm
 ) {
     if (id->interface_class == TENDRIL_CLASS_CDC) {
         switch (id->interface_subclass) {
@@ -596,11 +582,9 @@ static bool match_class(
                 return true;
             }
             case CDC_SUBCLASS_MDLM: {
-                /*
-                 * Some handheld devices running Linux present their Ethernet
-                 * function so, with ECM's descriptors and protocol (clean-room
-                 * specification).
-                 */
+                // Some handheld devices running Linux present their Ethernet
+                // function so, with ECM's descriptors and protocol (clean-room
+                // specification).
                 *kind = TENDRIL_NET_ECM;
                 return true;
             }
@@ -610,7 +594,7 @@ static bool match_class(
         }
     }
 
-    /* Huawei NCM functions under vendor codes (clean-room specification). */
+    // Huawei NCM functions under vendor codes (clean-room specification).
     if (tendril_le16(dev->desc.vendor_id) == VENDOR_HUAWEI
      && id->interface_class == TENDRIL_CLASS_VENDOR) {
         uint8_t sub = id->interface_subclass;
@@ -625,15 +609,13 @@ static bool match_class(
     return false;
 }
 
-static struct tendril_interface *find_data_interface(
-    struct tendril_interface *intf
-) {
+static struct tendril_interface *find_data_interface(struct tendril_interface *intf) {
     size_t size = 0;
     const uint8_t *desc = tendril_interface_descriptors(intf, &size);
     const uint8_t *un = NULL;
     struct tendril_interface *data = NULL;
 
-    /* Union Functional Descriptor (CDC 1.2, 5.2.3.2, Table 16) */
+    // Union Functional Descriptor (CDC 1.2, 5.2.3.2, Table 16)
     if (desc != NULL) {
         un = find_cs_desc(desc, desc + size, CDC_DESC_UNION, 5);
     }
@@ -641,52 +623,42 @@ static struct tendril_interface *find_data_interface(
         data = tendril_device_find_interface(intf->dev, un[4]);
     }
 
-    /* BEGIN OpenBSD sys/dev/usb/if_uncm.c */
-    /*
-     * An IAD may group the two interfaces instead (CDC NCM 1.0 Errata 1, 7.4);
-     * OpenBSD's sys/dev/usb/if_uncm.c (ISC license) falls back the same way.
-     */
+    // BEGIN OpenBSD sys/dev/usb/if_uncm.c
+    // An IAD may group the two interfaces instead (CDC NCM 1.0 Errata 1, 7.4);
+    // OpenBSD's sys/dev/usb/if_uncm.c (ISC license) falls back the same way.
     if (data == NULL && intf->iad != NULL
      && intf->iad->first_interface == intf->number
      && intf->iad->interface_count >= 2 && intf->number < 0xff) {
-        data = tendril_device_find_interface(
-            intf->dev, (uint8_t)(intf->number + 1)
-        );
+        data = tendril_device_find_interface(intf->dev, (uint8_t)(intf->number + 1));
     }
-    /* END OpenBSD sys/dev/usb/if_uncm.c */
+    // END OpenBSD sys/dev/usb/if_uncm.c
     return data;
 }
 
-/* BEGIN OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c */
-/* RNDIS control interfaces: class, subclass, and protocol. */
+// BEGIN OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c
+// RNDIS control interfaces: class, subclass, and protocol.
 static const uint8_t rndis_classes[][3] = {
-    /*
-     * CDC ACM with a vendor protocol, as OpenBSD's and FreeBSD's if_urndis.c
-     * match it
-     */
+    // CDC ACM with a vendor protocol, as OpenBSD's and FreeBSD's if_urndis.c
+    // match it
     { 0x02, 0x02, 0xff },
-    /* Wireless Controller, RF, RNDIS, as both match it */
+    // Wireless Controller, RF, RNDIS, as both match it
     { 0xe0, 0x01, 0x03 },
-    /* Miscellaneous, Sync, ActiveSync, as both match it */
+    // Miscellaneous, Sync, ActiveSync, as both match it
     { 0xef, 0x01, 0x01 },
-    /* Miscellaneous, RNDIS, Ethernet, as both match it */
+    // Miscellaneous, RNDIS, Ethernet, as both match it
     { 0xef, 0x04, 0x01 },
-    /* Novatel Wireless 8800/8000/etc, as FreeBSD's if_urndis.c matches it */
+    // Novatel Wireless 8800/8000/etc, as FreeBSD's if_urndis.c matches it
     { 0xef, 0xef, 0x03 }
 };
 
-/*
- * The table follows OpenBSD's sys/dev/usb/if_urndis.c and FreeBSD's
- * sys/dev/usb/net/if_urndis.c (ISC license).
- */
+// The table follows OpenBSD's sys/dev/usb/if_urndis.c and FreeBSD's
+// sys/dev/usb/net/if_urndis.c (ISC license).
 static bool match_rndis(
     struct tendril_device *dev, const struct tendril_interface_descriptor *id
 ) {
-    /*
-     * FUJITSUCOMP VIRTETH advertises RNDIS and CDC Ethernet, but its RNDIS
-     * does not work: OpenBSD's sys/dev/usb/if_urndis.c (ISC license) excludes
-     * it, leaving its ECM function.
-     */
+    // FUJITSUCOMP VIRTETH advertises RNDIS and CDC Ethernet, but its RNDIS
+    // does not work: OpenBSD's sys/dev/usb/if_urndis.c (ISC license) excludes
+    // it, leaving its ECM function.
     if (tendril_le16(dev->desc.vendor_id) == 0x0430
      && tendril_le16(dev->desc.product_id) == 0xa4a2) {
         return false;
@@ -700,18 +672,14 @@ static bool match_rndis(
     }
     return false;
 }
-/* END OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c */
+// END OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c
 
-/* BEGIN FreeBSD sys/dev/usb/net/if_urndis.c */
-/*
- * An RNDIS function's data interface: the one the Union Functional Descriptor
- * names (CDC 1.2, 5.2.3.2), else the Call Management Functional Descriptor's
- * bDataInterface, else the next interface, the last two as FreeBSD's
- * sys/dev/usb/net/if_urndis.c (ISC license) finds it.
- */
-static struct tendril_interface *find_rndis_data_interface(
-    struct tendril_interface *intf
-) {
+// BEGIN FreeBSD sys/dev/usb/net/if_urndis.c
+// An RNDIS function's data interface: the one the Union Functional Descriptor
+// names (CDC 1.2, 5.2.3.2), else the Call Management Functional Descriptor's
+// bDataInterface, else the next interface, the last two as FreeBSD's
+// sys/dev/usb/net/if_urndis.c (ISC license) finds it.
+static struct tendril_interface *find_rndis_data_interface(struct tendril_interface *intf) {
     size_t size = 0;
     const uint8_t *desc = tendril_interface_descriptors(intf, &size);
     const uint8_t *fd = NULL;
@@ -731,7 +699,7 @@ static struct tendril_interface *find_rndis_data_interface(
     }
     return tendril_device_find_interface(intf->dev, (uint8_t)number);
 }
-/* END FreeBSD sys/dev/usb/net/if_urndis.c */
+// END FreeBSD sys/dev/usb/net/if_urndis.c
 
 static void read_functional(struct tendril_net *net) {
     struct tendril_device *dev = net->dev;
@@ -740,22 +708,19 @@ static void read_functional(struct tendril_net *net) {
     const uint8_t *eth = NULL;
     const uint8_t *ncm = NULL;
 
-    /* Ethernet Networking Functional Descriptor (CDC ECM 1.2, 5.4, Table 3) */
+    // Ethernet Networking Functional Descriptor (CDC ECM 1.2, 5.4, Table 3)
     if (desc != NULL) {
         eth = find_cs_desc(desc, desc + size, CDC_DESC_ETHERNET, 13);
         ncm = find_cs_desc(desc, desc + size, CDC_DESC_NCM, 6);
     }
     if (eth == NULL && dev->active_config >= 0
      && (size_t)dev->active_config < dev->num_configs) {
-        /*
-         * Some devices put it elsewhere in the configuration (clean-room
-         * specification).
-         */
+        // Some devices put it elsewhere in the configuration (clean-room
+        // specification).
         const uint8_t *config = dev->configs[dev->active_config];
         if (config != NULL) {
             eth = find_cs_desc(
-                config, config + dev->config_sizes[dev->active_config],
-                CDC_DESC_ETHERNET, 13
+                config, config + dev->config_sizes[dev->active_config], CDC_DESC_ETHERNET, 13
             );
         }
     }
@@ -770,15 +735,15 @@ static void read_functional(struct tendril_net *net) {
         }
     }
 
-    /* NCM Functional Descriptor (CDC NCM 1.0 Errata 1, 5.2.1, Table 5-2) */
+    // NCM Functional Descriptor (CDC NCM 1.0 Errata 1, 5.2.1, Table 5-2)
     if (ncm != NULL) {
         net->ncm_caps = ncm[5];
     }
 }
 
 static int ctrl_submit(
-    struct tendril_net *net, uint8_t type, uint8_t request, uint16_t value,
-    void *data, size_t length, void (*callback)(struct tendril_transfer *xfer)
+    struct tendril_net *net, uint8_t type, uint8_t request, uint16_t value, void *data,
+    size_t length, void (*callback)(struct tendril_transfer *xfer)
 ) {
     struct tendril_transfer *xfer = &net->ctrl;
 
@@ -809,10 +774,8 @@ static int hex_value(char c) {
     return -1;
 }
 
-/*
- * iMACAddress: 12 hexadecimal digits, most significant nibble first (CDC ECM
- * 1.2, 5.4).
- */
+// iMACAddress: 12 hexadecimal digits, most significant nibble first (CDC ECM
+// 1.2, 5.4).
 static bool parse_mac(struct tendril_net *net) {
     uint8_t mac[MAC_LEN];
     uint8_t any = 0;
@@ -837,15 +800,13 @@ static bool parse_mac(struct tendril_net *net) {
     return true;
 }
 
-/* BEGIN OpenBSD sys/dev/usb/if_uncm.c */
-/*
- * A locally administered unicast address. OpenBSD's sys/dev/usb/if_uncm.c (ISC
- * license) also replaces missing, multicast, and all-zero addresses.
- */
+// BEGIN OpenBSD sys/dev/usb/if_uncm.c
+// A locally administered unicast address. OpenBSD's sys/dev/usb/if_uncm.c (ISC
+// license) also replaces missing, multicast, and all-zero addresses.
 static void make_up_mac(struct tendril_net *net) {
     uint64_t now = tendril_now();
     uint32_t mix = ((uint32_t)now ^ (uint32_t)(now >> 32))
-        * (uint32_t)0x9e3779b1;
+                 * (uint32_t)0x9e3779b1;
     const uint8_t *mac = net->mac;
 
     net->mac[0] = 0x02;
@@ -858,18 +819,16 @@ static void make_up_mac(struct tendril_net *net) {
         mac[4], mac[5]
     );
 }
-/* END OpenBSD sys/dev/usb/if_uncm.c */
+// END OpenBSD sys/dev/usb/if_uncm.c
 
 static bool power_of_two(uint32_t v) {
     return v != 0 && (v & (v - 1)) == 0;
 }
 
-/* BEGIN OpenBSD sys/dev/usb/if_uncm.c */
-/*
- * GET_NTB_PARAMETERS (CDC NCM 1.0 Errata 1, 6.2.1, Table 6-3), used as
- * OpenBSD's sys/dev/usb/if_uncm.c (ISC license, uncm_ntb_setup) does unless
- * noted.
- */
+// BEGIN OpenBSD sys/dev/usb/if_uncm.c
+// GET_NTB_PARAMETERS (CDC NCM 1.0 Errata 1, 6.2.1, Table 6-3), used as
+// OpenBSD's sys/dev/usb/if_uncm.c (ISC license, uncm_ntb_setup) does unless
+// noted.
 static bool ntb_params(struct tendril_net *net) {
     const uint8_t *p = net->ctrl_buf;
     uint32_t in_max = get_le32(p + 4);
@@ -879,7 +838,7 @@ static bool ntb_params(struct tendril_net *net) {
     uint32_t align = get_le16(p + 24);
     uint32_t datagrams = get_le16(p + 26);
 
-    /* This threshold is this implementation's own. */
+    // This threshold is this implementation's own.
     if (in_max < NTB_MIN_SIZE || out_max < NTB_MIN_SIZE) {
         LOG_WARN(
             "net: interface %u: NTB sizes %u and %u are too small",
@@ -900,12 +859,12 @@ static bool ntb_params(struct tendril_net *net) {
     if (remainder >= divisor) {
         remainder = 0;
     }
-    /* The cap of 32 is this implementation's own. */
+    // The cap of 32 is this implementation's own.
     if (datagrams == 0 || datagrams > NTB_MAX_DATAGRAMS) {
         datagrams = NTB_MAX_DATAGRAMS;
     }
 
-    /* Room for the NTH16, both paddings, and an NDP16 with one datagram. */
+    // Room for the NTH16, both paddings, and an NDP16 with one datagram.
     size_t overhead = NTH16_LEN + (divisor - 1) + (align - 1) + NDP16_MIN_LEN;
     if (out_size < overhead + NTB_MIN_FRAME_ROOM) {
         LOG_WARN(
@@ -928,7 +887,7 @@ static bool ntb_params(struct tendril_net *net) {
     net->max_frame = MIN(net->max_frame, net->ntb_frame_cap);
     return true;
 }
-/* END OpenBSD sys/dev/usb/if_uncm.c */
+// END OpenBSD sys/dev/usb/if_uncm.c
 
 static bool alloc_buffers(struct tendril_net *net) {
     if (net->kind == TENDRIL_NET_NCM) {
@@ -937,16 +896,12 @@ static bool alloc_buffers(struct tendril_net *net) {
         net->rx_buf_size = net->ntb_in_size;
         net->tx_buf_size = net->ntb_out_size;
     } else if (net->kind == TENDRIL_NET_RNDIS) {
-        /*
-         * No transfer from the device exceeds what REMOTE_NDIS_INITIALIZE_MSG
-         * asked for.
-         */
+        // No transfer from the device exceeds what REMOTE_NDIS_INITIALIZE_MSG
+        // asked for.
         net->num_rx = RNDIS_RX_XFERS;
         net->num_tx = RNDIS_TX_XFERS;
         net->rx_buf_size = RNDIS_MAX_TRANSFER;
-        net->tx_buf_size = MIN(
-            (size_t)net->rndis_max_transfer, (size_t)RNDIS_MAX_TRANSFER
-        );
+        net->tx_buf_size = MIN((size_t)net->rndis_max_transfer, (size_t)RNDIS_MAX_TRANSFER);
     } else {
         size_t len = net->max_frame;
         size_t packet = net->in_ep->max_packet;
@@ -982,10 +937,8 @@ static bool alloc_buffers(struct tendril_net *net) {
     return true;
 }
 
-/*
- * The data interface's bulk endpoints, and the control interface's optional
- * notification endpoint.
- */
+// The data interface's bulk endpoints, and the control interface's optional
+// notification endpoint.
 static bool find_endpoints(struct tendril_net *net) {
     net->in_ep = tendril_interface_find_endpoint(
         net->data_intf, TENDRIL_ENDPOINT_XFER_BULK, TENDRIL_DIR_IN
@@ -1001,7 +954,7 @@ static bool find_endpoints(struct tendril_net *net) {
 
 static void setup_run(struct tendril_net *net);
 
-/* Setup stops; the adapter stays claimed, inert, until disconnect. */
+// Setup stops; the adapter stays claimed, inert, until disconnect.
 static void setup_fail(struct tendril_net *net, const char *what, int status) {
     net->stopped = true;
     if (status != TENDRIL_ERR_NO_DEVICE) {
@@ -1053,24 +1006,18 @@ static void setup_result(struct tendril_net *net, int status, size_t actual) {
             break;
         }
         case STEP_NTB_FORMAT: {
-            /*
-             * A failure is harmless: alternate setting 0 selected NTB-16
-             * already (CDC NCM 1.0 Errata 1, 7.2).
-             */
+            // A failure is harmless: alternate setting 0 selected NTB-16
+            // already (CDC NCM 1.0 Errata 1, 7.2).
             setup_goto(net, STEP_NTB_INPUT_SIZE);
             break;
         }
         case STEP_NTB_INPUT_SIZE: {
             if (status != TENDRIL_OK) {
-                /* BEGIN OpenBSD sys/dev/usb/if_uncm.c */
-                /*
-                 * Refused: keep the function's maximum, as OpenBSD's if_uncm.c
-                 * does, within NTB-16's limit.
-                 */
-                net->ntb_in_size = MIN(
-                    net->ntb_in_max, (uint32_t)NTB16_MAX_SIZE
-                );
-                /* END OpenBSD sys/dev/usb/if_uncm.c */
+                // BEGIN OpenBSD sys/dev/usb/if_uncm.c
+                // Refused: keep the function's maximum, as OpenBSD's if_uncm.c
+                // does, within NTB-16's limit.
+                net->ntb_in_size = MIN(net->ntb_in_max, (uint32_t)NTB16_MAX_SIZE);
+                // END OpenBSD sys/dev/usb/if_uncm.c
             }
             setup_goto(net, STEP_MAX_DATAGRAM);
             break;
@@ -1087,22 +1034,18 @@ static void setup_result(struct tendril_net *net, int status, size_t actual) {
         }
         case STEP_DATA_ALT: {
             if (status != TENDRIL_OK) {
-                setup_fail(
-                    net, "selecting the data alternate setting", status
-                );
+                setup_fail(net, "selecting the data alternate setting", status);
                 break;
             }
             if (!find_endpoints(net)) {
-                setup_fail(
-                    net, "finding the bulk endpoints", TENDRIL_ERR_UNSUPPORTED
-                );
+                setup_fail(net, "finding the bulk endpoints", TENDRIL_ERR_UNSUPPORTED);
                 break;
             }
             setup_goto(net, STEP_FILTER);
             break;
         }
         case STEP_FILTER: {
-            /* A failure is ignored. */
+            // A failure is ignored.
             setup_goto(net, STEP_DONE);
             break;
         }
@@ -1124,8 +1067,7 @@ static void setup_async_done(void *ctx, int status) {
 }
 
 static void setup_request(
-    struct tendril_net *net, uint8_t type, uint8_t request, uint16_t value,
-    size_t length
+    struct tendril_net *net, uint8_t type, uint8_t request, uint16_t value, size_t length
 ) {
     void *buf = NULL;
     int status;
@@ -1133,9 +1075,7 @@ static void setup_request(
     if (length != 0) {
         buf = net->ctrl_buf;
     }
-    status = ctrl_submit(
-        net, type, request, value, buf, length, setup_ctrl_done
-    );
+    status = ctrl_submit(net, type, request, value, buf, length, setup_ctrl_done);
     if (status != TENDRIL_OK) {
         setup_result(net, status, 0);
     }
@@ -1172,10 +1112,7 @@ static void setup_finish(struct tendril_net *net) {
     if (net->kind == TENDRIL_NET_RNDIS) {
         net->rndis_last_rx = tendril_now();
         hc_lock(net->hc);
-        tendril_timer_arm(
-            net->hc, &net->rndis_keepalive_timer,
-            RNDIS_KEEPALIVE_MS * NS_PER_MS
-        );
+        tendril_timer_arm(net->hc, &net->rndis_keepalive_timer, RNDIS_KEEPALIVE_MS * NS_PER_MS);
         hc_unlock(net->hc);
     }
     LOG_INFO(
@@ -1187,7 +1124,7 @@ static void setup_finish(struct tendril_net *net) {
         net_callbacks->attach(net);
     }
     if (net->kind == TENDRIL_NET_RNDIS && net_callbacks->link != NULL) {
-        /* The state queried during setup. */
+        // The state queried during setup.
         net_callbacks->link(net, net->link_up, net->rx_bps, net->tx_bps);
     }
 
@@ -1197,11 +1134,9 @@ static void setup_finish(struct tendril_net *net) {
     op_kick(net);
 }
 
-/*
- * Each step starts the next from its completion. The data interface is in
- * alternate setting 0, which reset the function's network state (CDC ECM 1.2,
- * 3.3; CDC NCM 1.0 Errata 1, 7.2).
- */
+// Each step starts the next from its completion. The data interface is in
+// alternate setting 0, which reset the function's network state (CDC ECM 1.2,
+// 3.3; CDC NCM 1.0 Errata 1, 7.2).
 static void setup_run(struct tendril_net *net) {
     int status;
 
@@ -1213,8 +1148,8 @@ static void setup_run(struct tendril_net *net) {
                 break;
             }
             status = tendril_device_read_string(
-                net->dev, net->mac_string, net->mac_str, sizeof(net->mac_str),
-                setup_async_done, net
+                net->dev, net->mac_string, net->mac_str, sizeof(net->mac_str), setup_async_done,
+                net
             );
             if (status != TENDRIL_OK) {
                 setup_result(net, status, 0);
@@ -1223,19 +1158,15 @@ static void setup_run(struct tendril_net *net) {
         }
         case STEP_NTB_PARAMS: {
             if (net->kind == TENDRIL_NET_NCM) {
-                setup_request(
-                    net, REQ_IN, GET_NTB_PARAMETERS, 0, NTB_PARAMS_LEN
-                );
+                setup_request(net, REQ_IN, GET_NTB_PARAMETERS, 0, NTB_PARAMS_LEN);
             } else {
                 setup_goto(net, STEP_DATA_ALT);
             }
             break;
         }
         case STEP_NTB_FORMAT: {
-            /*
-             * NTB-16. Forbidden for functions without NTB-32, and only valid
-             * in alternate setting 0 (CDC NCM 1.0 Errata 1, 6.2.5).
-             */
+            // NTB-16. Forbidden for functions without NTB-32, and only valid
+            // in alternate setting 0 (CDC NCM 1.0 Errata 1, 6.2.5).
             if ((net->ntb_formats & NTB_FORMAT_32) != 0) {
                 setup_request(net, REQ_OUT, SET_NTB_FORMAT, 0, 0);
             } else {
@@ -1244,11 +1175,9 @@ static void setup_run(struct tendril_net *net) {
             break;
         }
         case STEP_NTB_INPUT_SIZE: {
-            /*
-             * The 4-byte form is valid whatever D5 says, and the host picks
-             * from 2048 to the function's maximum (CDC NCM 1.0 Errata 1,
-             * 6.2.7, Table 6-4).
-             */
+            // The 4-byte form is valid whatever D5 says, and the host picks
+            // from 2048 to the function's maximum (CDC NCM 1.0 Errata 1,
+            // 6.2.7, Table 6-4).
             if (net->ntb_in_max > NTB_SIZE_LIMIT) {
                 put_le32(net->ctrl_buf, NTB_SIZE_LIMIT);
                 setup_request(net, REQ_OUT, SET_NTB_INPUT_SIZE, 0, 4);
@@ -1258,10 +1187,8 @@ static void setup_run(struct tendril_net *net) {
             break;
         }
         case STEP_MAX_DATAGRAM: {
-            /*
-             * The host must read or set it (CDC NCM 1.0 Errata 1, 6.2.8 and
-             * 7.2).
-             */
+            // The host must read or set it (CDC NCM 1.0 Errata 1, 6.2.8 and
+            // 7.2).
             if ((net->ncm_caps & NCM_CAP_MAX_DATAGRAM) != 0) {
                 setup_request(net, REQ_IN, GET_MAX_DATAGRAM_SIZE, 0, 2);
             } else {
@@ -1283,14 +1210,13 @@ static void setup_run(struct tendril_net *net) {
             break;
         }
         case STEP_FILTER: {
-            /* CDC ECM 1.2, 6.2.4, Table 8 */
+            // CDC ECM 1.2, 6.2.4, Table 8
             if (net->kind == TENDRIL_NET_ECM
              || (net->ncm_caps & NCM_CAP_PACKET_FILTER) != 0) {
                 setup_request(
                     net, REQ_OUT, SET_ETHERNET_PACKET_FILTER,
                     TENDRIL_NET_FILTER_DIRECTED | TENDRIL_NET_FILTER_BROADCAST
-                        | TENDRIL_NET_FILTER_ALL_MULTICAST,
-                    0
+                  | TENDRIL_NET_FILTER_ALL_MULTICAST, 0
                 );
             } else {
                 setup_goto(net, STEP_DONE);
@@ -1311,19 +1237,15 @@ static bool net_probe(struct tendril_interface *intf) {
     struct tendril_device *dev = intf->dev;
     const struct tendril_interface_descriptor *id
         = tendril_interface_descriptor(intf);
-    uint32_t quirks = tendril_id_quirks(
-        net_quirks, ARRAY_SIZE(net_quirks), &dev->desc
-    );
+    uint32_t quirks = tendril_id_quirks(net_quirks, ARRAY_SIZE(net_quirks), &dev->desc);
     int kind = TENDRIL_NET_ECM;
     bool vendor_ncm = false;
     struct tendril_interface *data_intf;
     size_t alt;
 
     if ((quirks & QUIRK_NO_UNION) != 0) {
-        /*
-         * One interface carries control and data, speaking ECM (clean-room
-         * specification).
-         */
+        // One interface carries control and data, speaking ECM (clean-room
+        // specification).
         data_intf = intf;
     } else if (id != NULL && match_rndis(dev, id)) {
         kind = TENDRIL_NET_RNDIS;
@@ -1403,23 +1325,17 @@ static void clear_halt(struct tendril_endpoint *ep, bool *clearing) {
     }
 }
 
-/*
- * Counts a failed receive or interrupt transfer; false once the endpoint is
- * given up on.
- */
+// Counts a failed receive or interrupt transfer; false once the endpoint is
+// given up on.
 static bool in_failed(
-    struct tendril_endpoint *ep, size_t *errors, bool *gave_up, bool *clearing,
-    int status
+    struct tendril_endpoint *ep, size_t *errors, bool *gave_up, bool *clearing, int status
 ) {
     if (*gave_up) {
         return false;
     }
     if (++*errors > MAX_ERRORS) {
         *gave_up = true;
-        LOG_WARN(
-            "net: receiving keeps failing (%s), giving up",
-            tendril_status_str(status)
-        );
+        LOG_WARN("net: receiving keeps failing (%s), giving up", tendril_status_str(status));
         return false;
     }
     if (status == TENDRIL_ERR_STALL) {
@@ -1431,36 +1347,28 @@ static bool in_failed(
 static void retry_later(struct tendril_net *net) {
     hc_lock(net->hc);
     if (!tendril_timer_armed(&net->retry_timer)) {
-        tendril_timer_arm(
-            net->hc, &net->retry_timer, RETRY_DELAY_MS * NS_PER_MS
-        );
+        tendril_timer_arm(net->hc, &net->retry_timer, RETRY_DELAY_MS * NS_PER_MS);
     }
     hc_unlock(net->hc);
 }
 
-/*
- * Failures that leave a receive or interrupt transfer idle rather than count
- * as errors: the adapter stopped or suspended, the device gone, or the
- * transfer cancelled or refused while suspended.
- */
+// Failures that leave a receive or interrupt transfer idle rather than count
+// as errors: the adapter stopped or suspended, the device gone, or the
+// transfer cancelled or refused while suspended.
 static bool in_idle(struct tendril_net *net, int status) {
     return net->stopped || net->suspended || status == TENDRIL_ERR_NO_DEVICE
         || status == TENDRIL_ERR_CANCELLED || status == TENDRIL_ERR_SUSPENDED;
 }
 
-static void deliver(
-    struct tendril_net *net, const uint8_t *frame, size_t len
-) {
+static void deliver(struct tendril_net *net, const uint8_t *frame, size_t len) {
     if (net_callbacks->receive != NULL) {
         net_callbacks->receive(net, frame, len);
     }
 }
 
-static void link_set(
-    struct tendril_net *net, bool up, uint32_t rx_bps, uint32_t tx_bps
-) {
+static void link_set(struct tendril_net *net, bool up, uint32_t rx_bps, uint32_t tx_bps) {
     bool changed = up != net->link_up
-        || (up && (rx_bps != net->rx_bps || tx_bps != net->tx_bps));
+                || (up && (rx_bps != net->rx_bps || tx_bps != net->tx_bps));
 
     net->link_up = up;
     net->rx_bps = rx_bps;
@@ -1470,24 +1378,20 @@ static void link_set(
     }
 }
 
-/* CDC 1.2, 6.3: an 8-byte header, then wLength bytes. */
-static void notify_handle(
-    struct tendril_net *net, const uint8_t *n, size_t len
-) {
+// CDC 1.2, 6.3: an 8-byte header, then wLength bytes.
+static void notify_handle(struct tendril_net *net, const uint8_t *n, size_t len) {
     if (n[0] != REQ_IN) {
         return;
     }
     switch (n[1]) {
         case NOTIFY_NETWORK_CONNECTION: {
-            /* CDC 1.2, 6.3.1 */
+            // CDC 1.2, 6.3.1
             link_set(net, get_le16(n + 2) != 0, net->rx_bps, net->tx_bps);
             break;
         }
         case NOTIFY_SPEED_CHANGE: {
-            /*
-             * DLBitRate, what the host receives, then ULBitRate (CDC 1.2,
-             * 6.3.3, Table 21).
-             */
+            // DLBitRate, what the host receives, then ULBitRate (CDC 1.2,
+            // 6.3.3, Table 21).
             if (len >= NOTIFY_HEADER_LEN + 8) {
                 link_set(net, net->link_up, get_le32(n + 8), get_le32(n + 12));
             }
@@ -1499,10 +1403,8 @@ static void notify_handle(
     }
 }
 
-/*
- * Handles every complete notification in the buffer and keeps a partial one at
- * its start.
- */
+// Handles every complete notification in the buffer and keeps a partial one at
+// its start.
 static void notify_drain(struct tendril_net *net) {
     size_t pos = 0;
 
@@ -1529,10 +1431,8 @@ static void notify_drain(struct tendril_net *net) {
     net->notify_len -= pos;
 }
 
-/* A notification may span transfers, and a transfer may carry several. */
-static void notify_input(
-    struct tendril_net *net, const uint8_t *data, size_t len
-) {
+// A notification may span transfers, and a transfer may carry several.
+static void notify_input(struct tendril_net *net, const uint8_t *data, size_t len) {
     size_t off = 0;
 
     while (off < len && !net->stopped) {
@@ -1560,8 +1460,7 @@ static void intr_error(struct tendril_net *net, int status) {
         return;
     }
     bool failed = in_failed(
-        net->intr_ep, &net->intr_errors, &net->intr_gave_up,
-        &net->intr_clearing, status
+        net->intr_ep, &net->intr_errors, &net->intr_gave_up, &net->intr_clearing, status
     );
     if (failed) {
         net->intr_waiting = true;
@@ -1571,9 +1470,7 @@ static void intr_error(struct tendril_net *net, int status) {
 
 static void intr_submit(struct tendril_net *net) {
     struct tendril_transfer *xfer = &net->intr;
-    size_t len = MIN(
-        (size_t)net->intr_ep->max_packet, (size_t)INTR_MAX_PACKET
-    );
+    size_t len = MIN((size_t)net->intr_ep->max_packet, (size_t)INTR_MAX_PACKET);
     int status;
 
     if (len == 0) {
@@ -1606,16 +1503,14 @@ static void intr_done(struct tendril_transfer *xfer) {
     }
     net->intr_errors = 0;
     if (net->kind == TENDRIL_NET_RNDIS) {
-        /*
-         * RESPONSE_AVAILABLE (CDC 1.2, 6.3.2), or the 8-byte record some
-         * devices send instead: a message waits to be read.
-         */
+        // RESPONSE_AVAILABLE (CDC 1.2, 6.3.2), or the 8-byte record some
+        // devices send instead: a message waits to be read.
         if (xfer->actual != 0) {
             rndis_poll(net);
         }
     } else {
         notify_input(net, net->intr_buf, xfer->actual);
-        /* A short transfer ends any partial notification. */
+        // A short transfer ends any partial notification.
         if (xfer->actual < net->intr_asked) {
             net->notify_len = 0;
             net->notify_skip = 0;
@@ -1633,13 +1528,9 @@ static void intr_start(struct tendril_net *net) {
     }
 }
 
-/*
- * One frame per transfer, without CRC unless the device adds one (CDC ECM 1.2,
- * 3.3.1 and 3.4).
- */
-static void ecm_receive(
-    struct tendril_net *net, const uint8_t *frame, size_t len
-) {
+// One frame per transfer, without CRC unless the device adds one (CDC ECM 1.2,
+// 3.3.1 and 3.4).
+static void ecm_receive(struct tendril_net *net, const uint8_t *frame, size_t len) {
     if (net->crc32) {
         if (len < ETH_HEADER_LEN + ETH_CRC_LEN) {
             return;
@@ -1651,18 +1542,14 @@ static void ecm_receive(
     }
 }
 
-/* One NTB-16 (CDC NCM 1.0 Errata 1, 3). */
-static void ncm_receive(
-    struct tendril_net *net, const uint8_t *ntb, size_t len
-) {
+// One NTB-16 (CDC NCM 1.0 Errata 1, 3).
+static void ncm_receive(struct tendril_net *net, const uint8_t *ntb, size_t len) {
     if (len < NTH16_LEN || get_le32(ntb) != NTH16_SIGNATURE) {
         return;
     }
 
-    /*
-     * NTH16 (3.2.1, Table 3-1): a wBlockLength of 0 means a short packet ended
-     * the block.
-     */
+    // NTH16 (3.2.1, Table 3-1): a wBlockLength of 0 means a short packet ended
+    // the block.
     size_t block = get_le16(ntb + 8);
     if (block == 0) {
         block = len;
@@ -1674,17 +1561,15 @@ static void ncm_receive(
         return;
     }
 
-    /*
-     * NDP16 (3.3.1, Table 3-3). wNextNdpIndex is reserved: only this NDP is
-     * handled, as OpenBSD's sys/dev/usb/if_uncm.c (ISC license) also does.
-     */
+    // NDP16 (3.3.1, Table 3-3). wNextNdpIndex is reserved: only this NDP is
+    // handled, as OpenBSD's sys/dev/usb/if_uncm.c (ISC license) also does.
     const uint8_t *p = ntb + ndp;
     uint32_t signature = get_le32(p);
     size_t crc;
     if (signature == NDP16_SIGNATURE) {
         crc = 0;
     } else if (signature == NDP16_SIGNATURE_CRC) {
-        /* Each datagram ends with its CRC (3.3.3, Table 3-5). */
+        // Each datagram ends with its CRC (3.3.3, Table 3-5).
         crc = ETH_CRC_LEN;
     } else {
         return;
@@ -1694,12 +1579,11 @@ static void ncm_receive(
         return;
     }
 
-    for (size_t off = NDP16_HEADER_LEN;
-         off + NDP16_ENTRY_LEN <= ndp_len && !net->stopped;
+    for (size_t off = NDP16_HEADER_LEN; off + NDP16_ENTRY_LEN <= ndp_len && !net->stopped;
          off += NDP16_ENTRY_LEN) {
         size_t index = get_le16(p + off);
         size_t dlen = get_le16(p + off + 2);
-        /* The first entry with a zero field ends the list (3.7). */
+        // The first entry with a zero field ends the list (3.7).
         if (index == 0 || dlen == 0) {
             break;
         }
@@ -1711,15 +1595,11 @@ static void ncm_receive(
     }
 }
 
-/*
- * REMOTE_NDIS_PACKET_MSG messages back to back ([MS-RNDIS] v20130118, 2.2.14
- * and 3.1.5.8). A tail shorter than a header is padding, which OpenBSD's
- * sys/dev/usb/if_urndis.c (ISC license) also tolerates. A malformed message
- * ends the walk, as its length cannot be trusted.
- */
-static void rndis_receive(
-    struct tendril_net *net, const uint8_t *buf, size_t len
-) {
+// REMOTE_NDIS_PACKET_MSG messages back to back ([MS-RNDIS] v20130118, 2.2.14
+// and 3.1.5.8). A tail shorter than a header is padding, which OpenBSD's
+// sys/dev/usb/if_urndis.c (ISC license) also tolerates. A malformed message
+// ends the walk, as its length cannot be trusted.
+static void rndis_receive(struct tendril_net *net, const uint8_t *buf, size_t len) {
     size_t off = 0;
 
     while (len - off >= RNDIS_PACKET_HEADER_LEN && !net->stopped) {
@@ -1728,11 +1608,9 @@ static void rndis_receive(
         uint32_t data_off = get_le32(msg + 8);
         uint32_t data_len = get_le32(msg + 12);
 
-        /* BEGIN FreeBSD sys/dev/usb/net/if_urndis.c */
-        /*
-         * DataOffset counts from its own field; DataLength's bounds are the
-         * ones FreeBSD's sys/dev/usb/net/if_urndis.c (ISC license) accepts.
-         */
+        // BEGIN FreeBSD sys/dev/usb/net/if_urndis.c
+        // DataOffset counts from its own field; DataLength's bounds are the
+        // ones FreeBSD's sys/dev/usb/net/if_urndis.c (ISC license) accepts.
         if (get_le32(msg) != RNDIS_PACKET_MSG
          || msg_len < RNDIS_PACKET_HEADER_LEN || msg_len > len - off
          || (data_off & 3) != 0 || data_off > msg_len - 8
@@ -1746,7 +1624,7 @@ static void rndis_receive(
             );
             return;
         }
-        /* END FreeBSD sys/dev/usb/net/if_urndis.c */
+        // END FreeBSD sys/dev/usb/net/if_urndis.c
         deliver(net, msg + 8 + data_off, data_len);
         off += msg_len;
     }
@@ -1759,8 +1637,7 @@ static void rx_error(struct tendril_net *net, struct net_rx *rx, int status) {
         return;
     }
     bool failed = in_failed(
-        net->in_ep, &net->rx_errors, &net->rx_gave_up, &net->rx_clearing,
-        status
+        net->in_ep, &net->rx_errors, &net->rx_gave_up, &net->rx_clearing, status
     );
     if (failed) {
         rx->waiting = true;
@@ -1812,8 +1689,7 @@ static void rx_done(struct tendril_transfer *xfer) {
 }
 
 static void rx_start(struct tendril_net *net) {
-    for (size_t i = 0; i < net->num_rx && !net->stopped && !net->suspended;
-         i++) {
+    for (size_t i = 0; i < net->num_rx && !net->stopped && !net->suspended; i++) {
         if (!net->rx[i].busy && !net->rx[i].waiting) {
             rx_submit(net, &net->rx[i]);
         }
@@ -1821,9 +1697,7 @@ static void rx_start(struct tendril_net *net) {
 }
 
 static void retry_timer_fn(struct tendril_work *work) {
-    struct tendril_net *net = CONTAINER_OF(
-        work, struct tendril_net, retry_timer.work
-    );
+    struct tendril_net *net = CONTAINER_OF(work, struct tendril_net, retry_timer.work);
 
     if (net->suspended) {
         return;
@@ -1840,13 +1714,9 @@ static void retry_timer_fn(struct tendril_work *work) {
     }
 }
 
-/*
- * Moves every frame of `src` to the end of `dst`, to be completed with
- * `status`.
- */
-static void frames_move(
-    struct tendril_list *dst, struct tendril_list *src, int status
-) {
+// Moves every frame of `src` to the end of `dst`, to be completed with
+// `status`.
+static void frames_move(struct tendril_list *dst, struct tendril_list *src, int status) {
     while (!list_empty(src)) {
         struct tendril_list *node = src->next;
         CONTAINER_OF(node, struct net_frame, node)->status = status;
@@ -1855,15 +1725,11 @@ static void frames_move(
     }
 }
 
-/*
- * Calls `done` for every frame of a list private to the caller, which
- * callbacks cannot reach.
- */
+// Calls `done` for every frame of a list private to the caller, which
+// callbacks cannot reach.
 static void frames_complete(struct tendril_list *list) {
     while (!list_empty(list)) {
-        struct net_frame *frame = CONTAINER_OF(
-            list->next, struct net_frame, node
-        );
+        struct net_frame *frame = CONTAINER_OF(list->next, struct net_frame, node);
         void (*done)(void *ctx, int status) = frame->done;
         void *ctx = frame->ctx;
         int status = frame->status;
@@ -1876,7 +1742,7 @@ static void frames_complete(struct tendril_list *list) {
     }
 }
 
-/* Puts a slot's unsent frames back at the head of the queue, in order. */
+// Puts a slot's unsent frames back at the head of the queue, in order.
 static void frames_requeue(struct tendril_net *net, struct net_tx *tx) {
     while (!list_empty(&tx->frames)) {
         struct tendril_list *node = tx->frames.prev;
@@ -1903,13 +1769,11 @@ static bool tx_any_busy(struct tendril_net *net) {
     return false;
 }
 
-/*
- * The lowest offset from `off` where (offset + 14) % divisor == remainder: the
- * remainder applies to the payload after the Ethernet header (CDC NCM 1.0
- * Errata 1, 3.3.4 and Table 6-3). OpenBSD's sys/dev/usb/if_uncm.c (ISC
- * license) applies it to the start of the datagram instead; this follows the
- * specification's text.
- */
+// The lowest offset from `off` where (offset + 14) % divisor == remainder: the
+// remainder applies to the payload after the Ethernet header (CDC NCM 1.0
+// Errata 1, 3.3.4 and Table 6-3). OpenBSD's sys/dev/usb/if_uncm.c (ISC
+// license) applies it to the start of the datagram instead; this follows the
+// specification's text.
 static size_t datagram_offset(const struct tendril_net *net, size_t off) {
     size_t divisor = net->ndp_out_divisor;
     size_t at = (off + ETH_HEADER_LEN) % divisor;
@@ -1917,10 +1781,8 @@ static size_t datagram_offset(const struct tendril_net *net, size_t off) {
     return off + (net->ndp_out_remainder + divisor - at) % divisor;
 }
 
-/*
- * Packs queued frames into an NTB-16 in tx->buf (CDC NCM 1.0 Errata 1, 3) and
- * returns its length, or 0 if the first frame does not fit even alone.
- */
+// Packs queued frames into an NTB-16 in tx->buf (CDC NCM 1.0 Errata 1, 3) and
+// returns its length, or 0 if the first frame does not fit even alone.
 static size_t ntb_build(struct tendril_net *net, struct net_tx *tx) {
     uint8_t *b = tx->buf;
     size_t align = net->ndp_out_align;
@@ -1930,17 +1792,13 @@ static size_t ntb_build(struct tendril_net *net, struct net_tx *tx) {
     size_t count = 0;
 
     while (!list_empty(&net->frames) && count < net->ntb_out_datagrams) {
-        struct net_frame *frame = CONTAINER_OF(
-            net->frames.next, struct net_frame, node
-        );
+        struct net_frame *frame = CONTAINER_OF(net->frames.next, struct net_frame, node);
         size_t at = datagram_offset(net, off);
         size_t end = at + frame->len;
-        /*
-         * The NDP16 after this datagram, with one entry more and the null
-         * entry.
-         */
+        // The NDP16 after this datagram, with one entry more and the null
+        // entry.
         size_t need = ALIGN_UP(end, align) + NDP16_HEADER_LEN
-            + NDP16_ENTRY_LEN * ((size_t)count + 2);
+                    + NDP16_ENTRY_LEN * ((size_t)count + 2);
         if (need > net->ntb_out_size) {
             break;
         }
@@ -1965,7 +1823,7 @@ static size_t ntb_build(struct tendril_net *net, struct net_tx *tx) {
     size_t total = ndp + ndp_len;
     memset(b + off, 0, ndp - off);
 
-    /* NTH16 (3.2.1, Table 3-1) */
+    // NTH16 (3.2.1, Table 3-1)
     put_le32(b, NTH16_SIGNATURE);
     put_le16(b + 4, NTH16_LEN);
     put_le16(b + 6, net->ntb_sequence);
@@ -1973,7 +1831,7 @@ static size_t ntb_build(struct tendril_net *net, struct net_tx *tx) {
     put_le16(b + 10, (uint16_t)ndp);
     net->ntb_sequence = (uint16_t)(net->ntb_sequence + 1);
 
-    /* NDP16 (3.3.1, Table 3-3), ended by a null entry (3.7) */
+    // NDP16 (3.3.1, Table 3-3), ended by a null entry (3.7)
     uint8_t *p = b + ndp;
     put_le32(p, NDP16_SIGNATURE);
     put_le16(p + 4, (uint16_t)ndp_len);
@@ -1986,13 +1844,11 @@ static size_t ntb_build(struct tendril_net *net, struct net_tx *tx) {
     return total;
 }
 
-/*
- * Wraps queued frames in REMOTE_NDIS_PACKET_MSG messages in tx->buf, as many
- * as MaxPacketsPerTransfer and the buffer, at most the device's
- * MaxTransferSize, allow; each but the last is padded with zeros to a multiple
- * of 2^PacketAlignmentFactor bytes ([MS-RNDIS] v20130118, 2.2.14). Returns the
- * transfer's length, or 0 if the first frame does not fit even alone.
- */
+// Wraps queued frames in REMOTE_NDIS_PACKET_MSG messages in tx->buf, as many
+// as MaxPacketsPerTransfer and the buffer, at most the device's
+// MaxTransferSize, allow; each but the last is padded with zeros to a multiple
+// of 2^PacketAlignmentFactor bytes ([MS-RNDIS] v20130118, 2.2.14). Returns the
+// transfer's length, or 0 if the first frame does not fit even alone.
 static size_t rndis_build(struct tendril_net *net, struct net_tx *tx) {
     uint8_t *b = tx->buf;
     size_t align = (size_t)1 << net->rndis_align;
@@ -2001,9 +1857,7 @@ static size_t rndis_build(struct tendril_net *net, struct net_tx *tx) {
     size_t count = 0;
 
     while (!list_empty(&net->frames) && count < net->rndis_max_packets) {
-        struct net_frame *frame = CONTAINER_OF(
-            net->frames.next, struct net_frame, node
-        );
+        struct net_frame *frame = CONTAINER_OF(net->frames.next, struct net_frame, node);
         size_t start = 0;
         if (count != 0) {
             start = prev + ALIGN_UP(off - prev, align);
@@ -2016,15 +1870,11 @@ static size_t rndis_build(struct tendril_net *net, struct net_tx *tx) {
             memset(b + off, 0, start - off);
             put_le32(b + prev + 4, (uint32_t)(start - prev));
         }
-        /*
-         * DataOffset 36 puts the frame right after the header; the other
-         * fields stay 0.
-         */
+        // DataOffset 36 puts the frame right after the header; the other
+        // fields stay 0.
         memset(b + start, 0, RNDIS_PACKET_HEADER_LEN);
         put_le32(b + start, RNDIS_PACKET_MSG);
-        put_le32(
-            b + start + 4, (uint32_t)(RNDIS_PACKET_HEADER_LEN + frame->len)
-        );
+        put_le32(b + start + 4, (uint32_t)(RNDIS_PACKET_HEADER_LEN + frame->len));
         put_le32(b + start + 8, RNDIS_PACKET_HEADER_LEN - 8);
         put_le32(b + start + 12, (uint32_t)frame->len);
         memcpy(b + start + RNDIS_PACKET_HEADER_LEN, frame->data, frame->len);
@@ -2044,10 +1894,8 @@ static size_t rndis_build(struct tendril_net *net, struct net_tx *tx) {
 
 static void tx_done(struct tendril_transfer *xfer);
 
-/*
- * Starts a transfer from the queue on a free slot; on failure the slot's
- * frames are not sent.
- */
+// Starts a transfer from the queue on a free slot; on failure the slot's
+// frames are not sent.
 static int tx_submit(struct tendril_net *net, struct net_tx *tx) {
     struct tendril_transfer *xfer = &tx->xfer;
     uint32_t flags = TENDRIL_XFER_ZERO_PACKET;
@@ -2061,37 +1909,29 @@ static int tx_submit(struct tendril_net *net, struct net_tx *tx) {
             return TENDRIL_ERR_INVALID;
         }
         buf = tx->buf;
-        /*
-         * Only an NTB of exactly the maximum size may end without a short
-         * packet (CDC NCM 1.0 Errata 1, 3.2.1).
-         */
+        // Only an NTB of exactly the maximum size may end without a short
+        // packet (CDC NCM 1.0 Errata 1, 3.2.1).
         if (len == net->ntb_out_max) {
             flags = 0;
         }
     } else if (net->kind == TENDRIL_NET_RNDIS) {
-        /*
-         * A transfer that is a multiple of the packet size ends with a
-         * zero-length packet, as OpenBSD's sys/dev/usb/if_urndis.c (ISC
-         * license) forces short transfers.
-         */
+        // A transfer that is a multiple of the packet size ends with a
+        // zero-length packet, as OpenBSD's sys/dev/usb/if_urndis.c (ISC
+        // license) forces short transfers.
         len = rndis_build(net, tx);
         if (len == 0) {
             return TENDRIL_ERR_INVALID;
         }
         buf = tx->buf;
     } else {
-        /*
-         * One frame per transfer, ended by a short or zero-length packet (CDC
-         * ECM 1.2, 3.3.1).
-         */
-        struct net_frame *frame = CONTAINER_OF(
-            net->frames.next, struct net_frame, node
-        );
+        // One frame per transfer, ended by a short or zero-length packet (CDC
+        // ECM 1.2, 3.3.1).
+        struct net_frame *frame = CONTAINER_OF(net->frames.next, struct net_frame, node);
         list_del(&frame->node);
         list_add_tail(&tx->frames, &frame->node);
         len = frame->len;
         if (net->crc32) {
-            /* Followed by its CRC on the wire (clean-room specification). */
+            // Followed by its CRC on the wire (clean-room specification).
             memcpy(tx->buf, frame->data, len);
             put_le32(tx->buf + len, ether_crc32(frame->data, len));
             len += ETH_CRC_LEN;
@@ -2114,11 +1954,9 @@ static int tx_submit(struct tendril_net *net, struct net_tx *tx) {
     return status;
 }
 
-/*
- * Starts transfers while slots are free, moving frames that cannot go out to
- * `completed`, followed by the queue once the adapter has stopped and no
- * transfer is left.
- */
+// Starts transfers while slots are free, moving frames that cannot go out to
+// `completed`, followed by the queue once the adapter has stopped and no
+// transfer is left.
 static void tx_start(struct tendril_net *net, struct tendril_list *completed) {
     while (net->ready && !net->stopped && !net->suspended && !net->tx_clearing
         && !list_empty(&net->frames)) {
@@ -2128,7 +1966,7 @@ static void tx_start(struct tendril_net *net, struct tendril_list *completed) {
         }
         int status = tx_submit(net, tx);
         if (status == TENDRIL_ERR_SUSPENDED) {
-            /* Not sent: the frames wait for the resume. */
+            // Not sent: the frames wait for the resume.
             frames_requeue(net, tx);
             break;
         }
@@ -2169,7 +2007,7 @@ static void tx_done(struct tendril_transfer *xfer) {
     list_init(&completed);
     tx->busy = false;
     if (status == TENDRIL_ERR_SUSPENDED) {
-        /* Not sent: the frames wait for the resume. */
+        // Not sent: the frames wait for the resume.
         frames_requeue(net, tx);
     } else {
         frames_move(&completed, &tx->frames, status);
@@ -2184,14 +2022,14 @@ static void tx_done(struct tendril_transfer *xfer) {
             net->tx_clearing = false;
         }
     }
-    /* Further transfers start before the completed frames' callbacks run. */
+    // Further transfers start before the completed frames' callbacks run.
     tx_start(net, &completed);
     frames_complete(&completed);
 }
 
 int tendril_net_send(
-    struct tendril_net *net, const void *frame, size_t len,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_net *net, const void *frame, size_t len, void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     struct net_frame *entry;
 
@@ -2217,8 +2055,7 @@ int tendril_net_send(
 static void op_done(struct tendril_transfer *xfer);
 
 static void op_finish(
-    struct tendril_net *net, struct net_op *op, int status, const uint8_t *msg,
-    size_t len
+    struct tendril_net *net, struct net_op *op, int status, const uint8_t *msg, size_t len
 ) {
     void (*answer)(struct tendril_net *, int, const uint8_t *, size_t)
         = op->answer;
@@ -2251,11 +2088,9 @@ static void ops_fail(struct tendril_net *net) {
     }
 }
 
-/*
- * Operations run one at a time, in queue order: RNDIS's from the start of
- * setup, as setup itself goes through them, the others once setup has
- * finished.
- */
+// Operations run one at a time, in queue order: RNDIS's from the start of
+// setup, as setup itself goes through them, the others once setup has
+// finished.
 static void op_kick(struct tendril_net *net) {
     while ((net->ready || net->kind == TENDRIL_NET_RNDIS) && !net->stopped
         && !net->suspended && net->op == NULL && !net->ctrl_busy
@@ -2273,8 +2108,7 @@ static void op_kick(struct tendril_net *net) {
             net->op = NULL;
         } else {
             status = ctrl_submit(
-                net, REQ_OUT, op->request, op->value, op->data, op->length,
-                op_done
+                net, REQ_OUT, op->request, op->value, op->data, op->length, op_done
             );
             if (status == TENDRIL_OK) {
                 net->op = op;
@@ -2282,7 +2116,7 @@ static void op_kick(struct tendril_net *net) {
             }
         }
         if (status == TENDRIL_ERR_SUSPENDED) {
-            /* Not sent: it waits for the resume. */
+            // Not sent: it waits for the resume.
             list_add_head(&net->ops, &op->node);
             break;
         }
@@ -2303,7 +2137,7 @@ static void op_done(struct tendril_transfer *xfer) {
 
     net->op = NULL;
     if (status == TENDRIL_ERR_SUSPENDED && op != NULL) {
-        /* Not sent: it waits for the resume. */
+        // Not sent: it waits for the resume.
         list_add_head(&net->ops, &op->node);
         return;
     }
@@ -2317,8 +2151,8 @@ static void op_done(struct tendril_transfer *xfer) {
 }
 
 static int op_queue(
-    struct tendril_net *net, uint8_t request, uint16_t value,
-    const uint8_t *data, size_t length, void (*done)(void *, int), void *ctx
+    struct tendril_net *net, uint8_t request, uint16_t value, const uint8_t *data, size_t length,
+    void (*done)(void *, int), void *ctx
 ) {
     struct net_op *op = tendril_zalloc(sizeof(struct net_op));
 
@@ -2343,11 +2177,9 @@ static int op_queue(
     return TENDRIL_OK;
 }
 
-/*
- * RNDIS control messages go out by SEND_ENCAPSULATED_COMMAND and come back by
- * GET_ENCAPSULATED_RESPONSE (CDC 1.2, 6.2.1 and 6.2.2), one request at a time,
- * through the operation queue.
- */
+// RNDIS control messages go out by SEND_ENCAPSULATED_COMMAND and come back by
+// GET_ENCAPSULATED_RESPONSE (CDC 1.2, 6.2.1 and 6.2.2), one request at a time,
+// through the operation queue.
 
 static struct net_op *rndis_alloc(uint32_t type, size_t len) {
     struct net_op *op = tendril_zalloc(sizeof(struct net_op));
@@ -2367,7 +2199,7 @@ static struct net_op *rndis_alloc(uint32_t type, size_t len) {
     return op;
 }
 
-/* A request with the next RequestID, never 0 ([MS-RNDIS] v20130118, 2.2.2). */
+// A request with the next RequestID, never 0 ([MS-RNDIS] v20130118, 2.2.2).
 static struct net_op *rndis_request(
     struct tendril_net *net, uint32_t type, size_t len,
     void (*answer)(struct tendril_net *, int, const uint8_t *, size_t)
@@ -2392,13 +2224,9 @@ static void rndis_queue(struct tendril_net *net, struct net_op *op) {
     op_kick(net);
 }
 
-/*
- * Ends the exchange, completing the outstanding request, if any; `msg` is its
- * completion.
- */
-static void rndis_finish(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
-) {
+// Ends the exchange, completing the outstanding request, if any; `msg` is its
+// completion.
+static void rndis_finish(struct tendril_net *net, int status, const uint8_t *msg, size_t len) {
     struct net_op *op = net->op;
 
     net->op = NULL;
@@ -2419,10 +2247,8 @@ static void rndis_finish(
 
 static void rndis_read_done(struct tendril_transfer *xfer);
 
-/*
- * Nothing to read: a request reads again 10 ms later, while unsolicited
- * reading ends.
- */
+// Nothing to read: a request reads again 10 ms later, while unsolicited
+// reading ends.
 static void rndis_read_later(struct tendril_net *net) {
     if (net->op == NULL) {
         net->ctrl_busy = false;
@@ -2430,16 +2256,14 @@ static void rndis_read_later(struct tendril_net *net) {
         return;
     }
     hc_lock(net->hc);
-    tendril_timer_arm(
-        net->hc, &net->rndis_read_timer, RNDIS_REREAD_MS * NS_PER_MS
-    );
+    tendril_timer_arm(net->hc, &net->rndis_read_timer, RNDIS_REREAD_MS * NS_PER_MS);
     hc_unlock(net->hc);
 }
 
 static void rndis_read(struct tendril_net *net) {
     int status = ctrl_submit(
-        net, REQ_IN, GET_ENCAPSULATED_RESPONSE, 0, net->rndis_buf,
-        RNDIS_RESPONSE_SIZE, rndis_read_done
+        net, REQ_IN, GET_ENCAPSULATED_RESPONSE, 0, net->rndis_buf, RNDIS_RESPONSE_SIZE,
+        rndis_read_done
     );
 
     if (status == TENDRIL_OK) {
@@ -2451,10 +2275,8 @@ static void rndis_read(struct tendril_net *net) {
     }
 }
 
-/*
- * Reads unsolicited messages until a read finds nothing; a request's exchange
- * reads them anyway.
- */
+// Reads unsolicited messages until a read finds nothing; a request's exchange
+// reads them anyway.
 static void rndis_poll(struct tendril_net *net) {
     if (net->op != NULL || net->ctrl_busy || net->stopped || net->suspended) {
         return;
@@ -2475,20 +2297,17 @@ static void rndis_send_done(struct tendril_transfer *xfer) {
         rndis_finish(net, status, NULL, 0);
         return;
     }
-    /* BEGIN OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c */
-    /*
-     * The answer is read at once, as OpenBSD's and FreeBSD's if_urndis.c (ISC
-     * license) do.
-     */
+    // BEGIN OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c
+    // The answer is read at once, as OpenBSD's and FreeBSD's if_urndis.c (ISC
+    // license) do.
     rndis_read(net);
-    /* END OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c */
+    // END OpenBSD sys/dev/usb/if_urndis.c, FreeBSD sys/dev/usb/net/if_urndis.c
 }
 
-/* Starts the exchange of net->op. */
+// Starts the exchange of net->op.
 static int rndis_send(struct tendril_net *net, struct net_op *op) {
     int status = ctrl_submit(
-        net, REQ_OUT, SEND_ENCAPSULATED_COMMAND, 0, op->data, op->length,
-        rndis_send_done
+        net, REQ_OUT, SEND_ENCAPSULATED_COMMAND, 0, op->data, op->length, rndis_send_done
     );
 
     if (status == TENDRIL_OK) {
@@ -2496,18 +2315,14 @@ static int rndis_send(struct tendril_net *net, struct net_op *op) {
         net->ctrl_pending = true;
         net->rndis_timed_out = false;
         hc_lock(net->hc);
-        tendril_timer_arm(
-            net->hc, &net->rndis_timeout_timer, RNDIS_TIMEOUT_MS * NS_PER_MS
-        );
+        tendril_timer_arm(net->hc, &net->rndis_timeout_timer, RNDIS_TIMEOUT_MS * NS_PER_MS);
         hc_unlock(net->hc);
     }
     return status;
 }
 
 static void rndis_read_timer_fn(struct tendril_work *work) {
-    struct tendril_net *net = CONTAINER_OF(
-        work, struct tendril_net, rndis_read_timer.work
-    );
+    struct tendril_net *net = CONTAINER_OF(work, struct tendril_net, rndis_read_timer.work);
 
     if (net->op == NULL || !net->ctrl_busy || net->ctrl_pending) {
         return;
@@ -2519,13 +2334,9 @@ static void rndis_read_timer_fn(struct tendril_work *work) {
     rndis_read(net);
 }
 
-/*
- * Windows' ControlTimeoutTimer ([MS-RNDIS] v20130118, 3.1.2, footnote <17>).
- */
+// Windows' ControlTimeoutTimer ([MS-RNDIS] v20130118, 3.1.2, footnote <17>).
 static void rndis_timeout_fn(struct tendril_work *work) {
-    struct tendril_net *net = CONTAINER_OF(
-        work, struct tendril_net, rndis_timeout_timer.work
-    );
+    struct tendril_net *net = CONTAINER_OF(work, struct tendril_net, rndis_timeout_timer.work);
 
     if (net->op == NULL || !net->ctrl_busy) {
         return;
@@ -2538,10 +2349,8 @@ static void rndis_timeout_fn(struct tendril_work *work) {
     }
 }
 
-/*
- * The shortest MessageLength accepted from the device, by message type
- * ([MS-RNDIS] v20130118, 2.2).
- */
+// The shortest MessageLength accepted from the device, by message type
+// ([MS-RNDIS] v20130118, 2.2).
 static uint32_t rndis_min_len(uint32_t type) {
     switch (type) {
         case RNDIS_HALT_MSG:
@@ -2555,10 +2364,8 @@ static uint32_t rndis_min_len(uint32_t type) {
             return 24;
         }
         case RNDIS_INITIALIZE_MSG | RNDIS_CMPLT: {
-            /*
-             * The fields through PacketAlignmentFactor: 2.2.9 says 0x30 but
-             * lists 52 bytes.
-             */
+            // The fields through PacketAlignmentFactor: 2.2.9 says 0x30 but
+            // lists 52 bytes.
             return 44;
         }
         case RNDIS_SET_MSG | RNDIS_CMPLT:
@@ -2572,10 +2379,8 @@ static uint32_t rndis_min_len(uint32_t type) {
     }
 }
 
-/* A reset carries no RequestID, so its completion matches by type alone. */
-static bool rndis_answers(
-    const struct net_op *op, uint32_t type, const uint8_t *msg
-) {
+// A reset carries no RequestID, so its completion matches by type alone.
+static bool rndis_answers(const struct net_op *op, uint32_t type, const uint8_t *msg) {
     if (type != (op->rndis_type | RNDIS_CMPLT)) {
         return false;
     }
@@ -2593,7 +2398,7 @@ static int rndis_status(uint32_t status) {
     return TENDRIL_ERR_IO;
 }
 
-/* REMOTE_NDIS_INDICATE_STATUS_MSG ([MS-RNDIS] v20130118, 2.2.7) */
+// REMOTE_NDIS_INDICATE_STATUS_MSG ([MS-RNDIS] v20130118, 2.2.7)
 static void rndis_indicate(struct tendril_net *net, const uint8_t *msg) {
     uint32_t status = get_le32(msg + 8);
 
@@ -2609,14 +2414,10 @@ static void rndis_indicate(struct tendril_net *net, const uint8_t *msg) {
     }
 }
 
-/*
- * Answers the device's REMOTE_NDIS_KEEPALIVE_MSG ([MS-RNDIS] v20130118,
- * 3.1.5.9). It goes out once the current exchange ends.
- */
+// Answers the device's REMOTE_NDIS_KEEPALIVE_MSG ([MS-RNDIS] v20130118,
+// 3.1.5.9). It goes out once the current exchange ends.
 static void rndis_keepalive_reply(struct tendril_net *net, uint32_t id) {
-    struct net_op *op = rndis_alloc(
-        RNDIS_KEEPALIVE_MSG | RNDIS_CMPLT, RNDIS_KEEPALIVE_CMPLT_LEN
-    );
+    struct net_op *op = rndis_alloc(RNDIS_KEEPALIVE_MSG | RNDIS_CMPLT, RNDIS_KEEPALIVE_CMPLT_LEN);
 
     if (op == NULL) {
         return;
@@ -2643,7 +2444,7 @@ static void rndis_read_done(struct tendril_transfer *xfer) {
         rndis_finish(net, TENDRIL_ERR_NO_DEVICE, NULL, 0);
         return;
     }
-    /* Nothing there yet. */
+    // Nothing there yet.
     if (xfer->status != TENDRIL_OK || xfer->actual < 8
      || get_le32(msg + 4) < 8) {
         rndis_read_later(net);
@@ -2664,7 +2465,7 @@ static void rndis_read_done(struct tendril_transfer *xfer) {
                 break;
             }
             case RNDIS_HALT_MSG: {
-                /* The device halted ([MS-RNDIS] v20130118, 3.1.5.7). */
+                // The device halted ([MS-RNDIS] v20130118, 3.1.5.7).
                 LOG_WARN(
                     "net: interface %u: the RNDIS device halted",
                     (unsigned int)net->ctrl_intf->number
@@ -2676,9 +2477,7 @@ static void rndis_read_done(struct tendril_transfer *xfer) {
             default: {
                 if (op != NULL && rndis_answers(op, type, msg)) {
                     size_t at = op->rndis_type == RNDIS_RESET_MSG ? 8 : 12;
-                    rndis_finish(
-                        net, rndis_status(get_le32(msg + at)), msg, len
-                    );
+                    rndis_finish(net, rndis_status(get_le32(msg + at)), msg, len);
                     return;
                 }
                 break;
@@ -2686,21 +2485,17 @@ static void rndis_read_done(struct tendril_transfer *xfer) {
         }
     }
 
-    /*
-     * A callback above may have run the controller and ended this exchange
-     * meanwhile.
-     */
+    // A callback above may have run the controller and ended this exchange
+    // meanwhile.
     if (net->op != op || !net->ctrl_busy || net->ctrl_pending) {
         return;
     }
     rndis_read(net);
 }
 
-/*
- * The data of a REMOTE_NDIS_QUERY_CMPLT: InformationBufferLength bytes at
- * InformationBufferOffset from the RequestID field ([MS-RNDIS] v20130118,
- * 2.2.10), within MessageLength.
- */
+// The data of a REMOTE_NDIS_QUERY_CMPLT: InformationBufferLength bytes at
+// InformationBufferOffset from the RequestID field ([MS-RNDIS] v20130118,
+// 2.2.10), within MessageLength.
 static bool rndis_query_data(
     const uint8_t *msg, size_t len, const uint8_t **data, size_t *data_len
 ) {
@@ -2720,9 +2515,7 @@ static bool rndis_query_data(
     return true;
 }
 
-static bool rndis_answer_u32(
-    int status, const uint8_t *msg, size_t len, uint32_t *value
-) {
+static bool rndis_answer_u32(int status, const uint8_t *msg, size_t len, uint32_t *value) {
     const uint8_t *data;
     size_t data_len;
 
@@ -2734,17 +2527,13 @@ static bool rndis_answer_u32(
     return true;
 }
 
-/*
- * REMOTE_NDIS_SET_MSG with its data right after the header ([MS-RNDIS]
- * v20130118, 2.2.5).
- */
+// REMOTE_NDIS_SET_MSG with its data right after the header ([MS-RNDIS]
+// v20130118, 2.2.5).
 static struct net_op *rndis_set_request(
     struct tendril_net *net, uint32_t oid, const uint8_t *data, size_t len,
     void (*answer)(struct tendril_net *, int, const uint8_t *, size_t)
 ) {
-    struct net_op *op = rndis_request(
-        net, RNDIS_SET_MSG, RNDIS_SET_LEN + len, answer
-    );
+    struct net_op *op = rndis_request(net, RNDIS_SET_MSG, RNDIS_SET_LEN + len, answer);
 
     if (op == NULL) {
         return NULL;
@@ -2752,14 +2541,14 @@ static struct net_op *rndis_set_request(
     put_le32(op->data + 12, oid);
     put_le32(op->data + 16, (uint32_t)len);
     if (len != 0) {
-        /* Counted from RequestID; 0 when there is no data. */
+        // Counted from RequestID; 0 when there is no data.
         put_le32(op->data + 20, RNDIS_SET_LEN - 8);
         memcpy(op->data + RNDIS_SET_LEN, data, len);
     }
     return op;
 }
 
-/* Whether setup cannot go on: the device is gone, or the adapter stopped. */
+// Whether setup cannot go on: the device is gone, or the adapter stopped.
 static bool rndis_setup_over(struct tendril_net *net, int status) {
     if (status == TENDRIL_ERR_NO_DEVICE) {
         net->stopped = true;
@@ -2767,14 +2556,12 @@ static bool rndis_setup_over(struct tendril_net *net, int status) {
     return net->stopped;
 }
 
-/* REMOTE_NDIS_QUERY_MSG without input data ([MS-RNDIS] v20130118, 2.2.4). */
+// REMOTE_NDIS_QUERY_MSG without input data ([MS-RNDIS] v20130118, 2.2.4).
 static void rndis_query_step(
     struct tendril_net *net, uint32_t oid,
     void (*answer)(struct tendril_net *, int, const uint8_t *, size_t)
 ) {
-    struct net_op *op = rndis_request(
-        net, RNDIS_QUERY_MSG, RNDIS_QUERY_LEN, answer
-    );
+    struct net_op *op = rndis_request(net, RNDIS_QUERY_MSG, RNDIS_QUERY_LEN, answer);
 
     if (op == NULL) {
         setup_fail(net, "allocating an RNDIS message", TENDRIL_ERR_NO_MEMORY);
@@ -2796,24 +2583,21 @@ static void rndis_filter_answer(
         setup_fail(net, "setting the RNDIS packet filter", status);
         return;
     }
-    /* RNDIS_DATA_INITIALIZED ([MS-RNDIS] v20130118, 3.1.3, step 4) */
+    // RNDIS_DATA_INITIALIZED ([MS-RNDIS] v20130118, 3.1.3, step 4)
     setup_finish(net);
 }
 
-/*
- * Directed, broadcast, and all multicast frames, as the attach callback
- * promises.
- */
+// Directed, broadcast, and all multicast frames, as the attach callback
+// promises.
 static void rndis_filter_step(struct tendril_net *net) {
     uint8_t value[4];
     struct net_op *op;
 
     net->rndis_filter = NDIS_PACKET_TYPE_DIRECTED | NDIS_PACKET_TYPE_BROADCAST
-        | NDIS_PACKET_TYPE_ALL_MULTICAST;
+                      | NDIS_PACKET_TYPE_ALL_MULTICAST;
     put_le32(value, net->rndis_filter);
     op = rndis_set_request(
-        net, OID_GEN_CURRENT_PACKET_FILTER, value, sizeof(value),
-        rndis_filter_answer
+        net, OID_GEN_CURRENT_PACKET_FILTER, value, sizeof(value), rndis_filter_answer
     );
     if (op == NULL) {
         setup_fail(net, "allocating an RNDIS message", TENDRIL_ERR_NO_MEMORY);
@@ -2822,10 +2606,8 @@ static void rndis_filter_step(struct tendril_net *net) {
     rndis_queue(net, op);
 }
 
-/*
- * OID_GEN_LINK_SPEED, in units of 100 bit/s, for both directions; 0 if
- * unknown.
- */
+// OID_GEN_LINK_SPEED, in units of 100 bit/s, for both directions; 0 if
+// unknown.
 static void rndis_speed_answer(
     struct tendril_net *net, int status, const uint8_t *msg, size_t len
 ) {
@@ -2842,7 +2624,7 @@ static void rndis_speed_answer(
     rndis_filter_step(net);
 }
 
-/* OID_GEN_MEDIA_CONNECT_STATUS: 0 connected, 1 disconnected. */
+// OID_GEN_MEDIA_CONNECT_STATUS: 0 connected, 1 disconnected.
 static void rndis_media_answer(
     struct tendril_net *net, int status, const uint8_t *msg, size_t len
 ) {
@@ -2851,10 +2633,8 @@ static void rndis_media_answer(
     if (rndis_setup_over(net, status)) {
         return;
     }
-    /*
-     * Without an answer the link counts as up: many devices, phones among
-     * them, have no medium to lose.
-     */
+    // Without an answer the link counts as up: many devices, phones among
+    // them, have no medium to lose.
     net->link_up = !rndis_answer_u32(status, msg, len, &state) || state == 0;
     if (net->link_up) {
         rndis_query_step(net, OID_GEN_LINK_SPEED, rndis_speed_answer);
@@ -2863,10 +2643,8 @@ static void rndis_media_answer(
     }
 }
 
-/*
- * OID_802_3_MAXIMUM_LIST_SIZE: how many multicast addresses the device takes,
- * 0 if unknown.
- */
+// OID_802_3_MAXIMUM_LIST_SIZE: how many multicast addresses the device takes,
+// 0 if unknown.
 static void rndis_list_answer(
     struct tendril_net *net, int status, const uint8_t *msg, size_t len
 ) {
@@ -2882,16 +2660,13 @@ static void rndis_list_answer(
     rndis_query_step(net, OID_GEN_MEDIA_CONNECT_STATUS, rndis_media_answer);
 }
 
-/*
- * OID_GEN_MAXIMUM_FRAME_SIZE: the largest payload, without the Ethernet
- * header.
- */
+// OID_GEN_MAXIMUM_FRAME_SIZE: the largest payload, without the Ethernet
+// header.
 static void rndis_frame_answer(
     struct tendril_net *net, int status, const uint8_t *msg, size_t len
 ) {
-    size_t cap = MIN(
-        (size_t)net->rndis_max_transfer, (size_t)RNDIS_MAX_TRANSFER
-    ) - RNDIS_PACKET_HEADER_LEN;
+    size_t cap = MIN((size_t)net->rndis_max_transfer, (size_t)RNDIS_MAX_TRANSFER)
+               - RNDIS_PACKET_HEADER_LEN;
     uint32_t payload;
 
     if (rndis_setup_over(net, status)) {
@@ -2901,20 +2676,16 @@ static void rndis_frame_answer(
         if (payload > RNDIS_MAX_FRAME - ETH_HEADER_LEN) {
             net->max_frame = RNDIS_MAX_FRAME;
         } else {
-            net->max_frame = MAX(
-                (size_t)payload + ETH_HEADER_LEN, (size_t)RNDIS_MIN_FRAME
-            );
+            net->max_frame = MAX((size_t)payload + ETH_HEADER_LEN, (size_t)RNDIS_MIN_FRAME);
         }
     }
-    /* A frame must also fit into one transfer to the device. */
+    // A frame must also fit into one transfer to the device.
     net->max_frame = MIN(net->max_frame, cap);
     rndis_query_step(net, OID_802_3_MAXIMUM_LIST_SIZE, rndis_list_answer);
 }
 
-/* An answer of exactly 6 bytes is the station address. */
-static bool rndis_take_mac(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
-) {
+// An answer of exactly 6 bytes is the station address.
+static bool rndis_take_mac(struct tendril_net *net, int status, const uint8_t *msg, size_t len) {
     const uint8_t *data;
     size_t data_len;
 
@@ -2951,13 +2722,11 @@ static void rndis_perm_addr_answer(
     if (rndis_take_mac(net, status, msg, len)) {
         rndis_query_step(net, OID_GEN_MAXIMUM_FRAME_SIZE, rndis_frame_answer);
     } else {
-        rndis_query_step(
-            net, OID_802_3_CURRENT_ADDRESS, rndis_cur_addr_answer
-        );
+        rndis_query_step(net, OID_802_3_CURRENT_ADDRESS, rndis_cur_addr_answer);
     }
 }
 
-/* REMOTE_NDIS_INITIALIZE_CMPLT ([MS-RNDIS] v20130118, 2.2.9) */
+// REMOTE_NDIS_INITIALIZE_CMPLT ([MS-RNDIS] v20130118, 2.2.9)
 static void rndis_init_answer(
     struct tendril_net *net, int status, const uint8_t *msg, size_t len
 ) {
@@ -2965,14 +2734,12 @@ static void rndis_init_answer(
     if (rndis_setup_over(net, status)) {
         return;
     }
-    /* BEGIN OpenBSD sys/dev/usb/if_urndis.c */
-    /*
-     * 802.3 only, as OpenBSD's sys/dev/usb/if_urndis.c (ISC license) checks.
-     */
+    // BEGIN OpenBSD sys/dev/usb/if_urndis.c
+    // 802.3 only, as OpenBSD's sys/dev/usb/if_urndis.c (ISC license) checks.
     if (status == TENDRIL_OK && get_le32(msg + 28) != RNDIS_MEDIUM_802_3) {
         status = TENDRIL_ERR_UNSUPPORTED;
     }
-    /* END OpenBSD sys/dev/usb/if_urndis.c */
+    // END OpenBSD sys/dev/usb/if_urndis.c
     if (status != TENDRIL_OK) {
         setup_fail(net, "REMOTE_NDIS_INITIALIZE_MSG", status);
         return;
@@ -3012,13 +2779,9 @@ static void rndis_alt_done(void *ctx, int status) {
         return;
     }
 
-    /*
-     * Version 1.0, as Windows sends ([MS-RNDIS] v20130118, 2.2.2, footnotes
-     * <1> to <3>).
-     */
-    op = rndis_request(
-        net, RNDIS_INITIALIZE_MSG, RNDIS_INITIALIZE_LEN, rndis_init_answer
-    );
+    // Version 1.0, as Windows sends ([MS-RNDIS] v20130118, 2.2.2, footnotes
+    // <1> to <3>).
+    op = rndis_request(net, RNDIS_INITIALIZE_MSG, RNDIS_INITIALIZE_LEN, rndis_init_answer);
     if (op == NULL) {
         setup_fail(net, "allocating an RNDIS message", TENDRIL_ERR_NO_MEMORY);
         return;
@@ -3043,18 +2806,15 @@ static void rndis_readdress_answer(
     }
 }
 
-/*
- * The reset lost the packet filter and multicast list: set them again
- * ([MS-RNDIS] v20130118, 3.1.5.5).
- */
+// The reset lost the packet filter and multicast list: set them again
+// ([MS-RNDIS] v20130118, 3.1.5.5).
 static void rndis_readdress(struct tendril_net *net) {
     uint8_t value[4];
     struct net_op *op;
 
     put_le32(value, net->rndis_filter);
     op = rndis_set_request(
-        net, OID_GEN_CURRENT_PACKET_FILTER, value, sizeof(value),
-        rndis_readdress_answer
+        net, OID_GEN_CURRENT_PACKET_FILTER, value, sizeof(value), rndis_readdress_answer
     );
     if (op == NULL) {
         rndis_readdress_answer(net, TENDRIL_ERR_NO_MEMORY, NULL, 0);
@@ -3065,8 +2825,8 @@ static void rndis_readdress(struct tendril_net *net) {
         return;
     }
     op = rndis_set_request(
-        net, OID_802_3_MULTICAST_LIST, net->rndis_mc,
-        net->rndis_mc_count * MAC_LEN, rndis_readdress_answer
+        net, OID_802_3_MULTICAST_LIST, net->rndis_mc, net->rndis_mc_count * MAC_LEN,
+        rndis_readdress_answer
     );
     if (op == NULL) {
         rndis_readdress_answer(net, TENDRIL_ERR_NO_MEMORY, NULL, 0);
@@ -3075,7 +2835,7 @@ static void rndis_readdress(struct tendril_net *net) {
     }
 }
 
-/* REMOTE_NDIS_RESET_CMPLT ([MS-RNDIS] v20130118, 2.2.12 and 3.1.5.5) */
+// REMOTE_NDIS_RESET_CMPLT ([MS-RNDIS] v20130118, 2.2.12 and 3.1.5.5)
 static void rndis_reset_answer(
     struct tendril_net *net, int status, const uint8_t *msg, size_t len
 ) {
@@ -3090,16 +2850,14 @@ static void rndis_reset_answer(
         );
         return;
     }
-    /* AddressingReset */
+    // AddressingReset
     if (get_le32(msg + 12) == 1) {
         rndis_readdress(net);
     }
 }
 
-/*
- * REMOTE_NDIS_RESET_MSG, which carries no RequestID ([MS-RNDIS] v20130118,
- * 2.2.6).
- */
+// REMOTE_NDIS_RESET_MSG, which carries no RequestID ([MS-RNDIS] v20130118,
+// 2.2.6).
 static void rndis_reset(struct tendril_net *net) {
     struct net_op *op = rndis_alloc(RNDIS_RESET_MSG, RNDIS_RESET_LEN);
 
@@ -3111,10 +2869,8 @@ static void rndis_reset(struct tendril_net *net) {
     rndis_queue(net, op);
 }
 
-/*
- * A failed or unsuccessful keepalive resets the device ([MS-RNDIS] v20130118,
- * 3.1.5.4).
- */
+// A failed or unsuccessful keepalive resets the device ([MS-RNDIS] v20130118,
+// 3.1.5.4).
 static void rndis_keepalive_answer(
     struct tendril_net *net, int status, const uint8_t *msg, size_t len
 ) {
@@ -3132,15 +2888,11 @@ static void rndis_keepalive_arm(struct tendril_net *net, uint64_t delay) {
     hc_unlock(net->hc);
 }
 
-/*
- * KeepAliveTimer: a REMOTE_NDIS_KEEPALIVE_MSG once the device has been silent
- * for 5 seconds with no request outstanding, as long as Windows waits
- * ([MS-RNDIS] v20130118, 3.1.2 and 3.1.6, footnote <16>).
- */
+// KeepAliveTimer: a REMOTE_NDIS_KEEPALIVE_MSG once the device has been silent
+// for 5 seconds with no request outstanding, as long as Windows waits
+// ([MS-RNDIS] v20130118, 3.1.2 and 3.1.6, footnote <16>).
 static void rndis_keepalive_fn(struct tendril_work *work) {
-    struct tendril_net *net = CONTAINER_OF(
-        work, struct tendril_net, rndis_keepalive_timer.work
-    );
+    struct tendril_net *net = CONTAINER_OF(work, struct tendril_net, rndis_keepalive_timer.work);
     uint64_t period = RNDIS_KEEPALIVE_MS * NS_PER_MS;
     uint64_t now = tendril_now();
     uint64_t idle = now > net->rndis_last_rx ? now - net->rndis_last_rx : 0;
@@ -3154,8 +2906,7 @@ static void rndis_keepalive_fn(struct tendril_work *work) {
     }
     if (net->op == NULL && !net->ctrl_busy) {
         struct net_op *op = rndis_request(
-            net, RNDIS_KEEPALIVE_MSG, RNDIS_KEEPALIVE_LEN,
-            rndis_keepalive_answer
+            net, RNDIS_KEEPALIVE_MSG, RNDIS_KEEPALIVE_LEN, rndis_keepalive_answer
         );
         if (op != NULL) {
             rndis_queue(net, op);
@@ -3164,10 +2915,8 @@ static void rndis_keepalive_fn(struct tendril_work *work) {
     rndis_keepalive_arm(net, period);
 }
 
-/*
- * Selects the data alternate setting, then initializes the device ([MS-RNDIS]
- * v20130118, 3.1.3).
- */
+// Selects the data alternate setting, then initialises the device ([MS-RNDIS]
+// v20130118, 3.1.3).
 static void rndis_setup(struct tendril_net *net) {
     int status;
 
@@ -3179,15 +2928,13 @@ static void rndis_setup(struct tendril_net *net) {
         rndis_alt_done(net, TENDRIL_OK);
         return;
     }
-    status = tendril_interface_set_alt(
-        net->data_intf, net->data_alt, rndis_alt_done, net
-    );
+    status = tendril_interface_set_alt(net->data_intf, net->data_alt, rndis_alt_done, net);
     if (status != TENDRIL_OK) {
         rndis_alt_done(net, status);
     }
 }
 
-/* NDIS packet filter bits for the TENDRIL_NET_FILTER_* ones. */
+// NDIS packet filter bits for the TENDRIL_NET_FILTER_* ones.
 static uint32_t rndis_filter_bits(uint16_t filter) {
     uint32_t bits = 0;
 
@@ -3224,13 +2971,10 @@ static int rndis_set_oid(
     return TENDRIL_OK;
 }
 
-/*
- * SET_ETHERNET_PACKET_FILTER (CDC ECM 1.2, 6.2.4, Table 8), or
- * OID_GEN_CURRENT_PACKET_FILTER for RNDIS.
- */
+// SET_ETHERNET_PACKET_FILTER (CDC ECM 1.2, 6.2.4, Table 8), or
+// OID_GEN_CURRENT_PACKET_FILTER for RNDIS.
 int tendril_net_set_filter(
-    struct tendril_net *net, uint16_t filter,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_net *net, uint16_t filter, void (*done)(void *ctx, int status), void *ctx
 ) {
     if (net->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
@@ -3240,20 +2984,16 @@ int tendril_net_set_filter(
 
         net->rndis_filter = rndis_filter_bits(filter);
         put_le32(value, net->rndis_filter);
-        return rndis_set_oid(
-            net, OID_GEN_CURRENT_PACKET_FILTER, value, sizeof(value), done, ctx
-        );
+        return rndis_set_oid(net, OID_GEN_CURRENT_PACKET_FILTER, value, sizeof(value), done, ctx);
     }
     if (net->kind == TENDRIL_NET_NCM
      && (net->ncm_caps & NCM_CAP_PACKET_FILTER) == 0) {
         return TENDRIL_ERR_UNSUPPORTED;
     }
-    return op_queue(
-        net, SET_ETHERNET_PACKET_FILTER, filter, NULL, 0, done, ctx
-    );
+    return op_queue(net, SET_ETHERNET_PACKET_FILTER, filter, NULL, 0, done, ctx);
 }
 
-/* SET_ETHERNET_MULTICAST_FILTERS (CDC ECM 1.2, 6.2.1) */
+// SET_ETHERNET_MULTICAST_FILTERS (CDC ECM 1.2, 6.2.1)
 int tendril_net_set_multicast(
     struct tendril_net *net, const uint8_t *addrs, size_t count,
     void (*done)(void *ctx, int status), void *ctx
@@ -3269,19 +3009,16 @@ int tendril_net_set_multicast(
         return TENDRIL_ERR_INVALID;
     }
     if (net->kind == TENDRIL_NET_RNDIS) {
-        /* OID_802_3_MULTICAST_LIST, kept to set again after a reset. */
+        // OID_802_3_MULTICAST_LIST, kept to set again after a reset.
         if (count != 0) {
             memcpy(net->rndis_mc, addrs, count * MAC_LEN);
         }
         net->rndis_mc_count = count;
         net->rndis_mc_set = true;
-        return rndis_set_oid(
-            net, OID_802_3_MULTICAST_LIST, addrs, count * MAC_LEN, done, ctx
-        );
+        return rndis_set_oid(net, OID_802_3_MULTICAST_LIST, addrs, count * MAC_LEN, done, ctx);
     }
     return op_queue(
-        net, SET_ETHERNET_MULTICAST_FILTERS, (uint16_t)count, addrs,
-        count * MAC_LEN, done, ctx
+        net, SET_ETHERNET_MULTICAST_FILTERS, (uint16_t)count, addrs, count * MAC_LEN, done, ctx
     );
 }
 
@@ -3326,11 +3063,9 @@ static void net_disconnect(struct tendril_interface *intf) {
     tendril_free(net, sizeof(struct tendril_net));
 }
 
-/*
- * Refuses while setup runs or anything is in flight that cannot simply be
- * stopped: a frame being sent or queued, an operation, or an RNDIS exchange.
- * The core then cancels the receive and interrupt transfers.
- */
+// Refuses while setup runs or anything is in flight that cannot simply be
+// stopped: a frame being sent or queued, an operation, or an RNDIS exchange.
+// The core then cancels the receive and interrupt transfers.
 static bool net_busy(struct tendril_interface *intf) {
     struct tendril_net *net = tendril_interface_data(intf);
     return net != NULL && !net->attached && !net->stopped;
@@ -3359,7 +3094,7 @@ static bool net_suspend(struct tendril_interface *intf) {
     return true;
 }
 
-/* The device resumed, or its suspend failed: everything starts again. */
+// The device resumed, or its suspend failed: everything starts again.
 static void net_resume(struct tendril_interface *intf) {
     struct tendril_net *net = tendril_interface_data(intf);
 
@@ -3380,16 +3115,11 @@ static void net_resume(struct tendril_interface *intf) {
     rx_start(net);
     intr_start(net);
     if (net->kind == TENDRIL_NET_RNDIS && net->ready && !net->stopped) {
-        /*
-         * A device that lost its state answers the next keepalive badly, and
-         * the reset restores it.
-         */
+        // A device that lost its state answers the next keepalive badly, and
+        // the reset restores it.
         net->rndis_last_rx = tendril_now();
         hc_lock(net->hc);
-        tendril_timer_arm(
-            net->hc, &net->rndis_keepalive_timer,
-            RNDIS_KEEPALIVE_MS * NS_PER_MS
-        );
+        tendril_timer_arm(net->hc, &net->rndis_keepalive_timer, RNDIS_KEEPALIVE_MS * NS_PER_MS);
         hc_unlock(net->hc);
     }
     tx_kick(net);
@@ -3419,9 +3149,7 @@ static void send_sync_done(void *ctx, int status) {
     waiter->done = true;
 }
 
-int tendril_net_send_sync(
-    struct tendril_net *net, const void *frame, size_t len
-) {
+int tendril_net_send_sync(struct tendril_net *net, const void *frame, size_t len) {
     struct send_waiter waiter = { false, TENDRIL_OK };
     struct tendril_hc *hc = tendril_device_hc(net->dev);
     int status = tendril_net_send(net, frame, len, send_sync_done, &waiter);

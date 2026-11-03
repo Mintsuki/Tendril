@@ -55,6 +55,10 @@
  * SUCH DAMAGE.
  */
 
+#ifdef __cplusplus
+#   error "this file is C, not C++"
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -87,9 +91,7 @@ static void reset_internal(struct tendril_transfer *xfer) {
     in->cancel_status = TENDRIL_OK;
 }
 
-void tendril_transfer_init(
-    struct tendril_transfer *xfer, struct tendril_endpoint *ep
-) {
+void tendril_transfer_init(struct tendril_transfer *xfer, struct tendril_endpoint *ep) {
     memset(xfer, 0, sizeof(struct tendril_transfer));
     xfer->endpoint = ep;
     reset_internal(xfer);
@@ -120,10 +122,8 @@ static int dma_dir(struct tendril_transfer *xfer) {
     return is_in(xfer) ? TENDRIL_DMA_FROM_DEVICE : TENDRIL_DMA_TO_DEVICE;
 }
 
-/*
- * Copies what an IN transfer received from its bounce buffer, leaving the rest
- * of the caller's buffer alone.
- */
+// Copies what an IN transfer received from its bounce buffer, leaving the rest
+// of the caller's buffer alone.
 static void copy_back(struct tendril_transfer *xfer) {
     struct tendril_transfer_internal *in = &xfer->internal;
 
@@ -135,17 +135,14 @@ static void copy_back(struct tendril_transfer *xfer) {
     for (size_t i = 0; i < xfer->num_iso_packets; i++) {
         struct tendril_iso_packet *pkt = &xfer->iso_packets[i];
         memcpy(
-            (char *)xfer->buffer + off, (char *)in->bounce + off,
-            MIN(pkt->actual, pkt->length)
+            (char *)xfer->buffer + off, (char *)in->bounce + off, MIN(pkt->actual, pkt->length)
         );
         off += pkt->length;
     }
 }
 
-/* Undoes map_buffer() or bounce_buffer(), copying bounced IN data back. */
-static void release_buffer(
-    struct tendril_hc *hc, struct tendril_transfer *xfer, bool copy
-) {
+// Undoes map_buffer() or bounce_buffer(), copying bounced IN data back.
+static void release_buffer(struct tendril_hc *hc, struct tendril_transfer *xfer, bool copy) {
     struct tendril_transfer_internal *in = &xfer->internal;
 
     if (in->bounce != NULL) {
@@ -160,8 +157,7 @@ static void release_buffer(
         for (size_t i = 0; i < in->num_segments; i++) {
             struct tendril_dma_segment *seg = &in->segments[i];
             tendril_glue_dma_unmap(
-                hc->ctx, (char *)xfer->buffer + off, seg->len, dma_dir(xfer),
-                seg->addr
+                hc->ctx, (char *)xfer->buffer + off, seg->len, dma_dir(xfer), seg->addr
             );
             off += seg->len;
         }
@@ -174,14 +170,10 @@ static void release_buffer(
     in->mapped = 0;
 }
 
-/*
- * Maps the buffer for DMA, one segment per mapping; false asks for a bounce.
- */
-static bool map_buffer(
-    struct tendril_hc *hc, struct tendril_transfer *xfer, size_t len
-) {
+// Maps the buffer for DMA, one segment per mapping; false asks for a bounce.
+static bool map_buffer(struct tendril_hc *hc, struct tendril_transfer *xfer, size_t len) {
     struct tendril_transfer_internal *in = &xfer->internal;
-    /* With an external array, segment.len holds its size in bytes. */
+    // With an external array, segment.len holds its size in bytes.
     size_t cap = 1;
     size_t off = 0;
 
@@ -199,9 +191,9 @@ static bool map_buffer(
             n = len - off;
         }
         bool fits = !hc->data32 || dma + n <= (uint64_t)0x100000000;
-        /* Controllers take the pages after a transfer's first one whole. */
+        // Controllers take the pages after a transfer's first one whole.
         bool aligned = (off == 0 || (dma & 0xfff) == 0)
-            && (off + n == len || ((dma + n) & 0xfff) == 0);
+                    && (off + n == len || ((dma + n) & 0xfff) == 0);
         if (fits && aligned && in->num_segments == cap) {
             size_t ncap = cap * 4;
             struct tendril_dma_segment *arr = tendril_zalloc(
@@ -210,23 +202,16 @@ static bool map_buffer(
             if (arr == NULL) {
                 fits = false;
             } else {
-                memcpy(
-                    arr, in->segments,
-                    in->num_segments * sizeof(struct tendril_dma_segment)
-                );
+                memcpy(arr, in->segments, in->num_segments * sizeof(struct tendril_dma_segment));
                 if (in->segments != &in->segment) {
-                    tendril_free(
-                        in->segments, cap * sizeof(struct tendril_dma_segment)
-                    );
+                    tendril_free(in->segments, cap * sizeof(struct tendril_dma_segment));
                 }
                 in->segments = arr;
                 cap = ncap;
             }
         }
         if (!fits || !aligned) {
-            tendril_glue_dma_unmap(
-                hc->ctx, (char *)xfer->buffer + off, n, dma_dir(xfer), dma
-            );
+            tendril_glue_dma_unmap(hc->ctx, (char *)xfer->buffer + off, n, dma_dir(xfer), dma);
             break;
         }
         in->segments[in->num_segments].addr = dma;
@@ -236,10 +221,8 @@ static bool map_buffer(
         in->mapped = off;
     }
     if (in->segments != &in->segment) {
-        /*
-         * Remember the array size for freeing; the first segment lives in the
-         * array.
-         */
+        // Remember the array size for freeing; the first segment lives in the
+        // array.
         in->segment.len = cap * sizeof(struct tendril_dma_segment);
     }
     if (off == len) {
@@ -249,9 +232,7 @@ static bool map_buffer(
     return false;
 }
 
-static int bounce_buffer(
-    struct tendril_hc *hc, struct tendril_transfer *xfer, size_t len
-) {
+static int bounce_buffer(struct tendril_hc *hc, struct tendril_transfer *xfer, size_t len) {
     struct tendril_transfer_internal *in = &xfer->internal;
     uint64_t dma;
     void *b = tendril_dma_alloc_limit(hc, len, 64, hc->data32, &dma);
@@ -271,9 +252,7 @@ static int bounce_buffer(
     return TENDRIL_OK;
 }
 
-static int prepare_buffer(
-    struct tendril_hc *hc, struct tendril_transfer *xfer
-) {
+static int prepare_buffer(struct tendril_hc *hc, struct tendril_transfer *xfer) {
     struct tendril_transfer_internal *in = &xfer->internal;
     size_t len = data_length(xfer);
 
@@ -310,7 +289,7 @@ static int validate(struct tendril_transfer *xfer) {
              || data_length(xfer) > xfer->length) {
                 return TENDRIL_ERR_INVALID;
             }
-            /* A packet is what one service interval carries. */
+            // A packet is what one service interval carries.
             for (size_t i = 0; i < xfer->num_iso_packets; i++) {
                 if (xfer->iso_packets[i].length > ep->max_esit_payload) {
                     return TENDRIL_ERR_INVALID;
@@ -379,9 +358,7 @@ int tendril_transfer_submit(struct tendril_transfer *xfer) {
     in->hc = hc;
     xfer->status = TENDRIL_OK;
     xfer->actual = 0;
-    for (size_t i = 0;
-         ep->type == TENDRIL_ENDPOINT_XFER_ISOC && i < xfer->num_iso_packets;
-         i++) {
+    for (size_t i = 0; ep->type == TENDRIL_ENDPOINT_XFER_ISOC && i < xfer->num_iso_packets; i++) {
         xfer->iso_packets[i].actual = 0;
         xfer->iso_packets[i].status = TENDRIL_OK;
     }
@@ -413,17 +390,14 @@ int tendril_transfer_submit(struct tendril_transfer *xfer) {
         return st == TENDRIL_ERR_BOUNCE ? TENDRIL_ERR_NO_MEMORY : st;
     }
     if (xfer->timeout_ms != 0) {
-        tendril_timer_arm(
-            hc, &in->timeout, (uint64_t)xfer->timeout_ms * NS_PER_MS
-        );
+        tendril_timer_arm(hc, &in->timeout, (uint64_t)xfer->timeout_ms * NS_PER_MS);
     }
     hc_unlock(hc);
     return TENDRIL_OK;
 }
 
 void tendril_transfer_complete(
-    struct tendril_hc *hc, struct tendril_transfer *xfer, int status,
-    size_t actual
+    struct tendril_hc *hc, struct tendril_transfer *xfer, int status, size_t actual
 ) {
     struct tendril_transfer_internal *in = &xfer->internal;
 
@@ -449,12 +423,10 @@ void tendril_transfer_fail_endpoint(
     }
 }
 
-/* BEGIN FreeBSD sys/dev/usb/usb_transfer.c */
-/*
- * Errors after which a split transaction may have left a TT buffer busy: the
- * ones FreeBSD's sys/dev/usb/usb_transfer.c (BSD-2-Clause, usbd_transfer_done)
- * clears the TT buffer for, all but stalls and cancellations.
- */
+// BEGIN FreeBSD sys/dev/usb/usb_transfer.c
+// Errors after which a split transaction may have left a TT buffer busy: the
+// ones FreeBSD's sys/dev/usb/usb_transfer.c (BSD-2-Clause, usbd_transfer_done)
+// clears the TT buffer for, all but stalls and cancellations.
 static bool tt_error(int status) {
     switch (status) {
         case TENDRIL_ERR_TIMEOUT:
@@ -469,12 +441,10 @@ static bool tt_error(int status) {
         }
     }
 }
-/* END FreeBSD sys/dev/usb/usb_transfer.c */
+// END FreeBSD sys/dev/usb/usb_transfer.c
 
 static void xfer_done_work(struct tendril_work *work) {
-    struct tendril_transfer *xfer = CONTAINER_OF(
-        work, struct tendril_transfer, internal.done
-    );
+    struct tendril_transfer *xfer = CONTAINER_OF(work, struct tendril_transfer, internal.done);
     struct tendril_transfer_internal *in = &xfer->internal;
     struct tendril_hc *hc = in->hc;
     struct tendril_device *dev = xfer->endpoint->dev;
@@ -488,14 +458,12 @@ static void xfer_done_work(struct tendril_work *work) {
     }
     int type = xfer->endpoint->type;
     bool async = type == TENDRIL_ENDPOINT_XFER_CONTROL
-        || type == TENDRIL_ENDPOINT_XFER_BULK;
+              || type == TENDRIL_ENDPOINT_XFER_BULK;
     if (async && tt_error(xfer->status) && dev->tt_hub != NULL && !dev->gone) {
         tendril_hub_clear_tt(dev, xfer->endpoint);
     }
 
-    /*
-     * The callback may resubmit or free the transfer; keep the device alive.
-     */
+    // The callback may resubmit or free the transfer; keep the device alive.
     hc_lock(hc);
     in->state = XFER_DONE;
     dev->refs++;
@@ -565,9 +533,8 @@ int tendril_transfer_run(struct tendril_transfer *xfer) {
 }
 
 int tendril_control(
-    struct tendril_device *dev, uint8_t request_type, uint8_t request,
-    uint16_t value, uint16_t index, void *data, size_t length, size_t *actual,
-    uint32_t timeout_ms
+    struct tendril_device *dev, uint8_t request_type, uint8_t request, uint16_t value,
+    uint16_t index, void *data, size_t length, size_t *actual, uint32_t timeout_ms
 ) {
     struct tendril_transfer xfer;
 

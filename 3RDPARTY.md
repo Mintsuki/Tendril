@@ -5,8 +5,8 @@ at least as permissively as BSD-2-Clause. Parts of it are derived from the
 files below; their notices follow, as those licenses require, and each entry
 names the commit the file was read at and what Tendril takes from it. Each
 Tendril file drawing on one of them repeats its notice at the top, and brackets
-every part derived from it between `/* BEGIN <project> <path> */` and
-`/* END <project> <path> */` comments; comments in the code say what each part
+every part derived from it between `// BEGIN <project> <path>` and
+`// END <project> <path>` comments; comments in the code say what each part
 takes.
 
 Some facts Tendril needs about devices are documented only by sources whose

@@ -25,6 +25,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef __cplusplus
+#   error "this file is C, not C++"
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include "../internal.h"
@@ -44,9 +48,7 @@ void tendril_driver_register(struct tendril_driver *driver) {
     *p = driver;
 }
 
-bool tendril_interface_claim(
-    struct tendril_interface *intf, struct tendril_driver *driver
-) {
+bool tendril_interface_claim(struct tendril_interface *intf, struct tendril_driver *driver) {
     struct tendril_device *dev = intf->dev;
     if (intf->driver != NULL) {
         return intf->driver == driver
@@ -63,8 +65,7 @@ void tendril_bind_interfaces(struct tendril_device *dev) {
         if (intf->driver != NULL || (dev->hub != NULL && i == 0)) {
             continue;
         }
-        for (struct tendril_driver *drv = tendril_drivers; drv != NULL;
-             drv = drv->next) {
+        for (struct tendril_driver *drv = tendril_drivers; drv != NULL; drv = drv->next) {
             if (drv->probe == NULL) {
                 continue;
             }
@@ -76,10 +77,8 @@ void tendril_bind_interfaces(struct tendril_device *dev) {
             if (claimed) {
                 break;
             }
-            /*
-             * A declined probe must not leave companion claims or driver data
-             * behind.
-             */
+            // A declined probe must not leave companion claims or driver data
+            // behind.
             for (size_t j = 0; j < dev->num_interfaces; j++) {
                 if (dev->interfaces[j].primary == intf) {
                     dev->interfaces[j].driver = NULL;
@@ -113,8 +112,8 @@ void tendril_unbind_interfaces(struct tendril_device *dev) {
 }
 
 void tendril_notify_added(struct tendril_device *dev) {
-    for (struct tendril_driver *drv = tendril_drivers;
-         drv != NULL && !dev->gone; drv = drv->next) {
+    for (struct tendril_driver *drv = tendril_drivers; drv != NULL && !dev->gone;
+         drv = drv->next) {
         if (drv->device_added != NULL) {
             drv->device_added(dev);
         }
@@ -122,8 +121,7 @@ void tendril_notify_added(struct tendril_device *dev) {
 }
 
 void tendril_notify_removed(struct tendril_device *dev) {
-    for (struct tendril_driver *drv = tendril_drivers; drv != NULL;
-         drv = drv->next) {
+    for (struct tendril_driver *drv = tendril_drivers; drv != NULL; drv = drv->next) {
         if (drv->device_removed != NULL) {
             drv->device_removed(dev);
         }
@@ -131,8 +129,8 @@ void tendril_notify_removed(struct tendril_device *dev) {
 }
 
 void tendril_notify_woke(struct tendril_device *dev) {
-    for (struct tendril_driver *drv = tendril_drivers;
-         drv != NULL && !dev->gone; drv = drv->next) {
+    for (struct tendril_driver *drv = tendril_drivers; drv != NULL && !dev->gone;
+         drv = drv->next) {
         if (drv->device_woke != NULL) {
             drv->device_woke(dev);
         }

@@ -25,29 +25,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* Chipset fixes for PCI EHCI controllers. */
+// Chipset fixes for PCI EHCI controllers.
+
+#ifdef __cplusplus
+#   error "this file is C, not C++"
+#endif
 
 #include <stdint.h>
 #include "../internal.h"
 #include <tendril/glue.h>
 
 void tendril_ehci_chipset_fixes(void *ctx) {
-    /* Type 0 header (PCI Local Bus Specification Revision 3.0, 6.2.1). */
+    // Type 0 header (PCI Local Bus Specification Revision 3.0, 6.2.1).
     uint16_t vendor = tendril_glue_pci_read16(ctx, 0x00);
     uint16_t device = tendril_glue_pci_read16(ctx, 0x02);
     uint8_t revision = tendril_glue_pci_read8(ctx, 0x08);
 
-    /*
-     * The SB600's and SB700's EHCI controllers, the SB700's only with some
-     * revisions of its SMBus controller. The bit is undocumented: the SB700
-     * register reference guide calls it reserved (clean-room specification).
-     */
+    // The SB600's and SB700's EHCI controllers, the SB700's only with some
+    // revisions of its SMBus controller. The bit is undocumented: the SB700
+    // register reference guide calls it reserved (clean-room specification).
     if (vendor == 0x1002 && (device == 0x4386 || device == 0x4396)) {
         if (device == 0x4396) {
             uint8_t smbus_revision;
-            bool found = tendril_glue_pci_find_read8(
-                ctx, 0x1002, 0x4385, 0x08, &smbus_revision
-            );
+            bool found = tendril_glue_pci_find_read8(ctx, 0x1002, 0x4385, 0x08, &smbus_revision);
             if (!found
              || (smbus_revision != 0x3a && smbus_revision != 0x3b)) {
                 return;
@@ -60,10 +60,8 @@ void tendril_ehci_chipset_fixes(void *ctx) {
         }
     }
 
-    /*
-     * The bit sets the controller's schedule sleep time to 10 microseconds
-     * (clean-room specification).
-     */
+    // The bit sets the controller's schedule sleep time to 10 microseconds
+    // (clean-room specification).
     if (vendor == 0x1106 && device == 0x3104 && (revision & 0xf0) == 0x60) {
         uint8_t value = tendril_glue_pci_read8(ctx, 0x4b);
         if ((value & 0x20) == 0) {

@@ -25,10 +25,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * OpenHCI 1.0a. Registers, descriptors, and the HCCA are little-endian and use
- * 32-bit addresses.
- */
+// OpenHCI 1.0a. Registers, descriptors, and the HCCA are little-endian and use
+// 32-bit addresses.
 
 /*
  * Parts of this file are derived from FreeBSD's sys/dev/usb/controller/ohci.c
@@ -95,6 +93,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef __cplusplus
+#   error "this file is C, not C++"
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -153,10 +155,8 @@
 #define FI_MASK ((uint32_t)0x3fff)
 #define FI_DEFAULT ((uint32_t)11999)
 #define FIT ((uint32_t)1 << 31)
-/*
- * OHCI 1.0a, 5.4: bit times of transaction and EOF overhead, taken off before
- * the 6/7 for bit stuffing.
- */
+// OHCI 1.0a, 5.4: bit times of transaction and EOF overhead, taken off before
+// the 6/7 for bit stuffing.
 #define MAX_OVERHEAD ((uint32_t)210)
 
 #define RHA_NDP_MASK ((uint32_t)0xff)
@@ -165,7 +165,7 @@
 #define RHA_NOCP ((uint32_t)1 << 12)
 #define RHS_LPSC ((uint32_t)1 << 16)
 
-/* Port status: each read bit doubles as a write-one command, as noted. */
+// Port status: each read bit doubles as a write-one command, as noted.
 #define PS_CCS ((uint32_t)1 << 0)
 #define PS_CLEAR_ENABLE ((uint32_t)1 << 0)
 #define PS_PES ((uint32_t)1 << 1)
@@ -209,7 +209,7 @@
 #define TD_NOT_ACCESSED ((uint32_t)15 << 28)
 
 #define ITD_FC(n) ((uint32_t)(n) << 24)
-/* An untouched offset carries condition code 111x; x selects the page. */
+// An untouched offset carries condition code 111x; x selects the page.
 #define ITD_OFFSET_FRESH ((uint32_t)0xe000)
 
 #define CC_NOERROR 0
@@ -221,26 +221,22 @@
 #define CC_NOT_ACCESSED 14
 
 #define INTR_LEVELS 6
-/* BEGIN FreeBSD sys/dev/usb/controller/ohci.c */
-/*
- * 4 KiB per TD, as FreeBSD's sys/dev/usb/controller/ohci.c (BSD-2-Clause) has
- * it, though OHCI 1.0a allows two pages.
- */
+// BEGIN FreeBSD sys/dev/usb/controller/ohci.c
+// 4 KiB per TD, as FreeBSD's sys/dev/usb/controller/ohci.c (BSD-2-Clause) has
+// it, though OHCI 1.0a allows two pages.
 #define TD_MAX_BYTES 4096
-/* END FreeBSD sys/dev/usb/controller/ohci.c */
+// END FreeBSD sys/dev/usb/controller/ohci.c
 #define ITD_PACKETS 8
 #define ISO_LEAD_FRAMES 4
-/* BEGIN FreeBSD sys/dev/usb/usb.h, sys/dev/usb/controller/ohci.c */
-/*
- * FreeBSD's USB_BUS_RESET_DELAY and USB_PORT_ROOT_RESET_DELAY, from its
- * sys/dev/usb/usb.h (BSD-2-Clause), as its sys/dev/usb/controller/ohci.c
- * (BSD-2-Clause, ohci_controller_init and ohci_roothub_exec) uses them, and
- * its wait for SMM to let go.
- */
+// BEGIN FreeBSD sys/dev/usb/usb.h, sys/dev/usb/controller/ohci.c
+// FreeBSD's USB_BUS_RESET_DELAY and USB_PORT_ROOT_RESET_DELAY, from its
+// sys/dev/usb/usb.h (BSD-2-Clause), as its sys/dev/usb/controller/ohci.c
+// (BSD-2-Clause, ohci_controller_init and ohci_roothub_exec) uses them, and
+// its wait for SMM to let go.
 #define BUS_RESET_MS 100
 #define ROOT_RESET_MS 200
 #define SMM_WAIT_MS 100
-/* END FreeBSD sys/dev/usb/usb.h, sys/dev/usb/controller/ohci.c */
+// END FreeBSD sys/dev/usb/usb.h, sys/dev/usb/controller/ohci.c
 
 struct ohci_hcca {
     uint32_t intr_table[32];
@@ -259,7 +255,7 @@ struct ohci_td {
     struct ohci_td *sw_next;
     size_t length;
     bool skipped;
-    /* Holds a control transfer's SETUP data, which must be DMA-addressable. */
+    // Holds a control transfer's SETUP data, which must be DMA-addressable.
     uint8_t setup[8];
 };
 
@@ -281,9 +277,7 @@ struct ohci_itd {
 #define KIND_ISO 3
 #define KIND_SKELETON 4
 
-/*
- * Waits for endpoints being closed, then completes an asynchronous operation.
- */
+// Waits for endpoints being closed, then completes an asynchronous operation.
 struct ohci_close {
     struct tendril_async *async;
     size_t remaining;
@@ -297,13 +291,11 @@ struct ohci_ed {
     uint32_t next;
     uint64_t dma;
     struct tendril_endpoint *ep;
-    /*
-     * The empty descriptor TailP names, a struct ohci_td or, for isochronous,
-     * a struct ohci_itd.
-     */
+    // The empty descriptor TailP names, a struct ohci_td or, for isochronous,
+    // a struct ohci_itd.
     void *dummy;
     uint64_t dummy_dma;
-    /* Hardware list order, around a skeleton descriptor. */
+    // Hardware list order, around a skeleton descriptor.
     struct ohci_ed *sw_next;
     struct ohci_ed *sw_prev;
     struct tendril_list node;
@@ -315,7 +307,7 @@ struct ohci_ed {
     bool linked;
     bool waiting;
     bool closing;
-    /* Isochronous streaming: the frame after the last one scheduled. */
+    // Isochronous streaming: the frame after the last one scheduled.
     uint32_t next_frame;
     bool streaming;
 };
@@ -334,14 +326,12 @@ struct ohci {
     struct tendril_dma_pool ed_pool;
     struct tendril_dma_pool td_pool;
     struct tendril_dma_pool itd_pool;
-    /* Every endpoint descriptor in use, for scanning. */
+    // Every endpoint descriptor in use, for scanning.
     struct tendril_list eds;
-    /*
-     * Descriptors waiting for frames to pass: closing ones off the lists,
-     * paused ones skipped.
-     */
+    // Descriptors waiting for frames to pass: closing ones off the lists,
+    // paused ones skipped.
     struct tendril_list waiting;
-    /* List enables held off while control or bulk descriptors are removed. */
+    // List enables held off while control or bulk descriptors are removed.
     size_t control_removals;
     size_t bulk_removals;
     uint32_t control;
@@ -351,7 +341,7 @@ struct ohci {
     bool resetting[15];
 };
 
-/* hcd_data slots in a transfer */
+// hcd_data slots in a transfer
 #define XD_FIRST 0
 #define XD_LAST 1
 #define XD_FLAGS 2
@@ -360,7 +350,7 @@ struct ohci {
 #define XF_CANCEL ((uint32_t)1 << 0)
 #define XF_SHORT ((uint32_t)1 << 1)
 
-static struct ohci *O(struct tendril_hc *hc) {
+static struct ohci *ohci_of(struct tendril_hc *hc) {
     return hc->hcd;
 }
 
@@ -376,16 +366,14 @@ static uint32_t le(uint32_t v) {
     return tendril_le32(v);
 }
 
-/* The 32-bit frame number, extended from the 16-bit counter. */
+// The 32-bit frame number, extended from the 16-bit counter.
 static uint32_t current_frame(struct tendril_hc *hc) {
-    return tendril_frame_update(
-        hc, reg_read(hc, REG_FM_NUMBER) & 0xffff, 0xffff
-    );
+    return tendril_frame_update(hc, reg_read(hc, REG_FM_NUMBER) & 0xffff, 0xffff);
 }
 
 static struct ohci_td *td_alloc(struct tendril_hc *hc) {
     uint64_t dma;
-    struct ohci_td *td = tendril_dma_pool_alloc(&O(hc)->td_pool, &dma);
+    struct ohci_td *td = tendril_dma_pool_alloc(&ohci_of(hc)->td_pool, &dma);
     if (td != NULL) {
         td->dma = dma;
     }
@@ -393,12 +381,12 @@ static struct ohci_td *td_alloc(struct tendril_hc *hc) {
 }
 
 static void td_free(struct tendril_hc *hc, struct ohci_td *td) {
-    tendril_dma_pool_free(&O(hc)->td_pool, td, td->dma);
+    tendril_dma_pool_free(&ohci_of(hc)->td_pool, td, td->dma);
 }
 
 static struct ohci_itd *itd_alloc(struct tendril_hc *hc) {
     uint64_t dma;
-    struct ohci_itd *itd = tendril_dma_pool_alloc(&O(hc)->itd_pool, &dma);
+    struct ohci_itd *itd = tendril_dma_pool_alloc(&ohci_of(hc)->itd_pool, &dma);
     if (itd != NULL) {
         itd->dma = dma;
     }
@@ -406,12 +394,12 @@ static struct ohci_itd *itd_alloc(struct tendril_hc *hc) {
 }
 
 static void itd_free(struct tendril_hc *hc, struct ohci_itd *itd) {
-    tendril_dma_pool_free(&O(hc)->itd_pool, itd, itd->dma);
+    tendril_dma_pool_free(&ohci_of(hc)->itd_pool, itd, itd->dma);
 }
 
 static struct ohci_ed *ed_alloc(struct tendril_hc *hc) {
     uint64_t dma;
-    struct ohci_ed *ed = tendril_dma_pool_alloc(&O(hc)->ed_pool, &dma);
+    struct ohci_ed *ed = tendril_dma_pool_alloc(&ohci_of(hc)->ed_pool, &dma);
     if (ed != NULL) {
         ed->dma = dma;
         list_init(&ed->node);
@@ -421,10 +409,10 @@ static struct ohci_ed *ed_alloc(struct tendril_hc *hc) {
 }
 
 static void ed_free(struct tendril_hc *hc, struct ohci_ed *ed) {
-    tendril_dma_pool_free(&O(hc)->ed_pool, ed, ed->dma);
+    tendril_dma_pool_free(&ohci_of(hc)->ed_pool, ed, ed->dma);
 }
 
-/* Data cursor over a transfer's DMA segments. */
+// Data cursor over a transfer's DMA segments.
 struct cursor {
     const struct tendril_dma_segment *segs;
     size_t num;
@@ -447,7 +435,7 @@ static uint64_t cursor_addr(struct cursor *c) {
     return c->idx < c->num ? c->segs[c->idx].addr + c->off : 0;
 }
 
-/* Bytes contiguous at the cursor up to the end of its 4 KiB page. */
+// Bytes contiguous at the cursor up to the end of its 4 KiB page.
 static size_t cursor_page_room(struct cursor *c) {
     uint64_t a = cursor_addr(c);
     if (c->idx >= c->num) {
@@ -471,15 +459,11 @@ static void cursor_advance(struct cursor *c, size_t n) {
     }
 }
 
-/*
- * Takes up to `want` bytes from the cursor into one buffer a TD can describe:
- * the rest of one page, then the start of any other (OHCI 1.0a, 4.3.1.3.1).
- * Unless that is all of `want`, the size is kept a multiple of `mps`. Returns
- * the bytes taken, or 0 if the buffer cannot be described.
- */
-static size_t take_buffer(
-    struct cursor *c, size_t want, size_t mps, uint32_t *cbp, uint32_t *be
-) {
+// Takes up to `want` bytes from the cursor into one buffer a TD can describe:
+// the rest of one page, then the start of any other (OHCI 1.0a, 4.3.1.3.1).
+// Unless that is all of `want`, the size is kept a multiple of `mps`. Returns
+// the bytes taken, or 0 if the buffer cannot be described.
+static size_t take_buffer(struct cursor *c, size_t want, size_t mps, uint32_t *cbp, uint32_t *be) {
     struct cursor probe = *c;
     bool last = want <= TD_MAX_BYTES;
     want = MIN(want, (size_t)TD_MAX_BYTES);
@@ -511,10 +495,8 @@ static size_t take_buffer(
     return total;
 }
 
-/*
- * Bytes a retired TD moved, from what is left between CurrentBufferPointer and
- * BufferEnd.
- */
+// Bytes a retired TD moved, from what is left between CurrentBufferPointer and
+// BufferEnd.
 static size_t td_moved(const struct ohci_td *td) {
     uint32_t cbp = le(td->cbp);
     uint32_t be = le(td->be);
@@ -544,19 +526,19 @@ static int cc_status(int cc) {
     }
 }
 
-/* Endpoint descriptors */
+// Endpoint descriptors
 
 static uint32_t ed_flags(struct tendril_endpoint *ep) {
     struct tendril_device *dev = ep->dev;
     uint32_t f = (uint32_t)(dev->address & 0x7f)
-        | (uint32_t)(ep->address & TENDRIL_ENDPOINT_NUMBER_MASK) << 7
-        | (uint32_t)(ep->max_packet & 0x7ff) << 16;
+               | (uint32_t)(ep->address & TENDRIL_ENDPOINT_NUMBER_MASK) << 7
+               | (uint32_t)(ep->max_packet & 0x7ff) << 16;
     if (dev->speed == TENDRIL_SPEED_LOW) {
         f |= ED_LOW_SPEED;
     }
     if (ep->type != TENDRIL_ENDPOINT_XFER_CONTROL) {
         f |= (ep->address & TENDRIL_ENDPOINT_DIR_MASK) != 0 ? ED_DIR_IN
-            : ED_DIR_OUT;
+           : ED_DIR_OUT;
     }
     if (ep->type == TENDRIL_ENDPOINT_XFER_ISOC) {
         f |= ED_ISO;
@@ -565,7 +547,7 @@ static uint32_t ed_flags(struct tendril_endpoint *ep) {
 }
 
 static struct ohci_ed *list_head(struct tendril_hc *hc, struct ohci_ed *ed) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     switch (ed->kind) {
         case KIND_CONTROL: {
             return o->control_head;
@@ -582,10 +564,8 @@ static struct ohci_ed *list_head(struct tendril_hc *hc, struct ohci_ed *ed) {
     }
 }
 
-/*
- * Puts a descriptor right after its list's skeleton, where the controller
- * picks it up next time round.
- */
+// Puts a descriptor right after its list's skeleton, where the controller
+// picks it up next time round.
 static void link_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
     struct ohci_ed *head = list_head(hc, ed);
     ed->next = head->next;
@@ -611,12 +591,12 @@ static void unlink_ed(struct ohci_ed *ed) {
 
 static size_t intr_level(struct tendril_endpoint *ep) {
     size_t log2 = ep->interval_log2 > 3 ? ep->interval_log2 - (uint32_t)3
-        : (uint32_t)0;
+                : (uint32_t)0;
     return MIN(log2, (size_t)INTR_LEVELS - 1);
 }
 
 static void set_list_enables(struct tendril_hc *hc) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     uint32_t ctl = o->control | CTL_PLE | CTL_IE | CTL_CLE | CTL_BLE;
     if (o->control_removals != 0) {
         ctl &= ~CTL_CLE;
@@ -627,13 +607,11 @@ static void set_list_enables(struct tendril_hc *hc) {
     reg_write(hc, REG_CONTROL, ctl);
 }
 
-/*
- * Waits two frame starts before touching a descriptor the controller may be
- * using (OHCI 1.0a, 5.2.7.1.2-3): a removed one may still be in hand, and a
- * skipped one may be mid-transaction.
- */
+// Waits two frame starts before touching a descriptor the controller may be
+// using (OHCI 1.0a, 5.2.7.1.2-3): a removed one may still be in hand, and a
+// skipped one may be mid-transaction.
 static void wait_frames(struct tendril_hc *hc, struct ohci_ed *ed) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     if (ed->waiting) {
         return;
     }
@@ -643,7 +621,7 @@ static void wait_frames(struct tendril_hc *hc, struct ohci_ed *ed) {
     tendril_timer_arm(hc, &o->timer, NS_PER_MS);
 }
 
-/* Transfers */
+// Transfers
 
 static struct ohci_td *xfer_first(struct tendril_transfer *xfer) {
     return (struct ohci_td *)xfer->internal.hcd_data[XD_FIRST];
@@ -660,9 +638,7 @@ static bool is_in(struct tendril_transfer *xfer) {
     return (xfer->endpoint->address & TENDRIL_ENDPOINT_DIR_MASK) != 0;
 }
 
-static void free_chain(
-    struct tendril_hc *hc, struct ohci_td *td, struct ohci_td *stop
-) {
+static void free_chain(struct tendril_hc *hc, struct ohci_td *td, struct ohci_td *stop) {
     while (td != NULL && td != stop) {
         struct ohci_td *next = td->sw_next;
         td_free(hc, td);
@@ -670,16 +646,11 @@ static void free_chain(
     }
 }
 
-static void free_xfer_tds(
-    struct tendril_hc *hc, struct tendril_transfer *xfer
-) {
+static void free_xfer_tds(struct tendril_hc *hc, struct tendril_transfer *xfer) {
     free_chain(hc, xfer_first(xfer), xfer_last(xfer)->sw_next);
 }
 
-static void fill_td(
-    struct ohci_td *td, uint32_t flags, uint32_t cbp, uint32_t be,
-    size_t length
-) {
+static void fill_td(struct ohci_td *td, uint32_t flags, uint32_t cbp, uint32_t be, size_t length) {
     td->flags = le(flags | TD_NOT_ACCESSED | TD_DI(0));
     td->cbp = le(cbp);
     td->be = le(length != 0 ? be : 0);
@@ -687,10 +658,8 @@ static void fill_td(
     td->skipped = false;
 }
 
-/*
- * Queues a control, bulk, or interrupt transfer behind the descriptor's dummy
- * TD.
- */
+// Queues a control, bulk, or interrupt transfer behind the descriptor's dummy
+// TD.
 static void list_filled(struct tendril_hc *hc, struct ohci_ed *ed);
 
 static int submit_general(
@@ -702,7 +671,7 @@ static int submit_general(
     size_t mps = ep->max_packet;
     size_t len = control ? tendril_le16(xfer->setup.length) : xfer->length;
     bool zlp = !in && (xfer->flags & TENDRIL_XFER_ZERO_PACKET) != 0 && len != 0
-        && len % mps == 0;
+            && len % mps == 0;
     struct ohci_td *first = ed->dummy;
     struct ohci_td *dummy = td_alloc(hc);
     struct ohci_td *td = first;
@@ -720,10 +689,8 @@ static int submit_general(
         fill_td(td, TD_DP_SETUP | TD_DATA0, a, a + 7, 8);
     }
 
-    /*
-     * Data: control toggles start at DATA1, bulk and interrupt carry theirs in
-     * the ED.
-     */
+    // Data: control toggles start at DATA1, bulk and interrupt carry theirs in
+    // the ED.
     uint32_t dir = in ? TD_DP_IN : TD_DP_OUT;
     size_t packets = 1;
     size_t done = 0;
@@ -757,16 +724,11 @@ static int submit_general(
             zlp = false;
         }
         uint32_t toggle = control ? ((packets & 1) != 0 ? TD_DATA1 : TD_DATA0)
-            : TD_TOGGLE_CARRY;
+                        : TD_TOGGLE_CARRY;
         bool last_data = done + chunk == len;
-        /*
-         * Only the last IN TD may end short without an error; earlier ones
-         * halt on underrun.
-         */
-        fill_td(
-            td, dir | toggle | (in && last_data ? TD_ROUNDING : 0), cbp, be,
-            (uint32_t)chunk
-        );
+        // Only the last IN TD may end short without an error; earlier ones
+        // halt on underrun.
+        fill_td(td, dir | toggle | (in && last_data ? TD_ROUNDING : 0), cbp, be, (uint32_t)chunk);
         packets += (unsigned int)((chunk + mps - 1) / mps);
         done += chunk;
         any = true;
@@ -784,9 +746,7 @@ static int submit_general(
         td->sw_next = n;
         td->next = le((uint32_t)n->dma);
         td = n;
-        fill_td(
-            td, (in && len != 0 ? TD_DP_OUT : TD_DP_IN) | TD_DATA1, 0, 0, 0
-        );
+        fill_td(td, (in && len != 0 ? TD_DP_OUT : TD_DP_IN) | TD_DATA1, 0, 0, 0);
     }
 
     td->sw_next = dummy;
@@ -805,18 +765,14 @@ static int submit_general(
     return TENDRIL_OK;
 }
 
-/*
- * The TD the controller works on next, with the halt and carry bits dropped.
- */
+// The TD the controller works on next, with the halt and carry bits dropped.
 static uint32_t ed_head(struct ohci_ed *ed) {
     return le(ed->head) & ED_PTR_MASK;
 }
 
-/*
- * Tells the controller a control or bulk list has TDs to run (OHCI 1.0a,
- * HcCommandStatus CLF and BLF); once it has walked a list and found nothing,
- * it does not look again until told.
- */
+// Tells the controller a control or bulk list has TDs to run (OHCI 1.0a,
+// HcCommandStatus CLF and BLF); once it has walked a list and found nothing,
+// it does not look again until told.
 static void list_filled(struct tendril_hc *hc, struct ohci_ed *ed) {
     if (ed->kind == KIND_CONTROL) {
         reg_write(hc, REG_COMMAND_STATUS, CMD_CLF);
@@ -825,10 +781,8 @@ static void list_filled(struct tendril_hc *hc, struct ohci_ed *ed) {
     }
 }
 
-/*
- * Points the halted or skipped descriptor at `td`, keeping the toggle carry,
- * and has the controller look again.
- */
+// Points the halted or skipped descriptor at `td`, keeping the toggle carry,
+// and has the controller look again.
 static void ed_restart(
     struct tendril_hc *hc, struct ohci_ed *ed, uint64_t td_dma, uint32_t carry
 ) {
@@ -837,10 +791,8 @@ static void ed_restart(
     list_filled(hc, ed);
 }
 
-/*
- * Checks the oldest transfer of a descriptor. TDs retire in order, so those
- * ahead of HeadP are done. Returns true if the transfer completed.
- */
+// Checks the oldest transfer of a descriptor. TDs retire in order, so those
+// ahead of HeadP are done. Returns true if the transfer completed.
 static bool scan_general(
     struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_transfer *xfer
 ) {
@@ -864,13 +816,10 @@ static bool scan_general(
             }
             if (cc == CC_DATA_UNDERRUN && data
              && (flags & TD_DP_MASK) == TD_DP_IN) {
-                /*
-                 * A short packet ended the data early; the rest of the data
-                 * stage never runs.
-                 */
+                // A short packet ended the data early; the rest of the data
+                // stage never runs.
                 struct ohci_td *resume = control ? last : last->sw_next;
-                for (struct ohci_td *s = td->sw_next; s != resume;
-                     s = s->sw_next) {
+                for (struct ohci_td *s = td->sw_next; s != resume; s = s->sw_next) {
                     s->skipped = true;
                 }
                 if ((xfer->internal.hcd_data[XD_FLAGS] & XF_SHORT) == 0) {
@@ -881,10 +830,8 @@ static bool scan_general(
                     break;
                 }
             } else if (cc != CC_NOERROR) {
-                /*
-                 * The descriptor halted: drop the rest of the transfer and go
-                 * on with the next.
-                 */
+                // The descriptor halted: drop the rest of the transfer and go
+                // on with the next.
                 struct ohci_td *resume = last->sw_next;
                 uint32_t carry = le(ed->head) & ED_CARRY;
                 free_xfer_tds(hc, xfer);
@@ -902,7 +849,7 @@ static bool scan_general(
     return true;
 }
 
-/* Isochronous transfers */
+// Isochronous transfers
 
 static struct ohci_itd *xfer_first_itd(struct tendril_transfer *xfer) {
     return (struct ohci_itd *)xfer->internal.hcd_data[XD_FIRST];
@@ -912,9 +859,7 @@ static struct ohci_itd *xfer_last_itd(struct tendril_transfer *xfer) {
     return (struct ohci_itd *)xfer->internal.hcd_data[XD_LAST];
 }
 
-static void free_itd_chain(
-    struct tendril_hc *hc, struct ohci_itd *itd, struct ohci_itd *stop
-) {
+static void free_itd_chain(struct tendril_hc *hc, struct ohci_itd *itd, struct ohci_itd *stop) {
     while (itd != NULL && itd != stop) {
         struct ohci_itd *next = itd->sw_next;
         itd_free(hc, itd);
@@ -922,21 +867,18 @@ static void free_itd_chain(
     }
 }
 
-/*
- * Packs as many of the packets starting at `p` as fit one ITD: up to eight,
- * back to back in the rest of one page and the start of another, the same
- * two-page buffer a general TD has (OHCI 1.0a, 4.3.2.3.1). Returns the count.
- */
-static uint32_t fill_itd(
-    struct ohci_itd *itd, struct tendril_transfer *xfer, uint32_t p,
-    struct cursor *c, uint32_t frame
+// Packs as many of the packets starting at `p` as fit one ITD: up to eight,
+// back to back in the rest of one page and the start of another, the same
+// two-page buffer a general TD has (OHCI 1.0a, 4.3.2.3.1). Returns the count.
+static size_t fill_itd(
+    struct ohci_itd *itd, struct tendril_transfer *xfer, size_t p, struct cursor *c, uint32_t frame
 ) {
     uint64_t start = cursor_addr(c);
     size_t first = cursor_page_room(c);
     size_t room = first;
     uint64_t page1 = 0;
     size_t used = 0;
-    uint32_t n = 0;
+    size_t n = 0;
 
     if ((start + first) % 4096 == 0) {
         struct cursor probe = *c;
@@ -954,7 +896,7 @@ static uint32_t fill_itd(
             break;
         }
         uint32_t off = used < first ? (uint32_t)((start + used) & 0xfff)
-            : (uint32_t)(0x1000 | (used - first));
+                     : (uint32_t)(0x1000 | (used - first));
         itd->offset[n] = tendril_le16((uint16_t)(ITD_OFFSET_FRESH | off));
         used += len;
         n++;
@@ -962,12 +904,10 @@ static uint32_t fill_itd(
     if (n == 0) {
         return 0;
     }
-    /* BufferEnd is the last byte; with no data, the byte before the start. */
+    // BufferEnd is the last byte; with no data, the byte before the start.
     uint64_t be = used <= first ? start + used - 1
-        : page1 + (used - first) - 1;
-    itd->flags = le(
-        (frame & 0xffff) | TD_DI(0) | ITD_FC(n - 1) | TD_NOT_ACCESSED
-    );
+                : page1 + (used - first) - 1;
+    itd->flags = le((frame & 0xffff) | TD_DI(0) | ITD_FC(n - 1) | TD_NOT_ACCESSED);
     itd->bp0 = le((uint32_t)(start & ~(uint64_t)0xfff));
     itd->be = le((uint32_t)be);
     itd->first_packet = p;
@@ -976,9 +916,7 @@ static uint32_t fill_itd(
     return n;
 }
 
-static int submit_iso(
-    struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_transfer *xfer
-) {
+static int submit_iso(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_transfer *xfer) {
     uint32_t now = current_frame(hc);
     uint32_t frame;
     struct cursor c;
@@ -986,7 +924,7 @@ static int submit_iso(
     if ((xfer->flags & TENDRIL_XFER_ISO_ASAP) == 0) {
         frame = xfer->start_frame;
     } else if (ed->streaming && (int32_t)(ed->next_frame - now) > 0) {
-        /* Back to back with what is queued. */
+        // Back to back with what is queued.
         frame = ed->next_frame;
     } else {
         frame = now + ISO_LEAD_FRAMES;
@@ -997,11 +935,11 @@ static int submit_iso(
 
     struct ohci_itd *first = ed->dummy;
     struct ohci_itd *itd = first;
-    uint32_t p = 0;
+    size_t p = 0;
     cursor_init(&c, xfer);
     itd->sw_next = NULL;
     for (;;) {
-        uint32_t n = fill_itd(itd, xfer, p, &c, frame + p);
+        size_t n = fill_itd(itd, xfer, p, &c, frame + (uint32_t)p);
         struct ohci_itd *next = n != 0 ? itd_alloc(hc) : NULL;
         if (next == NULL) {
             free_itd_chain(hc, first->sw_next, NULL);
@@ -1013,16 +951,16 @@ static int submit_iso(
         itd->sw_next = next;
         itd->next = le((uint32_t)next->dma);
         if (p == xfer->num_iso_packets) {
-            /* The last ITD allocated becomes the dummy. */
+            // The last ITD allocated becomes the dummy.
             xfer->internal.hcd_data[XD_FIRST] = (uintptr_t)first;
             xfer->internal.hcd_data[XD_LAST] = (uintptr_t)itd;
             xfer->internal.hcd_data[XD_FLAGS] = 0;
             xfer->start_frame = frame;
             ed->dummy = next;
             ed->dummy_dma = next->dma;
-            /* What is queued ends with whichever transfer ends last. */
-            if (!ed->streaming || (int32_t)(frame + p - ed->next_frame) > 0) {
-                ed->next_frame = frame + p;
+            // What is queued ends with whichever transfer ends last.
+            if (!ed->streaming || (int32_t)(frame + (uint32_t)p - ed->next_frame) > 0) {
+                ed->next_frame = frame + (uint32_t)p;
             }
             ed->streaming = true;
             dma_barrier();
@@ -1050,9 +988,7 @@ static int psw_status(int cc) {
     }
 }
 
-static bool scan_iso(
-    struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_transfer *xfer
-) {
+static bool scan_iso(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_transfer *xfer) {
     struct ohci_itd *first = xfer_first_itd(xfer);
     struct ohci_itd *last = xfer_last_itd(xfer);
     uint32_t hp = ed_head(ed);
@@ -1077,8 +1013,8 @@ static bool scan_iso(
             int cc = psw >> (uint32_t)12;
             pkt->status = psw_status(cc);
             pkt->actual = pkt->status == TENDRIL_OK
-                ? (in ? psw & (uint32_t)0x7ff : pkt->length)
-                : 0;
+                        ? (in ? psw & (uint32_t)0x7ff : pkt->length)
+                        : 0;
             actual += pkt->actual;
             if (pkt->status != TENDRIL_OK && st == TENDRIL_OK) {
                 st = pkt->status;
@@ -1089,7 +1025,7 @@ static bool scan_iso(
         }
     }
     free_itd_chain(hc, first, last->sw_next);
-    /* Packet errors are in the packets; the transfer itself completed. */
+    // Packet errors are in the packets; the transfer itself completed.
     (void)st;
     tendril_transfer_complete(hc, xfer, TENDRIL_OK, actual);
     return true;
@@ -1105,7 +1041,7 @@ static void scan_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
             break;
         }
         bool done = ed->kind == KIND_ISO ? scan_iso(hc, ed, xfer)
-            : scan_general(hc, ed, xfer);
+                  : scan_general(hc, ed, xfer);
         if (!done) {
             break;
         }
@@ -1116,7 +1052,7 @@ static void scan_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
 }
 
 static void scan_all(struct tendril_hc *hc) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     struct tendril_list *it;
     LIST_FOR_EACH(it, &o->eds) {
         struct ohci_ed *ed = CONTAINER_OF(it, struct ohci_ed, node);
@@ -1126,17 +1062,15 @@ static void scan_all(struct tendril_hc *hc) {
     }
 }
 
-/*
- * With the descriptor skipped and idle: completes cancelled transfers, then
- * relinks the rest behind HeadP, keeping the data toggle.
- */
+// With the descriptor skipped and idle: completes cancelled transfers, then
+// relinks the rest behind HeadP, keeping the data toggle.
 static void sweep_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
     struct tendril_endpoint *ep = ed->ep;
     struct tendril_list *it;
     struct tendril_list *tmp;
     bool iso = ed->kind == KIND_ISO;
 
-    /* Whatever finished before the pause completes normally. */
+    // Whatever finished before the pause completes normally.
     while (!list_empty(&ep->transfers)) {
         struct tendril_transfer *xfer = CONTAINER_OF(
             ep->transfers.next, struct tendril_transfer, internal.node
@@ -1149,31 +1083,27 @@ static void sweep_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
     uint32_t head = le(ed->head);
     uint32_t carry = head & ED_CARRY;
     struct tendril_transfer *oldest = list_empty(&ep->transfers) ? NULL
-        : CONTAINER_OF(
+                                    : CONTAINER_OF(
             ep->transfers.next, struct tendril_transfer, internal.node
         );
     bool restart = false;
 
     LIST_FOR_EACH_SAFE(it, tmp, &ep->transfers) {
-        struct tendril_transfer *xfer = CONTAINER_OF(
-            it, struct tendril_transfer, internal.node
-        );
+        struct tendril_transfer *xfer = CONTAINER_OF(it, struct tendril_transfer, internal.node);
         if ((xfer->internal.hcd_data[XD_FLAGS] & XF_CANCEL) == 0) {
             continue;
         }
         size_t actual = 0;
         if (xfer == oldest) {
-            /* HeadP is inside this transfer, so it moves to the next. */
+            // HeadP is inside this transfer, so it moves to the next.
             restart = true;
             bool control = xfer->endpoint->type
-                == TENDRIL_ENDPOINT_XFER_CONTROL;
-            for (struct ohci_td *td = xfer_first(xfer);
-                 !iso && td != xfer_last(xfer)->sw_next; td = td->sw_next) {
+                        == TENDRIL_ENDPOINT_XFER_CONTROL;
+            for (struct ohci_td *td = xfer_first(xfer); !iso && td != xfer_last(xfer)->sw_next;
+                 td = td->sw_next) {
                 if ((uint32_t)td->dma == (head & ED_PTR_MASK)) {
-                    /*
-                     * A TD part way through holds a toggle the carry has not
-                     * caught up with.
-                     */
+                    // A TD part way through holds a toggle the carry has not
+                    // caught up with.
                     uint32_t t = le(td->flags) & TD_TOGGLE_MASK;
                     if (!control && (t & TD_DATA0) == TD_DATA0) {
                         carry = (t & ((uint32_t)1 << 24)) != 0 ? ED_CARRY : 0;
@@ -1188,32 +1118,22 @@ static void sweep_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
             }
         }
         if (iso) {
-            free_itd_chain(
-                hc, xfer_first_itd(xfer), xfer_last_itd(xfer)->sw_next
-            );
+            free_itd_chain(hc, xfer_first_itd(xfer), xfer_last_itd(xfer)->sw_next);
         } else {
             free_xfer_tds(hc, xfer);
         }
-        tendril_transfer_complete(
-            hc, xfer, xfer->internal.cancel_status, actual
-        );
+        tendril_transfer_complete(hc, xfer, xfer->internal.cancel_status, actual);
     }
 
-    /*
-     * Rebuild the links between the transfers left, in order, ending at the
-     * dummy.
-     */
+    // Rebuild the links between the transfers left, in order, ending at the
+    // dummy.
     struct tendril_transfer *prev = NULL;
     LIST_FOR_EACH(it, &ep->transfers) {
-        struct tendril_transfer *xfer = CONTAINER_OF(
-            it, struct tendril_transfer, internal.node
-        );
+        struct tendril_transfer *xfer = CONTAINER_OF(it, struct tendril_transfer, internal.node);
         if (prev != NULL) {
             if (iso) {
                 xfer_last_itd(prev)->sw_next = xfer_first_itd(xfer);
-                xfer_last_itd(prev)->next = le(
-                    (uint32_t)xfer_first_itd(xfer)->dma
-                );
+                xfer_last_itd(prev)->next = le((uint32_t)xfer_first_itd(xfer)->dma);
             } else {
                 xfer_last(prev)->sw_next = xfer_first(xfer);
                 xfer_last(prev)->next = le((uint32_t)xfer_first(xfer)->dma);
@@ -1245,7 +1165,7 @@ static void sweep_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
     }
 }
 
-/* Descriptors waiting on frames */
+// Descriptors waiting on frames
 
 static void close_done(struct tendril_hc *hc, struct ohci_close *close) {
     if (close != NULL && --close->remaining == 0) {
@@ -1254,18 +1174,14 @@ static void close_done(struct tendril_hc *hc, struct ohci_close *close) {
     }
 }
 
-static void fail_transfers(
-    struct tendril_hc *hc, struct ohci_ed *ed, int status
-) {
+static void fail_transfers(struct tendril_hc *hc, struct ohci_ed *ed, int status) {
     struct tendril_endpoint *ep = ed->ep;
     while (!list_empty(&ep->transfers)) {
         struct tendril_transfer *xfer = CONTAINER_OF(
             ep->transfers.next, struct tendril_transfer, internal.node
         );
         if (ed->kind == KIND_ISO) {
-            free_itd_chain(
-                hc, xfer_first_itd(xfer), xfer_last_itd(xfer)->sw_next
-            );
+            free_itd_chain(hc, xfer_first_itd(xfer), xfer_last_itd(xfer)->sw_next);
         } else {
             free_xfer_tds(hc, xfer);
         }
@@ -1273,7 +1189,7 @@ static void fail_transfers(
     }
 }
 
-/* Frees a descriptor the controller can no longer see. */
+// Frees a descriptor the controller can no longer see.
 static void free_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
     struct ohci_close *close = ed->close;
     fail_transfers(hc, ed, TENDRIL_ERR_NO_DEVICE);
@@ -1288,7 +1204,7 @@ static void free_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
 }
 
 static void finish_wait(struct tendril_hc *hc, struct ohci_ed *ed) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     list_del(&ed->wait_node);
     ed->waiting = false;
     if (ed->closing) {
@@ -1309,7 +1225,7 @@ static void finish_wait(struct tendril_hc *hc, struct ohci_ed *ed) {
 }
 
 static void process_waiting(struct tendril_hc *hc) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     struct tendril_list *it;
     struct tendril_list *tmp;
     uint32_t frame = current_frame(hc);
@@ -1323,10 +1239,8 @@ static void process_waiting(struct tendril_hc *hc) {
             bulk |= ed->kind == KIND_BULK;
         }
     }
-    /*
-     * OHCI 1.0a, 5.2.7.1.2: with the list stopped, its current pointer may
-     * still name a removed descriptor.
-     */
+    // OHCI 1.0a, 5.2.7.1.2: with the list stopped, its current pointer may
+    // still name a removed descriptor.
     if (control) {
         reg_write(hc, REG_CONTROL_CURRENT_ED, 0);
     }
@@ -1357,7 +1271,7 @@ static void ohci_timer(struct tendril_work *work) {
     hc_unlock(hc);
 }
 
-/* Transfers */
+// Transfers
 
 static int ohci_submit(struct tendril_hc *hc, struct tendril_transfer *xfer) {
     struct ohci_ed *ed = xfer->endpoint->hcd;
@@ -1375,9 +1289,7 @@ static void ohci_cancel(struct tendril_hc *hc, struct tendril_transfer *xfer) {
     if (hc->dead || ed == NULL) {
         if (ed != NULL) {
             if (ed->kind == KIND_ISO) {
-                free_itd_chain(
-                    hc, xfer_first_itd(xfer), xfer_last_itd(xfer)->sw_next
-                );
+                free_itd_chain(hc, xfer_first_itd(xfer), xfer_last_itd(xfer)->sw_next);
             } else {
                 free_xfer_tds(hc, xfer);
             }
@@ -1386,10 +1298,8 @@ static void ohci_cancel(struct tendril_hc *hc, struct tendril_transfer *xfer) {
         return;
     }
     xfer->internal.hcd_data[XD_FLAGS] |= XF_CANCEL;
-    /*
-     * OHCI 1.0a, 5.2.7.1.3: skip the descriptor, then change its queue once a
-     * frame has passed.
-     */
+    // OHCI 1.0a, 5.2.7.1.3: skip the descriptor, then change its queue once a
+    // frame has passed.
     if (!ed->waiting) {
         ed->flags = le(le(ed->flags) | ED_SKIP);
         dma_barrier();
@@ -1397,10 +1307,10 @@ static void ohci_cancel(struct tendril_hc *hc, struct tendril_transfer *xfer) {
     }
 }
 
-/* Endpoints */
+// Endpoints
 
 static int open_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     bool iso = ep->type == TENDRIL_ENDPOINT_XFER_ISOC;
 
     if (ep->dev->speed > TENDRIL_SPEED_FULL
@@ -1457,10 +1367,9 @@ static int open_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep) {
 }
 
 static void close_endpoint(
-    struct tendril_hc *hc, struct tendril_endpoint *ep,
-    struct ohci_close *close
+    struct tendril_hc *hc, struct tendril_endpoint *ep, struct ohci_close *close
 ) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     struct ohci_ed *ed = ep->hcd;
 
     ep->open = false;
@@ -1493,9 +1402,7 @@ static void close_endpoint(
         return;
     }
     if (ed->waiting) {
-        /*
-         * Paused already; the removal needs its own frames, counted from now.
-         */
+        // Paused already; the removal needs its own frames, counted from now.
         ed->wait_frame = current_frame(hc);
     } else {
         wait_frames(hc, ed);
@@ -1503,9 +1410,8 @@ static void close_endpoint(
 }
 
 static int ohci_configure(
-    struct tendril_hc *hc, struct tendril_device *dev,
-    struct tendril_endpoint **drop, size_t num_drop,
-    struct tendril_endpoint **add, size_t num_add, struct tendril_async *async
+    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_endpoint **drop,
+    size_t num_drop, struct tendril_endpoint **add, size_t num_add, struct tendril_async *async
 ) {
     (void)dev;
     struct ohci_close *close = tendril_zalloc(sizeof(struct ohci_close));
@@ -1514,7 +1420,7 @@ static int ohci_configure(
     }
     close->async = async;
     close->status = TENDRIL_OK;
-    /* Held until everything is queued, so it cannot complete early. */
+    // Held until everything is queued, so it cannot complete early.
     close->remaining = 1;
     for (size_t i = 0; i < num_drop; i++) {
         close_endpoint(hc, drop[i], close);
@@ -1534,8 +1440,7 @@ static int ohci_configure(
 }
 
 static int ohci_device_init(
-    struct tendril_hc *hc, struct tendril_device *dev,
-    struct tendril_async *async
+    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
 ) {
     int st = open_endpoint(hc, &dev->ep0);
     if (st == TENDRIL_OK) {
@@ -1545,14 +1450,11 @@ static int ohci_device_init(
 }
 
 static int ohci_ep0_update(
-    struct tendril_hc *hc, struct tendril_device *dev,
-    struct tendril_async *async
+    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
 ) {
     struct ohci_ed *ed = dev->ep0.hcd;
-    /*
-     * Nothing is queued on endpoint 0 here, so its address and packet size can
-     * change in place.
-     */
+    // Nothing is queued on endpoint 0 here, so its address and packet size can
+    // change in place.
     ed->flags = le(ed_flags(&dev->ep0) | (le(ed->flags) & ED_SKIP));
     dma_barrier();
     tendril_async_complete(hc, async, TENDRIL_OK);
@@ -1560,14 +1462,11 @@ static int ohci_ep0_update(
 }
 
 static int ohci_endpoint_reset(
-    struct tendril_hc *hc, struct tendril_endpoint *ep,
-    struct tendril_async *async
+    struct tendril_hc *hc, struct tendril_endpoint *ep, struct tendril_async *async
 ) {
     struct ohci_ed *ed = ep->hcd;
-    /*
-     * With no TDs queued the controller leaves HeadP alone, so the carry can
-     * go back to DATA0.
-     */
+    // With no TDs queued the controller leaves HeadP alone, so the carry can
+    // go back to DATA0.
     if (ed != NULL && ed->kind != KIND_ISO && list_empty(&ep->transfers)) {
         ed->head = le(le(ed->head) & ~(ED_CARRY | ED_HALTED));
         dma_barrier();
@@ -1577,8 +1476,7 @@ static int ohci_endpoint_reset(
 }
 
 static void ohci_device_free(
-    struct tendril_hc *hc, struct tendril_device *dev,
-    struct tendril_async *async
+    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
 ) {
     struct ohci_close *close = tendril_zalloc(sizeof(struct ohci_close));
     if (close != NULL) {
@@ -1586,7 +1484,7 @@ static void ohci_device_free(
         close->status = TENDRIL_OK;
         close->remaining = 1;
     }
-    /* The device is going away with its interfaces' endpoints still open. */
+    // The device is going away with its interfaces' endpoints still open.
     close_endpoint(hc, &dev->ep0, close);
     for (size_t i = 0; i < dev->num_interfaces; i++) {
         struct tendril_interface *intf = &dev->interfaces[i];
@@ -1601,25 +1499,21 @@ static void ohci_device_free(
     }
 }
 
-/* Root hub */
+// Root hub
 
-static void ohci_port_status(
-    struct tendril_hc *hc, uint8_t port, struct tendril_port_status *st
-) {
-    struct ohci *o = O(hc);
+static void ohci_port_status(struct tendril_hc *hc, uint8_t port, struct tendril_port_status *st) {
+    struct ohci *o = ohci_of(hc);
     size_t i = port - 1;
     uint32_t ps = reg_read(hc, REG_RH_PORT(port));
 
-    /* BEGIN FreeBSD sys/dev/usb/controller/ohci.c */
-    /*
-     * The controller resets for 10 ms; as with FreeBSD, the reset is over
-     * after ROOT_RESET_MS.
-     */
+    // BEGIN FreeBSD sys/dev/usb/controller/ohci.c
+    // The controller resets for 10 ms; as with FreeBSD, the reset is over
+    // after ROOT_RESET_MS.
     if (o->resetting[i] && (ps & PS_PRS) == 0
      && tendril_now() - o->reset_start[i] >= ROOT_RESET_MS * NS_PER_MS) {
         o->resetting[i] = false;
     }
-    /* END FreeBSD sys/dev/usb/controller/ohci.c */
+    // END FreeBSD sys/dev/usb/controller/ohci.c
 
     st->status = 0;
     st->change = 0;
@@ -1662,10 +1556,8 @@ static void ohci_port_status(
     }
 }
 
-static int ohci_port_set_feature(
-    struct tendril_hc *hc, uint8_t port, int feature
-) {
-    struct ohci *o = O(hc);
+static int ohci_port_set_feature(struct tendril_hc *hc, uint8_t port, int feature) {
+    struct ohci *o = ohci_of(hc);
     switch (feature) {
         case TENDRIL_PORT_FEAT_RESET: {
             reg_write(hc, REG_RH_PORT(port), PS_SET_RESET);
@@ -1695,9 +1587,7 @@ static int ohci_port_set_feature(
     }
 }
 
-static int ohci_port_clear_feature(
-    struct tendril_hc *hc, uint8_t port, int feature
-) {
+static int ohci_port_clear_feature(struct tendril_hc *hc, uint8_t port, int feature) {
     uint32_t bit;
     switch (feature) {
         case TENDRIL_PORT_FEAT_ENABLE: {
@@ -1708,15 +1598,13 @@ static int ohci_port_clear_feature(
             break;
         }
         case TENDRIL_PORT_FEAT_SUSPEND: {
-            /*
-             * The controller times the resume and reports it with
-             * C_PORT_SUSPEND.
-             */
+            // The controller times the resume and reports it with
+            // C_PORT_SUSPEND.
             bit = PS_CLEAR_SUSPEND;
             break;
         }
         case TENDRIL_PORT_FEAT_POWER: {
-            if (!O(hc)->per_port_power) {
+            if (!ohci_of(hc)->per_port_power) {
                 return TENDRIL_OK;
             }
             bit = PS_CLEAR_POWER;
@@ -1750,10 +1638,10 @@ static int ohci_port_clear_feature(
     return TENDRIL_OK;
 }
 
-/* Controller */
+// Controller
 
 static void fail_everything(struct tendril_hc *hc) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     struct tendril_list *it;
     struct tendril_list *tmp;
 
@@ -1778,16 +1666,14 @@ static void controller_died(struct tendril_hc *hc, const char *why) {
 }
 
 static void ohci_poll(struct tendril_hc *hc) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     uint32_t sts = reg_read(hc, REG_INTR_STATUS);
     if (sts == 0xffffffff) {
         controller_died(hc, "controller removed");
         return;
     }
-    /*
-     * Completions are found by scanning, so clearing WDH just lets the next
-     * done head be written.
-     */
+    // Completions are found by scanning, so clearing WDH just lets the next
+    // done head be written.
     sts &= INT_ALL;
     if (sts != 0) {
         reg_write(hc, REG_INTR_STATUS, sts);
@@ -1810,12 +1696,12 @@ static void ohci_poll(struct tendril_hc *hc) {
 }
 
 static bool ohci_irq(struct tendril_hc *hc) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     uint32_t sts = reg_read(hc, REG_INTR_STATUS);
     if (sts == 0xffffffff || (sts & o->intr) == 0) {
         return false;
     }
-    /* Masked until tendril_hc_poll() has handled the cause. */
+    // Masked until tendril_hc_poll() has handled the cause.
     reg_write(hc, REG_INTR_DISABLE, INT_MIE);
     return true;
 }
@@ -1824,43 +1710,37 @@ static uint32_t ohci_frame_number(struct tendril_hc *hc) {
     return current_frame(hc);
 }
 
-/*
- * OHCI 1.0a, 5.1.1.3: takes the controller from SMM or BIOS firmware, then
- * resets the bus.
- */
+// OHCI 1.0a, 5.1.1.3: takes the controller from SMM or BIOS firmware, then
+// resets the bus.
 static void take_ownership(struct tendril_hc *hc) {
     uint32_t ctl = reg_read(hc, REG_CONTROL);
     if ((ctl & CTL_IR) != 0
      && (hc->quirks & TENDRIL_HC_QUIRK_NO_HANDOFF) == 0) {
         LOG_DEBUG("OHCI: taking over from SMM");
         reg_write(hc, REG_COMMAND_STATUS, CMD_OCR);
-        /* BEGIN FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
-        bool released = tendril_hc_wait32(
-            hc, REG_CONTROL, CTL_IR, 0, SMM_WAIT_MS * 1000
-        );
+        // BEGIN FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c
+        bool released = tendril_hc_wait32(hc, REG_CONTROL, CTL_IR, 0, SMM_WAIT_MS * 1000);
         if (!released) {
             LOG_WARN("OHCI: SMM did not release the controller, resetting it");
         }
-        /* END FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
+        // END FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c
     } else if ((ctl & CTL_HCFS_MASK) != CTL_HCFS_RESET
             && (ctl & CTL_HCFS_MASK) != CTL_HCFS_OPERATIONAL) {
-        /* Firmware left it suspended: resume the bus before taking it down. */
+        // Firmware left it suspended: resume the bus before taking it down.
         reg_write(hc, REG_CONTROL, (ctl & ~CTL_HCFS_MASK) | CTL_HCFS_RESUME);
         tendril_delay_us(20000);
     }
-    /* BEGIN FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
-    /*
-     * Some controllers only start after this reset, which the specification
-     * does not ask for, as FreeBSD's sys/dev/usb/controller/ohci.c
-     * (BSD-2-Clause, ohci_controller_init) notes.
-     */
+    // BEGIN FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c
+    // Some controllers only start after this reset, which the specification
+    // does not ask for, as FreeBSD's sys/dev/usb/controller/ohci.c
+    // (BSD-2-Clause, ohci_controller_init) notes.
     reg_write(hc, REG_CONTROL, CTL_HCFS_RESET);
     tendril_delay_us(BUS_RESET_MS * 1000);
-    /* END FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
+    // END FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c
 }
 
 static void free_structures(struct tendril_hc *hc) {
-    struct ohci *o = O(hc);
+    struct ohci *o = ohci_of(hc);
     struct ohci_ed *skels[INTR_LEVELS + 3];
     size_t n = 0;
     skels[n++] = o->control_head;
@@ -1909,16 +1789,14 @@ static int ohci_start(struct tendril_hc *hc) {
         free_structures(hc);
         return TENDRIL_ERR_NO_DEVICE;
     }
-    /* Every address the controller handles is 32 bits wide. */
+    // Every address the controller handles is 32 bits wide.
     hc->dma32 = true;
     hc->data32 = true;
 
     tendril_dma_pool_init(&o->ed_pool, hc, sizeof(struct ohci_ed), 16);
     tendril_dma_pool_init(&o->td_pool, hc, sizeof(struct ohci_td), 16);
     tendril_dma_pool_init(&o->itd_pool, hc, sizeof(struct ohci_itd), 32);
-    o->hcca = tendril_dma_alloc(
-        hc, sizeof(struct ohci_hcca), 256, &o->hcca_dma
-    );
+    o->hcca = tendril_dma_alloc(hc, sizeof(struct ohci_hcca), 256, &o->hcca_dma);
     o->control_head = skeleton(hc);
     o->bulk_head = skeleton(hc);
     o->iso_head = skeleton(hc);
@@ -1926,7 +1804,7 @@ static int ohci_start(struct tendril_hc *hc) {
         o->skel[l] = skeleton(hc);
     }
     bool ok = o->hcca != NULL && o->control_head != NULL
-        && o->bulk_head != NULL && o->iso_head != NULL;
+           && o->bulk_head != NULL && o->iso_head != NULL;
     for (size_t l = 0; l < INTR_LEVELS; l++) {
         ok = ok && o->skel[l] != NULL;
     }
@@ -1934,17 +1812,15 @@ static int ohci_start(struct tendril_hc *hc) {
         free_structures(hc);
         return TENDRIL_ERR_NO_MEMORY;
     }
-    /*
-     * Level k is visited every 2^k frames, ahead of level k - 1; isochronous
-     * descriptors come last.
-     */
+    // Level k is visited every 2^k frames, ahead of level k - 1; isochronous
+    // descriptors come last.
     for (size_t l = 1; l < INTR_LEVELS; l++) {
         o->skel[l]->next = le((uint32_t)o->skel[l - 1]->dma);
     }
     o->skel[0]->next = le((uint32_t)o->iso_head->dma);
     for (size_t i = 0; i < 32; i++) {
         size_t level = i == 0 ? INTR_LEVELS - 1
-            : MIN(lowest_bit(i), (size_t)INTR_LEVELS - 1);
+                     : MIN(lowest_bit(i), (size_t)INTR_LEVELS - 1);
         o->hcca->intr_table[i] = le((uint32_t)o->skel[level]->dma);
     }
 
@@ -1960,10 +1836,8 @@ static int ohci_start(struct tendril_hc *hc) {
         return TENDRIL_ERR_TIMEOUT;
     }
 
-    /*
-     * OHCI 1.0a, 5.1.1.4: now suspended, with at most 2 ms to become
-     * operational.
-     */
+    // OHCI 1.0a, 5.1.1.4: now suspended, with at most 2 ms to become
+    // operational.
     dma_barrier();
     reg_write(hc, REG_HCCA, (uint32_t)o->hcca_dma);
     reg_write(hc, REG_CONTROL_HEAD_ED, (uint32_t)o->control_head->dma);
@@ -1974,37 +1848,29 @@ static int ohci_start(struct tendril_hc *hc) {
     if (hc->config.irq) {
         reg_write(hc, REG_INTR_ENABLE, o->intr | INT_MIE);
     }
-    /* The ports off now, switched on below. */
+    // The ports off now, switched on below.
     uint32_t was_off = 0;
-    uint32_t ndp = MIN(
-        reg_read(hc, REG_RH_DESC_A) & RHA_NDP_MASK, (uint32_t)15
-    );
+    uint32_t ndp = MIN(reg_read(hc, REG_RH_DESC_A) & RHA_NDP_MASK, (uint32_t)15);
     for (size_t p = 1; p <= ndp; p++) {
         if ((reg_read(hc, REG_RH_PORT(p)) & PS_PPS) == 0) {
             was_off |= (uint32_t)1 << p;
         }
     }
-    /* BEGIN FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
+    // BEGIN FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c
     uint32_t mask = CTL_CBSR_MASK | CTL_HCFS_MASK | CTL_IR | CTL_PLE | CTL_IE
-        | CTL_CLE | CTL_BLE;
+                  | CTL_CLE | CTL_BLE;
     uint32_t keep = reg_read(hc, REG_CONTROL) & ~mask;
     o->control = keep | CTL_RATIO_4_1 | CTL_HCFS_OPERATIONAL;
     set_list_enables(hc);
 
-    /*
-     * FreeBSD's ohci_controller_init sets these only now: the controller
-     * ignores them while suspended.
-     */
+    // FreeBSD's ohci_controller_init sets these only now: the controller
+    // ignores them while suspended.
     uint32_t fit = (reg_read(hc, REG_FM_INTERVAL) & FIT) ^ FIT;
-    reg_write(
-        hc, REG_FM_INTERVAL, fit | ((fi - MAX_OVERHEAD) * 6 / 7) << 16 | fi
-    );
+    reg_write(hc, REG_FM_INTERVAL, fit | ((fi - MAX_OVERHEAD) * 6 / 7) << 16 | fi);
     reg_write(hc, REG_PERIODIC_START, fi * 9 / 10);
 
-    /*
-     * Ports on: global power, with NOCP set meanwhile against a chip bug, as
-     * FreeBSD's ohci_controller_init does.
-     */
+    // Ports on: global power, with NOCP set meanwhile against a chip bug, as
+    // FreeBSD's ohci_controller_init does.
     uint32_t desca = reg_read(hc, REG_RH_DESC_A);
     reg_write(hc, REG_RH_DESC_A, desca | RHA_NOCP);
     reg_write(hc, REG_RH_STATUS, RHS_LPSC);
@@ -2013,24 +1879,20 @@ static int ohci_start(struct tendril_hc *hc) {
     o->no_power_switching = (desca & RHA_NPS) != 0;
     o->per_port_power = !o->no_power_switching && (desca & RHA_PSM) != 0;
 
-    /*
-     * The AMD-756 may report no ports at first; FreeBSD's ohci_controller_init
-     * rereads the same way.
-     */
+    // The AMD-756 may report no ports at first; FreeBSD's ohci_controller_init
+    // rereads the same way.
     for (size_t i = 0; i < 10 && (desca & RHA_NDP_MASK) == 0; i++) {
         tendril_delay_us(5000);
         desca = reg_read(hc, REG_RH_DESC_A);
     }
-    /* END FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c */
+    // END FreeBSD sys/dev/usb/controller/ohci.c, OpenBSD sys/dev/usb/ohci.c
     o->num_ports = MIN(desca & RHA_NDP_MASK, (uint32_t)15);
     if (o->per_port_power) {
         for (size_t p = 1; p <= o->num_ports; p++) {
             reg_write(hc, REG_RH_PORT(p), PS_SET_POWER);
         }
     }
-    LOG_INFO(
-        "OHCI %u.%u: %zu ports", (rev >> 4) & 0xf, rev & 0xf, o->num_ports
-    );
+    LOG_INFO("OHCI %u.%u: %zu ports", (rev >> 4) & 0xf, rev & 0xf, o->num_ports);
 
     int st = tendril_roothub_init(hc, o->num_ports);
     if (st != TENDRIL_OK) {
@@ -2038,10 +1900,8 @@ static int ohci_start(struct tendril_hc *hc) {
         free_structures(hc);
         return st;
     }
-    /*
-     * PowerOnToPowerGoodTime, in 2 ms units, and at least the USB 2.0 7.1.7.3
-     * settling time.
-     */
+    // PowerOnToPowerGoodTime, in 2 ms units, and at least the USB 2.0 7.1.7.3
+    // settling time.
     uint32_t settle_ms = MAX((desca >> 24) * (uint32_t)2, (uint32_t)20);
     for (size_t p = 1; p <= o->num_ports; p++) {
         if ((was_off & (uint32_t)1 << p) != 0) {
@@ -2068,18 +1928,16 @@ static void ohci_destroy(struct tendril_hc *hc) {
     }
 }
 
-/*
- * No suspend step: entering USBRESUME would clear every port's suspend (OHCI
- * 1.0a, HcRhPortStatus PSS), so the controller stays operational while its
- * ports are suspended.
- */
+// No suspend step: entering USBRESUME would clear every port's suspend (OHCI
+// 1.0a, HcRhPortStatus PSS), so the controller stays operational while its
+// ports are suspended.
 static int ohci_resume(struct tendril_hc *hc) {
     uint32_t ctl = reg_read(hc, REG_CONTROL);
     if (ctl == 0xffffffff) {
         return TENDRIL_ERR_NO_DEVICE;
     }
-    /* An HCCA that no longer reads back means the controller lost power. */
-    if (reg_read(hc, REG_HCCA) != (uint32_t)O(hc)->hcca_dma
+    // An HCCA that no longer reads back means the controller lost power.
+    if (reg_read(hc, REG_HCCA) != (uint32_t)ohci_of(hc)->hcca_dma
      || (ctl & CTL_HCFS_MASK) != CTL_HCFS_OPERATIONAL) {
         return TENDRIL_ERR_IO;
     }

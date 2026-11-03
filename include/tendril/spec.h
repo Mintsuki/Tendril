@@ -28,37 +28,25 @@
 #ifndef TENDRIL_SPEC_H
 #define TENDRIL_SPEC_H 1
 
+#if !defined(__cplusplus) && (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L)
+#   error "tendril/spec.h needs C99 or later"
+#endif
+
 #include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*
- * Definitions from the USB 2.0 and USB 3.2 (revision 1.1) specifications.
- * Multi-byte fields of the structures are little-endian, as on the wire; use
- * tendril_le16() and tendril_le32() to read them.
- */
+// Definitions from the USB 2.0 and USB 3.2 (revision 1.1) specifications.
+// Multi-byte fields of the structures are little-endian, as on the wire; use
+// tendril_le16() and tendril_le32() to read them.
 
 #if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) \
  && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#define TENDRIL_BIG_ENDIAN 1
+#   define TENDRIL_BIG_ENDIAN 1
 #else
-#define TENDRIL_BIG_ENDIAN 0
-#endif
-
-/*
- * The structures below are packed by attribute, or with MSVC, which has none,
- * by pragma.
- */
-#if defined(_MSC_VER) && !defined(__clang__)
-#define TENDRIL_PACKED
-#define TENDRIL_PACK_BEGIN __pragma(pack(push, 1))
-#define TENDRIL_PACK_END __pragma(pack(pop))
-#else
-#define TENDRIL_PACKED __attribute__((packed))
-#define TENDRIL_PACK_BEGIN
-#define TENDRIL_PACK_END
+#   define TENDRIL_BIG_ENDIAN 0
 #endif
 
 static inline uint16_t tendril_le16(uint16_t v) {
@@ -87,7 +75,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #endif
 }
 
-/* bmRequestType */
+// bmRequestType
 #define TENDRIL_DIR_OUT 0x00
 #define TENDRIL_DIR_IN 0x80
 #define TENDRIL_TYPE_STANDARD 0x00
@@ -100,7 +88,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_RECIP_OTHER 0x03
 #define TENDRIL_RECIP_MASK 0x1f
 
-/* Standard requests */
+// Standard requests
 #define TENDRIL_REQ_GET_STATUS 0
 #define TENDRIL_REQ_CLEAR_FEATURE 1
 #define TENDRIL_REQ_SET_FEATURE 3
@@ -115,7 +103,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_REQ_SET_SEL 48
 #define TENDRIL_REQ_SET_ISOCH_DELAY 49
 
-/* Descriptor types */
+// Descriptor types
 #define TENDRIL_DT_DEVICE 1
 #define TENDRIL_DT_CONFIGURATION 2
 #define TENDRIL_DT_STRING 3
@@ -136,7 +124,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_DT_SS_ENDPOINT_COMPANION 48
 #define TENDRIL_DT_SSP_ISO_ENDPOINT_COMPANION 49
 
-/* Standard feature selectors */
+// Standard feature selectors
 #define TENDRIL_FEATURE_ENDPOINT_HALT 0
 #define TENDRIL_FEATURE_FUNCTION_SUSPEND 0
 #define TENDRIL_FEATURE_DEVICE_REMOTE_WAKEUP 1
@@ -145,19 +133,17 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_FEATURE_U2_ENABLE 49
 #define TENDRIL_FEATURE_LTM_ENABLE 50
 
-/*
- * SET_FEATURE(FUNCTION_SUSPEND) options, wIndex bits 15:8 (USB 3.2 revision
- * 1.1, Table 9-9)
- */
+// SET_FEATURE(FUNCTION_SUSPEND) options, wIndex bits 15:8 (USB 3.2 revision
+// 1.1, Table 9-9)
 #define TENDRIL_FUNCTION_SUSPEND_LOW_POWER 0x01
 #define TENDRIL_FUNCTION_SUSPEND_REMOTE_WAKE 0x02
 
-/* Configuration descriptor bmAttributes */
+// Configuration descriptor bmAttributes
 #define TENDRIL_CONFIG_ATTR_BUS_POWERED 0x80
 #define TENDRIL_CONFIG_ATTR_SELF_POWERED 0x40
 #define TENDRIL_CONFIG_ATTR_REMOTE_WAKEUP 0x20
 
-/* Class codes */
+// Class codes
 #define TENDRIL_CLASS_PER_INTERFACE 0x00
 #define TENDRIL_CLASS_AUDIO 0x01
 #define TENDRIL_CLASS_CDC 0x02
@@ -174,7 +160,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_CLASS_APP_SPEC 0xfe
 #define TENDRIL_CLASS_VENDOR 0xff
 
-/* Endpoint descriptor fields */
+// Endpoint descriptor fields
 #define TENDRIL_ENDPOINT_NUMBER_MASK 0x0f
 #define TENDRIL_ENDPOINT_DIR_MASK 0x80
 #define TENDRIL_ENDPOINT_XFER_MASK 0x03
@@ -189,19 +175,19 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_ENDPOINT_MAXP_MULT_SHIFT 11
 #define TENDRIL_ENDPOINT_MAXP_MULT_MASK 0x1800
 
-/* Configuration descriptor attributes */
+// Configuration descriptor attributes
 #define TENDRIL_CONFIG_ATT_ONE 0x80
 #define TENDRIL_CONFIG_ATT_SELFPOWER 0x40
 #define TENDRIL_CONFIG_ATT_WAKEUP 0x20
 
-/* Device capability types */
+// Device capability types
 #define TENDRIL_CAP_USB20_EXTENSION 0x02
 #define TENDRIL_CAP_SUPERSPEED 0x03
 #define TENDRIL_CAP_CONTAINER_ID 0x04
 #define TENDRIL_CAP_PLATFORM 0x05
 #define TENDRIL_CAP_SUPERSPEED_PLUS 0x0a
 
-/* Hub class requests, USB 2.0 11.24.2 and USB 3.2 revision 1.1 10.16.2 */
+// Hub class requests, USB 2.0 11.24.2 and USB 3.2 revision 1.1 10.16.2
 #define TENDRIL_HUB_REQ_GET_STATUS 0
 #define TENDRIL_HUB_REQ_CLEAR_FEATURE 1
 #define TENDRIL_HUB_REQ_SET_FEATURE 3
@@ -213,7 +199,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_HUB_REQ_SET_HUB_DEPTH 12
 #define TENDRIL_HUB_REQ_GET_PORT_ERR_COUNT 13
 
-/* Hub class feature selectors */
+// Hub class feature selectors
 #define TENDRIL_HUB_C_LOCAL_POWER 0
 #define TENDRIL_HUB_C_OVER_CURRENT 1
 #define TENDRIL_PORT_FEAT_CONNECTION 0
@@ -240,7 +226,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_PORT_FEAT_C_BH_RESET 29
 #define TENDRIL_PORT_FEAT_FORCE_LINKPM_ACCEPT 30
 
-/* wPortStatus */
+// wPortStatus
 #define TENDRIL_PORT_STAT_CONNECTION 0x0001
 #define TENDRIL_PORT_STAT_ENABLE 0x0002
 #define TENDRIL_PORT_STAT_SUSPEND 0x0004
@@ -256,7 +242,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_SS_PORT_STAT_POWER 0x0200
 #define TENDRIL_SS_PORT_STAT_SPEED_MASK 0x1c00
 
-/* SuperSpeed link states */
+// SuperSpeed link states
 #define TENDRIL_SS_LINK_U0 0x0
 #define TENDRIL_SS_LINK_U1 0x1
 #define TENDRIL_SS_LINK_U2 0x2
@@ -270,7 +256,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_SS_LINK_COMPLIANCE 0xa
 #define TENDRIL_SS_LINK_LOOPBACK 0xb
 
-/* wPortChange */
+// wPortChange
 #define TENDRIL_PORT_STAT_C_CONNECTION 0x0001
 #define TENDRIL_PORT_STAT_C_ENABLE 0x0002
 #define TENDRIL_PORT_STAT_C_SUSPEND 0x0004
@@ -280,7 +266,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_PORT_STAT_C_LINK_STATE 0x0040
 #define TENDRIL_PORT_STAT_C_CONFIG_ERROR 0x0080
 
-/* wHubCharacteristics */
+// wHubCharacteristics
 #define TENDRIL_HUB_CHAR_LPSM_MASK 0x0003
 #define TENDRIL_HUB_CHAR_COMPOUND 0x0004
 #define TENDRIL_HUB_CHAR_OCPM_MASK 0x0018
@@ -288,7 +274,7 @@ static inline uint64_t tendril_le64(uint64_t v) {
 #define TENDRIL_HUB_CHAR_TTTT_SHIFT 5
 #define TENDRIL_HUB_CHAR_PORTIND 0x0080
 
-TENDRIL_PACK_BEGIN
+#pragma pack(push, 1)
 
 struct tendril_setup {
     uint8_t request_type;
@@ -296,12 +282,12 @@ struct tendril_setup {
     uint16_t value;
     uint16_t index;
     uint16_t length;
-} TENDRIL_PACKED;
+};
 
 struct tendril_descriptor_header {
     uint8_t length;
     uint8_t type;
-} TENDRIL_PACKED;
+};
 
 struct tendril_device_descriptor {
     uint8_t length;
@@ -318,7 +304,7 @@ struct tendril_device_descriptor {
     uint8_t product_string;
     uint8_t serial_string;
     uint8_t num_configurations;
-} TENDRIL_PACKED;
+};
 
 struct tendril_config_descriptor {
     uint8_t length;
@@ -329,7 +315,7 @@ struct tendril_config_descriptor {
     uint8_t configuration_string;
     uint8_t attributes;
     uint8_t max_power;
-} TENDRIL_PACKED;
+};
 
 struct tendril_interface_assoc_descriptor {
     uint8_t length;
@@ -340,7 +326,7 @@ struct tendril_interface_assoc_descriptor {
     uint8_t function_subclass;
     uint8_t function_protocol;
     uint8_t function_string;
-} TENDRIL_PACKED;
+};
 
 struct tendril_interface_descriptor {
     uint8_t length;
@@ -352,7 +338,7 @@ struct tendril_interface_descriptor {
     uint8_t interface_subclass;
     uint8_t interface_protocol;
     uint8_t interface_string;
-} TENDRIL_PACKED;
+};
 
 struct tendril_endpoint_descriptor {
     uint8_t length;
@@ -361,7 +347,7 @@ struct tendril_endpoint_descriptor {
     uint8_t attributes;
     uint16_t max_packet_size;
     uint8_t interval;
-} TENDRIL_PACKED;
+};
 
 struct tendril_ss_ep_companion_descriptor {
     uint8_t length;
@@ -369,40 +355,40 @@ struct tendril_ss_ep_companion_descriptor {
     uint8_t max_burst;
     uint8_t attributes;
     uint16_t bytes_per_interval;
-} TENDRIL_PACKED;
+};
 
 struct tendril_ssp_iso_ep_companion_descriptor {
     uint8_t length;
     uint8_t type;
     uint16_t reserved;
     uint32_t bytes_per_interval;
-} TENDRIL_PACKED;
+};
 
+// Its UTF-16LE code units follow it, (length - 2) / 2 of them.
 struct tendril_string_descriptor {
     uint8_t length;
     uint8_t type;
-    uint16_t data[];
-} TENDRIL_PACKED;
+};
 
 struct tendril_bos_descriptor {
     uint8_t length;
     uint8_t type;
     uint16_t total_length;
     uint8_t num_device_caps;
-} TENDRIL_PACKED;
+};
 
 struct tendril_device_capability_header {
     uint8_t length;
     uint8_t type;
     uint8_t capability_type;
-} TENDRIL_PACKED;
+};
 
 struct tendril_usb20_ext_capability {
     uint8_t length;
     uint8_t type;
     uint8_t capability_type;
     uint32_t attributes;
-} TENDRIL_PACKED;
+};
 
 struct tendril_ss_capability {
     uint8_t length;
@@ -413,7 +399,7 @@ struct tendril_ss_capability {
     uint8_t functionality_support;
     uint8_t u1_dev_exit_lat;
     uint16_t u2_dev_exit_lat;
-} TENDRIL_PACKED;
+};
 
 struct tendril_hub_descriptor {
     uint8_t length;
@@ -423,7 +409,7 @@ struct tendril_hub_descriptor {
     uint8_t power_on_to_good;
     uint8_t controller_current;
     uint8_t variable[64];
-} TENDRIL_PACKED;
+};
 
 struct tendril_ss_hub_descriptor {
     uint8_t length;
@@ -435,9 +421,9 @@ struct tendril_ss_hub_descriptor {
     uint8_t header_decode_latency;
     uint16_t hub_delay;
     uint16_t device_removable;
-} TENDRIL_PACKED;
+};
 
-TENDRIL_PACK_END
+#pragma pack(pop)
 
 #ifdef __cplusplus
 }

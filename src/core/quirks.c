@@ -157,6 +157,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef __cplusplus
+#   error "this file is C, not C++"
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include "../internal.h"
@@ -172,11 +176,9 @@ struct hc_quirk {
     uint32_t quirks;
 };
 
-/* BEGIN FreeBSD sys/dev/usb/controller/xhci_pci.c, ehci_pci.c */
-/*
- * From FreeBSD's sys/dev/usb/controller/xhci_pci.c and ehci_pci.c
- * (BSD-2-Clause), the latter's "dropped interrupts workaround".
- */
+// BEGIN FreeBSD sys/dev/usb/controller/xhci_pci.c, ehci_pci.c
+// From FreeBSD's sys/dev/usb/controller/xhci_pci.c and ehci_pci.c
+// (BSD-2-Clause), the latter's "dropped interrupts workaround".
 #define INTEL_LP \
     (TENDRIL_HC_QUIRK_INTEL_PORT_ROUTING | TENDRIL_HC_QUIRK_XHCI_CTRL_STEP \
         | TENDRIL_HC_QUIRK_XHCI_IMOD_LP)
@@ -194,42 +196,40 @@ static const struct hc_quirk hc_quirks[] = {
     { 0x1002, ANY, TENDRIL_HC_EHCI, TENDRIL_HC_QUIRK_EHCI_LOST_INTR },
     { 0x1106, ANY, TENDRIL_HC_EHCI, TENDRIL_HC_QUIRK_EHCI_LOST_INTR }
 };
-/* END FreeBSD sys/dev/usb/controller/xhci_pci.c, ehci_pci.c */
+// END FreeBSD sys/dev/usb/controller/xhci_pci.c, ehci_pci.c
 
-/* BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs */
-/*
- * From FreeBSD's sys/dev/usb/quirk/usb_quirk.c (BSD-2-Clause), naming the IDs
- * as its sys/dev/usb/usbdevs (BSD-2-Clause) does.
- */
+// BEGIN FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs
+// From FreeBSD's sys/dev/usb/quirk/usb_quirk.c (BSD-2-Clause), naming the IDs
+// as its sys/dev/usb/usbdevs (BSD-2-Clause) does.
 static const struct tendril_id_quirk device_quirks[] = {
-    /* INSIDEOUT EDGEPORT4 */
+    // INSIDEOUT EDGEPORT4
     { 0x1608, 0x0001, 0x0094, 0x0094, TENDRIL_DEV_QUIRK_SWAP_UNICODE },
-    /* LOGITECH UN53B */
+    // LOGITECH UN53B
     { 0x046d, 0xc032, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_NO_STRINGS },
-    /* REALTEK RTL8196EU */
+    // REALTEK RTL8196EU
     { 0x0bda, 0x8196, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
-    /* ELSA MODEM1 */
+    // ELSA MODEM1
     { 0x05cc, 0x2265, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
-    /* PLANEX2 MZKUE150N */
+    // PLANEX2 MZKUE150N
     { 0x2019, 0xab2f, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
-    /* CISCOLINKSYS USB3GIGV1 */
+    // CISCOLINKSYS USB3GIGV1
     { 0x13b1, 0x0041, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
-    /* QUALCOMMINC ZTE_MF730M */
+    // QUALCOMMINC ZTE_MF730M
     { 0x19d2, 0x1420, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_0 },
-    /* PLOYTEC SPL_CRIMSON_1 */
+    // PLOYTEC SPL_CRIMSON_1
     { 0x0a4a, 0xc150, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
-    /* LENOVO TBT3LAN */
+    // LENOVO TBT3LAN
     { 0x17ef, 0x3069, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
-    /* REALTEK RTL8153 */
+    // REALTEK RTL8153
     { 0x0bda, 0x8153, 0x31fd, 0x31fd, TENDRIL_DEV_QUIRK_CONFIG_INDEX_1 },
-    /* MCT HUB0100 */
+    // MCT HUB0100
     { 0x0711, 0x0100, 0x0102, 0x0102, TENDRIL_DEV_QUIRK_BUS_POWERED },
-    /* MCT USB232 */
+    // MCT USB232
     { 0x0711, 0x0210, 0x0102, 0x0102, TENDRIL_DEV_QUIRK_BUS_POWERED },
-    /* DYMO LABELMANAGERPNP */
-    { 0x0922, 0x1001, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_DYMO_EJECT },
+    // DYMO LABELMANAGERPNP
+    { 0x0922, 0x1001, 0x0000, 0xffff, TENDRIL_DEV_QUIRK_DYMO_EJECT }
 };
-/* END FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs */
+// END FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs
 
 uint32_t tendril_pci_hc_quirks(int type, uint16_t vendor, uint16_t device) {
     uint32_t quirks = 0;
@@ -249,9 +249,7 @@ uint32_t tendril_hc_quirk_lookup(struct tendril_hc *hc) {
     if (!hc->config.pci) {
         return 0;
     }
-    return tendril_pci_hc_quirks(
-        hc->config.type, hc->pci_vendor, hc->pci_device
-    );
+    return tendril_pci_hc_quirks(hc->config.type, hc->pci_vendor, hc->pci_device);
 }
 
 uint32_t tendril_id_quirks(
@@ -272,8 +270,6 @@ uint32_t tendril_id_quirks(
     return quirks;
 }
 
-uint32_t tendril_device_quirk_lookup(
-    const struct tendril_device_descriptor *desc
-) {
+uint32_t tendril_device_quirk_lookup(const struct tendril_device_descriptor *desc) {
     return tendril_id_quirks(device_quirks, ARRAY_SIZE(device_quirks), desc);
 }

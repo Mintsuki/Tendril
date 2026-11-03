@@ -28,6 +28,10 @@
 #ifndef TENDRIL_SERIAL_H
 #define TENDRIL_SERIAL_H 1
 
+#if !defined(__cplusplus) && (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L)
+#   error "tendril/serial.h needs C99 or later"
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -37,10 +41,8 @@
 extern "C" {
 #endif
 
-/*
- * Serial ports: CDC ACM, and FTDI, Prolific PL2303, WCH CH34x, and Silicon
- * Labs CP210x adapters.
- */
+// Serial ports: CDC ACM, and FTDI, Prolific PL2303, WCH CH34x, and Silicon
+// Labs CP210x adapters.
 
 struct tendril_serial;
 
@@ -50,10 +52,8 @@ struct tendril_serial;
 #define TENDRIL_SERIAL_CH34X 3
 #define TENDRIL_SERIAL_CP210X 4
 
-/*
- * Status bits. DCD, DSR, RI, and CTS are line states; the rest are events,
- * reported once each. Not every adapter reports every bit.
- */
+// Status bits. DCD, DSR, RI, and CTS are line states; the rest are events,
+// reported once each. Not every adapter reports every bit.
 #define TENDRIL_SERIAL_DCD ((uint32_t)1 << 0)
 #define TENDRIL_SERIAL_DSR ((uint32_t)1 << 1)
 #define TENDRIL_SERIAL_BREAK ((uint32_t)1 << 2)
@@ -64,24 +64,18 @@ struct tendril_serial;
 #define TENDRIL_SERIAL_CTS ((uint32_t)1 << 7)
 
 struct tendril_serial_callbacks {
-    /*
-     * A port is ready: 115200 baud, 8 data bits, no parity, 1 stop bit, DTR
-     * and RTS on.
-     */
+    // A port is ready: 115200 baud, 8 data bits, no parity, 1 stop bit, DTR
+    // and RTS on.
     void (*attach)(struct tendril_serial *port);
-    /* The port is gone; its writes and operations have all completed. */
+    // The port is gone; its writes and operations have all completed.
     void (*detach)(struct tendril_serial *port);
-    /* Received data, valid only during the call. */
-    void (*receive)(
-        struct tendril_serial *port, const uint8_t *data, size_t len
-    );
+    // Received data, valid only during the call.
+    void (*receive)(struct tendril_serial *port, const uint8_t *data, size_t len);
     void (*status)(struct tendril_serial *port, uint32_t status);
 };
 
-/*
- * Registers the serial class driver; call before the first controller is
- * added.
- */
+// Registers the serial class driver; call before the first controller is
+// added.
 void tendril_serial_register(const struct tendril_serial_callbacks *callbacks);
 
 #define TENDRIL_SERIAL_PARITY_NONE 0
@@ -96,52 +90,44 @@ void tendril_serial_register(const struct tendril_serial_callbacks *callbacks);
 
 struct tendril_serial_config {
     uint32_t baud;
-    /* 5 to 8 */
+    // 5 to 8
     uint8_t data_bits;
     uint8_t parity;
     uint8_t stop_bits;
-    /* RTS/CTS flow control, where the adapter can do it. */
+    // RTS/CTS flow control, where the adapter can do it.
     bool rtscts;
 };
 
-/*
- * Line settings, modem control lines, and break. Each completes through
- * `done`; those still queued fail with TENDRIL_ERR_NO_DEVICE if the port goes
- * away.
- */
+// Line settings, modem control lines, and break. Each completes through
+// `done`; those still queued fail with TENDRIL_ERR_NO_DEVICE if the port goes
+// away.
 int tendril_serial_configure(
     struct tendril_serial *port, const struct tendril_serial_config *config,
     void (*done)(void *ctx, int status), void *ctx
 );
 int tendril_serial_set_lines(
-    struct tendril_serial *port, bool dtr, bool rts,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_serial *port, bool dtr, bool rts, void (*done)(void *ctx, int status), void *ctx
 );
 int tendril_serial_set_break(
-    struct tendril_serial *port, bool on, void (*done)(void *ctx, int status),
+    struct tendril_serial *port, bool on, void (*done)(void *ctx, int status), void *ctx
+);
+
+// Queues `len` bytes, which must stay valid until `done`; writes go out in
+// order.
+int tendril_serial_write(
+    struct tendril_serial *port, const void *data, size_t len, void (*done)(void *ctx, int status),
     void *ctx
 );
 
-/*
- * Queues `len` bytes, which must stay valid until `done`; writes go out in
- * order.
- */
-int tendril_serial_write(
-    struct tendril_serial *port, const void *data, size_t len,
-    void (*done)(void *ctx, int status), void *ctx
-);
-
-/* Synchronous helpers, running tendril_hc_poll() until done. */
+// Synchronous helpers, running tendril_hc_poll() until done.
 int tendril_serial_configure_sync(
     struct tendril_serial *port, const struct tendril_serial_config *config
 );
-int tendril_serial_write_sync(
-    struct tendril_serial *port, const void *data, size_t len
-);
+int tendril_serial_write_sync(struct tendril_serial *port, const void *data, size_t len);
 
 struct tendril_device *tendril_serial_device(struct tendril_serial *port);
 int tendril_serial_kind(struct tendril_serial *port);
-/* The number of the interface carrying the port's data. */
+// The number of the interface carrying the port's data.
 uint8_t tendril_serial_interface(struct tendril_serial *port);
 uint32_t tendril_serial_status(struct tendril_serial *port);
 void tendril_serial_set_user(struct tendril_serial *port, void *user);

@@ -27,8 +27,8 @@ which code using Tendril needs too. The sources are C99 and build as C99
 through C23 with GCC and Clang, freestanding. They use the compiler's
 freestanding headers and `__builtin_memcpy` and friends, which may still call
 `memcpy`, `memset`, `memmove`, and `memcmp`. With MSVC, which has no such
-builtins and no packing attribute, the intrinsics of those names and
-`#pragma pack` stand in for them. On 32-bit targets, link the compiler's
+builtins, the intrinsics of those names stand in for them. Every compiler packs
+the wire structures by `#pragma pack`. On 32-bit targets, link the compiler's
 runtime library (libgcc or the compiler-rt builtins, for example) for 64-bit
 division.
 

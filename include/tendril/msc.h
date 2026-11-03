@@ -28,6 +28,10 @@
 #ifndef TENDRIL_MSC_H
 #define TENDRIL_MSC_H 1
 
+#if !defined(__cplusplus) && (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L)
+#   error "tendril/msc.h needs C99 or later"
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -37,31 +41,27 @@
 extern "C" {
 #endif
 
-/*
- * Mass storage: Bulk-Only 1.0, CBI 1.1, and UAS (UASP 1.0) transports,
- * carrying SCSI-family commands.
- */
+// Mass storage: Bulk-Only 1.0, CBI 1.1, and UAS (UASP 1.0) transports,
+// carrying SCSI-family commands.
 
 struct tendril_msc_lun;
 
 struct tendril_msc_callbacks {
-    /* A logical unit was probed; check tendril_msc_present() for a medium. */
+    // A logical unit was probed; check tendril_msc_present() for a medium.
     void (*attach)(struct tendril_msc_lun *lun);
-    /* The logical unit is gone; its requests have all completed. */
+    // The logical unit is gone; its requests have all completed.
     void (*detach)(struct tendril_msc_lun *lun);
-    /* The medium was inserted, removed or swapped. */
+    // The medium was inserted, removed or swapped.
     void (*medium_changed)(struct tendril_msc_lun *lun);
 };
 
-/*
- * Registers the mass storage class driver; call before the first controller is
- * added.
- */
+// Registers the mass storage class driver; call before the first controller is
+// added.
 void tendril_msc_register(const struct tendril_msc_callbacks *callbacks);
 
 struct tendril_device *tendril_msc_device(struct tendril_msc_lun *lun);
 unsigned int tendril_msc_lun_number(struct tendril_msc_lun *lun);
-/* SCSI peripheral device type: 0x00 direct access, 0x05 CD/DVD, and so on. */
+// SCSI peripheral device type: 0x00 direct access, 0x05 CD/DVD, and so on.
 int tendril_msc_type(struct tendril_msc_lun *lun);
 bool tendril_msc_removable(struct tendril_msc_lun *lun);
 bool tendril_msc_present(struct tendril_msc_lun *lun);
@@ -97,34 +97,23 @@ struct tendril_msc_request {
     struct tendril_msc_request_internal internal;
 };
 
-/* Queues a request; requests complete in order, through `done`. */
-int tendril_msc_submit(
-    struct tendril_msc_lun *lun, struct tendril_msc_request *req
-);
+// Queues a request; requests complete in order, through `done`.
+int tendril_msc_submit(struct tendril_msc_lun *lun, struct tendril_msc_request *req);
 
-/* Synchronous helpers, running tendril_hc_poll() until done. */
-int tendril_msc_read(
-    struct tendril_msc_lun *lun, uint64_t lba, size_t count, void *buf
-);
-int tendril_msc_write(
-    struct tendril_msc_lun *lun, uint64_t lba, size_t count, const void *buf
-);
+// Synchronous helpers, running tendril_hc_poll() until done.
+int tendril_msc_read(struct tendril_msc_lun *lun, uint64_t lba, size_t count, void *buf);
+int tendril_msc_write(struct tendril_msc_lun *lun, uint64_t lba, size_t count, const void *buf);
 int tendril_msc_flush(struct tendril_msc_lun *lun);
 
-/*
- * Runs one command, padded as the device's command set wants. `sense`, if not
- * NULL, receives up to 32 bytes of sense data after a CHECK CONDITION.
- */
+// Runs one command, padded as the device's command set wants. `sense`, if not
+// NULL, receives up to 32 bytes of sense data after a CHECK CONDITION.
 int tendril_msc_command(
-    struct tendril_msc_lun *lun, const uint8_t *cdb, size_t cdb_len,
-    void *data, size_t len, bool in, uint8_t *sense,
-    void (*done)(void *ctx, int status, int scsi_status, size_t actual),
+    struct tendril_msc_lun *lun, const uint8_t *cdb, size_t cdb_len, void *data, size_t len,
+    bool in, uint8_t *sense, void (*done)(void *ctx, int status, int scsi_status, size_t actual),
     void *ctx
 );
 
-/*
- * Probes a removable medium again, reporting changes through medium_changed.
- */
+// Probes a removable medium again, reporting changes through medium_changed.
 int tendril_msc_check_medium(
     struct tendril_msc_lun *lun, void (*done)(void *ctx, int status), void *ctx
 );

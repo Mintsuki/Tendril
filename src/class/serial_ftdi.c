@@ -25,11 +25,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * FTDI serial adapters: chip identification, the vendor control requests, and
- * the status bytes heading received data. Follows FTDI AN232B-04 Version 1.1
- * and FTDI AN_120 Version 1.2.
- */
+// FTDI serial adapters: chip identification, the vendor control requests, and
+// the status bytes heading received data. Follows FTDI AN232B-04 Version 1.1
+// and FTDI AN_120 Version 1.2.
 
 /*
  * Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uftdi.c
@@ -65,6 +63,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef __cplusplus
+#   error "this file is C, not C++"
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -74,7 +76,7 @@
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
 
-/* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
+// BEGIN FreeBSD sys/dev/usb/serial/uftdi.c
 #define FTDI_FT232A 0
 #define FTDI_FT232B 1
 #define FTDI_FT2232D 2
@@ -83,9 +85,9 @@
 #define FTDI_FT4232H 5
 #define FTDI_FT232H 6
 #define FTDI_FT230X 7
-/* END FreeBSD sys/dev/usb/serial/uftdi.c */
+// END FreeBSD sys/dev/usb/serial/uftdi.c
 
-/* Vendor requests and their fields (clean-room specification). */
+// Vendor requests and their fields (clean-room specification).
 #define FTDI_RESET 0x00
 #define FTDI_MODEM_CTRL 0x01
 #define FTDI_SET_FLOW_CTRL 0x02
@@ -104,8 +106,8 @@
 
 #define FTDI_LATENCY_MS 2
 
-/* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
-/* Chips with several ports, which take the port index in wIndex. */
+// BEGIN FreeBSD sys/dev/usb/serial/uftdi.c
+// Chips with several ports, which take the port index in wIndex.
 static bool multi_port(int chip) {
     switch (chip) {
         case FTDI_FT2232D:
@@ -121,7 +123,7 @@ static bool multi_port(int chip) {
     }
 }
 
-/* Chips with the 12 MHz baud rate reference (FTDI AN_120 Version 1.2, 4.4). */
+// Chips with the 12 MHz baud rate reference (FTDI AN_120 Version 1.2, 4.4).
 static bool fast_clock(int chip) {
     switch (chip) {
         case FTDI_FT2232H:
@@ -134,16 +136,14 @@ static bool fast_clock(int chip) {
         }
     }
 }
-/* END FreeBSD sys/dev/usb/serial/uftdi.c */
+// END FreeBSD sys/dev/usb/serial/uftdi.c
 
 static uint16_t req_index(const struct tendril_serial *port, uint8_t high) {
     return (uint16_t)((uint32_t)high << 8
-        | (port->port_index & (uint32_t)0xff));
+                    | (port->port_index & (uint32_t)0xff));
 }
 
-static void ftdi_req(
-    struct serial_op *op, uint8_t request, uint16_t value, uint16_t index
-) {
+static void ftdi_req(struct serial_op *op, uint8_t request, uint16_t value, uint16_t index) {
     serial_op_add(op, REQ_VENDOR_OUT, request, value, index, NULL, 0);
 }
 
@@ -152,11 +152,9 @@ bool serial_ftdi_init(struct tendril_serial *port) {
     uint16_t bcd = tendril_le16(desc->bcd_device);
     int chip;
 
-    /* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
-    /*
-     * As FreeBSD's sys/dev/usb/serial/uftdi.c (BSD-2-Clause,
-     * uftdi_devtype_setup) does.
-     */
+    // BEGIN FreeBSD sys/dev/usb/serial/uftdi.c
+    // As FreeBSD's sys/dev/usb/serial/uftdi.c (BSD-2-Clause,
+    // uftdi_devtype_setup) does.
     switch (bcd) {
         case 0x0200: {
             if (desc->serial_string == 0) {
@@ -203,13 +201,11 @@ bool serial_ftdi_init(struct tendril_serial *port) {
             break;
         }
     }
-    /* END FreeBSD sys/dev/usb/serial/uftdi.c */
+    // END FreeBSD sys/dev/usb/serial/uftdi.c
 
     port->chip = chip;
     if (multi_port(port->chip)) {
-        /*
-         * 1, 2, 3, ... select ports A, B, C, ... (clean-room specification).
-         */
+        // 1, 2, 3, ... select ports A, B, C, ... (clean-room specification).
         port->port_index = (uint16_t)((uint32_t)1 + port->intf->number);
     } else {
         port->port_index = 0;
@@ -217,20 +213,16 @@ bool serial_ftdi_init(struct tendril_serial *port) {
     return true;
 }
 
-/* BEGIN FreeBSD sys/dev/usb/serial/uftdi.c */
-/*
- * The SET_BAUD_RATE divisor of a 3 MHz or 12 MHz reference (FTDI AN_120
- * Version 1.2, 3, 4.3, and 4.4), rounded and with the 12 MHz reference picked
- * as FreeBSD's sys/dev/usb/serial/uftdi.c (BSD-2-Clause,
- * uftdi_encode_baudrate) does.
- */
+// BEGIN FreeBSD sys/dev/usb/serial/uftdi.c
+// The SET_BAUD_RATE divisor of a 3 MHz or 12 MHz reference (FTDI AN_120
+// Version 1.2, 3, 4.3, and 4.4), rounded and with the 12 MHz reference picked
+// as FreeBSD's sys/dev/usb/serial/uftdi.c (BSD-2-Clause,
+// uftdi_encode_baudrate) does.
 static bool encode_baud(int chip, uint32_t rate, uint32_t *encoded) {
-    /* Fraction codes by eighths (FTDI AN_120 Version 1.2, 4.3). */
+    // Fraction codes by eighths (FTDI AN_120 Version 1.2, 4.3).
     static const uint8_t frac_code[8] = { 0, 3, 2, 4, 1, 5, 6, 7 };
-    /*
-     * Moves sixteenths to the nearest fraction the FT232A has: 0, 1/8, 1/4, or
-     * 1/2.
-     */
+    // Moves sixteenths to the nearest fraction the FT232A has: 0, 1/8, 1/4, or
+    // 1/2.
     static const int roundoff[16] = {
         0, 1, 0, 1, 0, -1, 2, 1, 0, -1, -2, -3, 4, 3, 2, 1
     };
@@ -259,10 +251,8 @@ static bool encode_baud(int chip, uint32_t rate, uint32_t *encoded) {
     uint32_t n = d8 / 8;
     uint32_t value;
     if (n == 1) {
-        /*
-         * Divisors 0 and 1 mean 3 and 2 MBaud, or 12 and 8 on 12 MHz (FTDI
-         * AN_120 Version 1.2, 3 and 4.4).
-         */
+        // Divisors 0 and 1 mean 3 and 2 MBaud, or 12 and 8 on 12 MHz (FTDI
+        // AN_120 Version 1.2, 3 and 4.4).
         value = (d8 % 8) == 0 ? (uint32_t)0 : (uint32_t)1;
     } else if (n > 16383) {
         return false;
@@ -275,7 +265,7 @@ static bool encode_baud(int chip, uint32_t rate, uint32_t *encoded) {
     *encoded = value;
     return true;
 }
-/* END FreeBSD sys/dev/usb/serial/uftdi.c */
+// END FreeBSD sys/dev/usb/serial/uftdi.c
 
 static bool data_value(const struct tendril_serial *port, uint16_t *value) {
     const struct tendril_serial_config *config = &port->config;
@@ -287,7 +277,7 @@ static bool data_value(const struct tendril_serial *port, uint16_t *value) {
     }
 
     uint32_t v = (uint32_t)config->data_bits | (uint32_t)config->parity << 8
-        | (uint32_t)config->stop_bits << 11;
+               | (uint32_t)config->stop_bits << 11;
     if (port->in_break) {
         v |= FTDI_DATA_BREAK;
     }
@@ -297,10 +287,8 @@ static bool data_value(const struct tendril_serial *port, uint16_t *value) {
 
 void serial_ftdi_setup(struct tendril_serial *port, struct serial_op *op) {
     ftdi_req(op, FTDI_RESET, 0, req_index(port, 0));
-    /*
-     * The chip holds partial packets back until its latency timer, 16 ms by
-     * default, runs out (FTDI AN232B-04 Version 1.1, 3.1).
-     */
+    // The chip holds partial packets back until its latency timer, 16 ms by
+    // default, runs out (FTDI AN232B-04 Version 1.1, 3.1).
     ftdi_req(op, FTDI_SET_LATENCY_TIMER, FTDI_LATENCY_MS, req_index(port, 0));
     serial_ftdi_line(port, op);
     serial_ftdi_lines(port, op);
@@ -316,7 +304,7 @@ void serial_ftdi_line(struct tendril_serial *port, struct serial_op *op) {
         return;
     }
 
-    /* Where the divisor's upper bits go (clean-room specification). */
+    // Where the divisor's upper bits go (clean-room specification).
     uint16_t baud_index;
     if (multi_port(port->chip)) {
         baud_index = req_index(port, (uint8_t)(divisor >> 16));
@@ -329,10 +317,7 @@ void serial_ftdi_line(struct tendril_serial *port, struct serial_op *op) {
         flow = FTDI_FLOW_RTS_CTS;
     }
 
-    ftdi_req(
-        op, FTDI_SET_BAUD_RATE, (uint16_t)(divisor & (uint32_t)0xffff),
-        baud_index
-    );
+    ftdi_req(op, FTDI_SET_BAUD_RATE, (uint16_t)(divisor & (uint32_t)0xffff), baud_index);
     ftdi_req(op, FTDI_SET_DATA, data, req_index(port, 0));
     ftdi_req(op, FTDI_SET_FLOW_CTRL, 0, req_index(port, flow));
 }
@@ -359,7 +344,7 @@ void serial_ftdi_break(struct tendril_serial *port, struct serial_op *op) {
     ftdi_req(op, FTDI_SET_DATA, data, req_index(port, 0));
 }
 
-/* The modem and line status bytes (clean-room specification). */
+// The modem and line status bytes (clean-room specification).
 static uint32_t status_bits(uint8_t modem, uint8_t line) {
     uint32_t status = 0;
 
@@ -390,12 +375,8 @@ static uint32_t status_bits(uint8_t modem, uint8_t line) {
     return status;
 }
 
-/*
- * Every packet starts with two status bytes (FTDI AN232B-04 Version 1.1, 3.1).
- */
-void serial_ftdi_receive(
-    struct tendril_serial *port, const uint8_t *buf, size_t len
-) {
+// Every packet starts with two status bytes (FTDI AN232B-04 Version 1.1, 3.1).
+void serial_ftdi_receive(struct tendril_serial *port, const uint8_t *buf, size_t len) {
     size_t chunk = port->in_ep->max_packet;
     size_t off = 0;
 
