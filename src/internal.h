@@ -688,6 +688,14 @@ void tendril_roothub_hold(struct tendril_hc *hc, uint8_t port, uint64_t ms);
 void tendril_roothub_powered(
     struct tendril_hc *hc, uint8_t port, uint64_t settle_ms
 );
+/*
+ * The controller's reset left a root port disconnected, and a device still on
+ * it may take up to ms to show again: tendril_hc_ready() waits that long. Lock
+ * held, or from start().
+ */
+void tendril_roothub_reconnect(
+    struct tendril_hc *hc, uint8_t port, uint64_t ms
+);
 
 /* Transfer completion from controller drivers, lock held. */
 void tendril_transfer_complete(

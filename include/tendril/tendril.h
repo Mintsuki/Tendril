@@ -331,10 +331,11 @@ bool tendril_hc_settled(struct tendril_hc *hc);
 /*
  * Whether the devices plugged in so far are all up: tendril_hc_settled()
  * holds, no device is changing configuration, every interface a driver claimed
- * has been set up or given up on, and every port the library switched on with
+ * has been set up or given up on, every port the library switched on with
  * nothing connected has had TSVLD_CON_PWD (USB 2.0 Connect Timing ECN) for a
- * device to connect and its hub the time to report it. True once the
- * controller has died.
+ * device to connect and its hub the time to report it, and every root port a
+ * controller's reset left disconnected the time to see a device still on it.
+ * True once the controller has died.
  */
 bool tendril_hc_ready(struct tendril_hc *hc);
 

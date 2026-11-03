@@ -276,6 +276,16 @@ void tendril_roothub_powered(
     }
 }
 
+void tendril_roothub_reconnect(
+    struct tendril_hc *hc, uint8_t port, uint64_t ms
+) {
+    if (hc->root.ports != NULL && port >= 1 && port <= hc->root.num_ports) {
+        tendril_timer_arm(
+            hc, &hc->root.ports[port - 1].connect_wait, ms * NS_PER_MS
+        );
+    }
+}
+
 /* Controllers */
 
 static const struct tendril_hcd_ops *hcd_ops(int type) {

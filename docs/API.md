@@ -483,9 +483,14 @@ interface a driver claimed has been set up or given up on (the `busy` member of
 connected has had 1 s for a device to connect (TSVLD_CON_PWD, USB 2.0 Connect
 Timing ECN, Table 7-14) and its hub the time to report it: TDCNN (2 ms, USB 2.0
 Table 7-13), plus one interval of its status change endpoint for a hub's port.
-It is true once the controller has died. It takes the controller's lock, and
-may be called wherever `tendril_hc_poll()` may. The deadline
-`tendril_hc_poll()` returns accounts for the waits for devices to connect.
+An xHCI controller's root ports, which its reset leaves disconnected (xHCI 1.2,
+4.19.1.1.2), each get 180 ms to see a device still on them: a SuperSpeed port
+looks for its device's receiver only once every tRxDetectQuietTimeoutDFP, up
+to 120 ms, which a link timer may run half over (USB 3.2 revision 1.1, Table
+7-12 and section 7.5). It is true once the controller has died. It takes the
+controller's lock, and may be called wherever `tendril_hc_poll()` may. The
+deadline `tendril_hc_poll()` returns accounts for the waits for devices to
+connect.
 
 To find the devices present at boot, call `tendril_hc_poll()` on every
 controller until all of them are ready, with a deadline of your own. The
