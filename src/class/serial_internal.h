@@ -144,39 +144,39 @@ struct tendril_serial {
 
 // Appends a request; IN requests read up to 16 bytes into its data. Setting
 // op->status instead fails the operation before anything is sent.
-void serial_op_add(
+void tendril_serial_op_add(
     struct serial_op *op, uint8_t type, uint8_t request, uint16_t value, uint16_t index,
     const void *data, size_t length
 );
 // Reports line states and events (TENDRIL_SERIAL_*).
-void serial_status_update(struct tendril_serial *port, uint32_t status);
+void tendril_serial_status_update(struct tendril_serial *port, uint32_t status);
 // Hands received data to the embedder.
-void serial_deliver(struct tendril_serial *port, const uint8_t *data, size_t len);
+void tendril_serial_deliver(struct tendril_serial *port, const uint8_t *data, size_t len);
 
 // FTDI (serial_ftdi.c)
 
 // Works out the chip and port->port_index; false leaves the port unsupported.
-bool serial_ftdi_init(struct tendril_serial *port);
+bool tendril_serial_ftdi_init(struct tendril_serial *port);
 // Brings the port up with port->config, port->dtr, and port->rts.
-void serial_ftdi_setup(struct tendril_serial *port, struct serial_op *op);
+void tendril_serial_ftdi_setup(struct tendril_serial *port, struct serial_op *op);
 // Applies port->config.
-void serial_ftdi_line(struct tendril_serial *port, struct serial_op *op);
+void tendril_serial_ftdi_line(struct tendril_serial *port, struct serial_op *op);
 // Applies port->dtr and port->rts.
-void serial_ftdi_lines(struct tendril_serial *port, struct serial_op *op);
+void tendril_serial_ftdi_lines(struct tendril_serial *port, struct serial_op *op);
 // Applies port->in_break.
-void serial_ftdi_break(struct tendril_serial *port, struct serial_op *op);
+void tendril_serial_ftdi_break(struct tendril_serial *port, struct serial_op *op);
 // Data from the bulk IN endpoint.
-void serial_ftdi_receive(struct tendril_serial *port, const uint8_t *buf, size_t len);
+void tendril_serial_ftdi_receive(struct tendril_serial *port, const uint8_t *buf, size_t len);
 
 // Prolific PL2303 (serial_pl2303.c)
 
 // Makes a first guess at the chip.
-void serial_pl2303_init(struct tendril_serial *port);
-void serial_pl2303_setup(struct tendril_serial *port, struct serial_op *op);
-void serial_pl2303_line(struct tendril_serial *port, struct serial_op *op);
-void serial_pl2303_lines(struct tendril_serial *port, struct serial_op *op);
-void serial_pl2303_break(struct tendril_serial *port, struct serial_op *op);
+void tendril_serial_pl2303_init(struct tendril_serial *port);
+void tendril_serial_pl2303_setup(struct tendril_serial *port, struct serial_op *op);
+void tendril_serial_pl2303_line(struct tendril_serial *port, struct serial_op *op);
+void tendril_serial_pl2303_lines(struct tendril_serial *port, struct serial_op *op);
+void tendril_serial_pl2303_break(struct tendril_serial *port, struct serial_op *op);
 // Data from the interrupt IN endpoint.
-void serial_pl2303_status(struct tendril_serial *port, const uint8_t *buf, size_t len);
+void tendril_serial_pl2303_status(struct tendril_serial *port, const uint8_t *buf, size_t len);
 
 #endif

@@ -1221,10 +1221,10 @@ static void sweep_qh(struct tendril_hc *hc, struct ehci_qh *qh) {
         }
         prev = xfer;
     }
-    struct tendril_transfer *head = list_empty(&ep->transfers) ? NULL
-                                  : CONTAINER_OF(
-            ep->transfers.next, struct tendril_transfer, internal.node
-        );
+    struct tendril_transfer *head = NULL;
+    if (!list_empty(&ep->transfers)) {
+        head = CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
+    }
     if (prev != NULL) {
         xfer_last(prev)->sw_next = qh->dummy;
         xfer_last(prev)->next = le(lo32(qh->dummy->dma));
@@ -1430,8 +1430,7 @@ static int build_itds(
             size_t len = xfer->iso_packets[p].length;
             uint64_t a = cursor_addr(&c);
             if (npages == 0
-             || (pages[npages - 1] & ~(uint64_t)0xfff)
-                 != (a & ~(uint64_t)0xfff)) {
+             || (pages[npages - 1] & ~(uint64_t)0xfff) != (a & ~(uint64_t)0xfff)) {
                 if (npages == 7) {
                     return TENDRIL_ERR_BOUNCE;
                 }
@@ -1562,8 +1561,7 @@ static int build_sitds(
         } else {
             cursor_advance(&c, len);
         }
-        uint32_t endpoint = (uint32_t)dev->tt_port << 24
-                          | (uint32_t)dev->tt_hub->address << 16
+        uint32_t endpoint = (uint32_t)dev->tt_port << 24 | (uint32_t)dev->tt_hub->address << 16
                           | (uint32_t)(ep->address & 0xf) << 8 | dev->address;
         sitd->endpoint = le(in ? endpoint | (uint32_t)1 << 31 : endpoint);
         // BEGIN FreeBSD sys/dev/usb/controller/ehci.c
@@ -1649,7 +1647,8 @@ static int submit_iso(struct tendril_hc *hc, struct tendril_transfer *xfer) {
     xfer->internal.hcd_data[ED_FLAGS] = 0;
     xfer->start_frame = start;
     size_t index = start & (FRAMES - 1);
-    int st = high_speed ? build_itds(hc, xfer, ix, index)
+    int st = high_speed
+           ? build_itds(hc, xfer, ix, index)
            : build_sitds(hc, xfer, ix, index);
     if (st != TENDRIL_OK) {
         iso_free_descs(hc, ix);
@@ -1681,8 +1680,7 @@ static bool iso_collect(struct tendril_hc *hc, struct ehci_iso_xfer *ix, bool fo
                     continue;
                 }
                 uint32_t tr = le(itd->trans[t]);
-                struct tendril_iso_packet *pkt
-                    = &xfer->iso_packets[itd->packet[t]];
+                struct tendril_iso_packet *pkt = &xfer->iso_packets[itd->packet[t]];
                 if ((tr & ITD_ACTIVE) != 0) {
                     all = false;
                     pkt->status = TENDRIL_ERR_MISSED;
@@ -1690,10 +1688,11 @@ static bool iso_collect(struct tendril_hc *hc, struct ehci_iso_xfer *ix, bool fo
                     continue;
                 }
                 pkt->actual = in ? (tr >> 16) & 0xfff : pkt->length;
-                pkt->status = (tr & ITD_BABBLE) != 0 ? TENDRIL_ERR_BABBLE
-                            : (tr & ITD_DBE) != 0 ? TENDRIL_ERR_OVERRUN
-                            : (tr & ITD_XACT) != 0 ? TENDRIL_ERR_IO
-                            : TENDRIL_OK;
+                pkt->status = (tr & ITD_BABBLE) != 0
+                            ? TENDRIL_ERR_BABBLE
+                            : (tr & ITD_DBE) != 0
+                                ? TENDRIL_ERR_OVERRUN
+                                : (tr & ITD_XACT) != 0 ? TENDRIL_ERR_IO : TENDRIL_OK;
             }
         } else {
             struct ehci_sitd *sitd = ix->descs[i];
@@ -1711,13 +1710,16 @@ static bool iso_collect(struct tendril_hc *hc, struct ehci_iso_xfer *ix, bool fo
                 continue;
             }
             uint32_t left = (state >> 16) & 0x3ff;
-            pkt->actual = in ? sitd->length - MIN(left, sitd->length)
+            pkt->actual = in
+                        ? sitd->length - MIN(left, sitd->length)
                         : sitd->length;
-            pkt->status = (state & SITD_BABBLE) != 0 ? TENDRIL_ERR_BABBLE
-                        : (state & SITD_DBE) != 0 ? TENDRIL_ERR_OVERRUN
-                        : (state & (SITD_XACT | SITD_ERR)) != 0 ? TENDRIL_ERR_IO
-                        : (state & SITD_MMF) != 0 ? TENDRIL_ERR_MISSED
-                        : TENDRIL_OK;
+            pkt->status = (state & SITD_BABBLE) != 0
+                        ? TENDRIL_ERR_BABBLE
+                        : (state & SITD_DBE) != 0
+                            ? TENDRIL_ERR_OVERRUN
+                            : (state & (SITD_XACT | SITD_ERR)) != 0
+                                ? TENDRIL_ERR_IO
+                                : (state & SITD_MMF) != 0 ? TENDRIL_ERR_MISSED : TENDRIL_OK;
         }
     }
     return all || force;
@@ -2213,8 +2215,7 @@ static void bios_handoff(struct tendril_hc *hc, uint32_t eecp) {
                 bool owned = true;
                 while (owned && tendril_now() < end) {
                     owned = (tendril_glue_pci_read32(hc->ctx, (uint16_t)eecp)
-                           & ((uint32_t)1 << 16))
-                         != 0;
+                           & ((uint32_t)1 << 16)) != 0;
                 }
                 if (owned) {
                     LOG_WARN("EHCI: firmware did not release the controller, forcing it");
@@ -2436,8 +2437,8 @@ static int ehci_start(struct tendril_hc *hc) {
     hc->dma32 = true;
     hc->data32 = !e->ac64;
     LOG_INFO(
-        "EHCI %x.%02x: %zu ports, %zu companions%s", cap >> 24,
-        (cap >> 16) & 0xff, e->num_ports, e->num_cc, e->ac64 ? ", 64-bit" : ""
+        "EHCI %x.%02x: %zu ports, %zu companions%s", cap >> 24, (cap >> 16) & 0xff, e->num_ports,
+        e->num_cc, e->ac64 ? ", 64-bit" : ""
     );
 
     if (hc->config.pci && (hc->quirks & TENDRIL_HC_QUIRK_NO_HANDOFF) == 0) {
@@ -2491,7 +2492,8 @@ static int ehci_start(struct tendril_hc *hc) {
         e->skel[l] = s;
     }
     for (size_t f = 0; f < FRAMES; f++) {
-        size_t level = f == 0 ? LEVELS - 1
+        size_t level = f == 0
+                     ? LEVELS - 1
                      : MIN(lowest_bit(f), (size_t)LEVELS - 1);
         e->frame_list[f] = le(qh_link(e->skel[level]));
     }

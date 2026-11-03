@@ -60,8 +60,7 @@ const uint8_t *tendril_desc_find(const uint8_t *p, const uint8_t *end, int type)
 }
 
 bool tendril_config_valid(const uint8_t *config, size_t size) {
-    if (size < sizeof(struct tendril_config_descriptor)
-     || config[1] != TENDRIL_DT_CONFIGURATION
+    if (size < sizeof(struct tendril_config_descriptor) || config[1] != TENDRIL_DT_CONFIGURATION
      || config[0] < sizeof(struct tendril_config_descriptor)) {
         return false;
     }

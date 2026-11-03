@@ -60,7 +60,7 @@ static inline uint16_t tendril_le16(uint16_t v) {
 static inline uint32_t tendril_le32(uint32_t v) {
 #if TENDRIL_BIG_ENDIAN
     return v >> 24 | (v >> 8 & (uint32_t)0xff00)
-        | (v << 8 & (uint32_t)0xff0000) | v << 24;
+         | (v << 8 & (uint32_t)0xff0000) | v << 24;
 #else
     return v;
 #endif
@@ -69,7 +69,7 @@ static inline uint32_t tendril_le32(uint32_t v) {
 static inline uint64_t tendril_le64(uint64_t v) {
 #if TENDRIL_BIG_ENDIAN
     return (uint64_t)tendril_le32((uint32_t)v) << 32
-        | tendril_le32((uint32_t)(v >> 32));
+         | tendril_le32((uint32_t)(v >> 32));
 #else
     return v;
 #endif

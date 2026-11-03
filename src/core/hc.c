@@ -203,7 +203,8 @@ static void root_get_status(struct tendril_port *port) {
 static void root_set_feature(struct tendril_port *port, int feature) {
     struct tendril_hc *hc = port_hc(port);
     hc_lock(hc);
-    int st = hc->dead ? TENDRIL_ERR_NO_DEVICE
+    int st = hc->dead
+           ? TENDRIL_ERR_NO_DEVICE
            : hc->ops->port_set_feature(hc, port->number, feature);
     tendril_async_complete(hc, &port->async, st);
     hc_unlock(hc);
@@ -212,7 +213,8 @@ static void root_set_feature(struct tendril_port *port, int feature) {
 static void root_clear_feature(struct tendril_port *port, int feature) {
     struct tendril_hc *hc = port_hc(port);
     hc_lock(hc);
-    int st = hc->dead ? TENDRIL_ERR_NO_DEVICE
+    int st = hc->dead
+           ? TENDRIL_ERR_NO_DEVICE
            : hc->ops->port_clear_feature(hc, port->number, feature);
     tendril_async_complete(hc, &port->async, st);
     hc_unlock(hc);
@@ -336,9 +338,8 @@ int tendril_hc_add(const struct tendril_hc_config *config, struct tendril_hc **o
     hc->quirks = config->quirks | tendril_hc_quirk_lookup(hc);
 
     LOG_INFO(
-        "%s controller%s%04x:%04x, quirks 0x%x", ops->name,
-        config->pci ? " " : "", config->pci ? hc->pci_vendor : 0,
-        config->pci ? hc->pci_device : 0, hc->quirks
+        "%s controller%s%04x:%04x, quirks 0x%x", ops->name, config->pci ? " " : "",
+        config->pci ? hc->pci_vendor : 0, config->pci ? hc->pci_device : 0, hc->quirks
     );
 
     int st = ops->start(hc);
@@ -435,7 +436,8 @@ static int run_device_pm(
 ) {
     struct pm_wait w = { false, TENDRIL_OK };
     tendril_device_ref(dev);
-    int st = suspend ? tendril_device_suspend(dev, wake, pm_wait_done, &w)
+    int st = suspend
+           ? tendril_device_suspend(dev, wake, pm_wait_done, &w)
            : tendril_device_resume(dev, pm_wait_done, &w);
     if (st == TENDRIL_OK) {
         tendril_hc_wait(hc, &w.done);
@@ -472,8 +474,8 @@ static struct tendril_device *next_pm_device(struct tendril_hc *hc, bool suspend
 // getting its address; for `ready`, with a device or past the time one may
 // take to connect after the port was switched on.
 static bool port_settled(struct tendril_port *port, bool ready) {
-    if (!tendril_port_idle(port) || port->state == PORT_WAIT_ENUM
-     || port->state == PORT_ENUM || tendril_timer_armed(&port->hold)) {
+    if (!tendril_port_idle(port) || port->state == PORT_WAIT_ENUM || port->state == PORT_ENUM
+     || tendril_timer_armed(&port->hold)) {
         return false;
     }
     return !ready || port->device != NULL
@@ -577,9 +579,9 @@ int tendril_hc_suspend(struct tendril_hc *hc, bool wake) {
     }
 
     hc_lock(hc);
-    int st = hc->dead ? TENDRIL_ERR_NO_DEVICE
-           : hc->ops->suspend != NULL ? hc->ops->suspend(hc)
-           : TENDRIL_OK;
+    int st = hc->dead
+           ? TENDRIL_ERR_NO_DEVICE
+           : hc->ops->suspend != NULL ? hc->ops->suspend(hc) : TENDRIL_OK;
     if (st == TENDRIL_OK) {
         hc->suspended = true;
     }
@@ -628,9 +630,9 @@ int tendril_hc_resume(struct tendril_hc *hc) {
     }
     hc_lock(hc);
     hc->suspended = false;
-    int st = hc->dead ? TENDRIL_ERR_NO_DEVICE
-           : hc->ops->resume != NULL ? hc->ops->resume(hc)
-           : TENDRIL_OK;
+    int st = hc->dead
+           ? TENDRIL_ERR_NO_DEVICE
+           : hc->ops->resume != NULL ? hc->ops->resume(hc) : TENDRIL_OK;
     if (st == TENDRIL_OK) {
         // Ports may have seen wakeups, connects, or disconnects while asleep.
         tendril_roothub_changed(hc, 0);

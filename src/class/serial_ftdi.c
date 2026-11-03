@@ -144,10 +144,10 @@ static uint16_t req_index(const struct tendril_serial *port, uint8_t high) {
 }
 
 static void ftdi_req(struct serial_op *op, uint8_t request, uint16_t value, uint16_t index) {
-    serial_op_add(op, REQ_VENDOR_OUT, request, value, index, NULL, 0);
+    tendril_serial_op_add(op, REQ_VENDOR_OUT, request, value, index, NULL, 0);
 }
 
-bool serial_ftdi_init(struct tendril_serial *port) {
+bool tendril_serial_ftdi_init(struct tendril_serial *port) {
     const struct tendril_device_descriptor *desc = &port->dev->desc;
     uint16_t bcd = tendril_le16(desc->bcd_device);
     int chip;
@@ -285,16 +285,16 @@ static bool data_value(const struct tendril_serial *port, uint16_t *value) {
     return true;
 }
 
-void serial_ftdi_setup(struct tendril_serial *port, struct serial_op *op) {
+void tendril_serial_ftdi_setup(struct tendril_serial *port, struct serial_op *op) {
     ftdi_req(op, FTDI_RESET, 0, req_index(port, 0));
     // The chip holds partial packets back until its latency timer, 16 ms by
     // default, runs out (FTDI AN232B-04 Version 1.1, 3.1).
     ftdi_req(op, FTDI_SET_LATENCY_TIMER, FTDI_LATENCY_MS, req_index(port, 0));
-    serial_ftdi_line(port, op);
-    serial_ftdi_lines(port, op);
+    tendril_serial_ftdi_line(port, op);
+    tendril_serial_ftdi_lines(port, op);
 }
 
-void serial_ftdi_line(struct tendril_serial *port, struct serial_op *op) {
+void tendril_serial_ftdi_line(struct tendril_serial *port, struct serial_op *op) {
     uint32_t divisor;
     uint16_t data;
 
@@ -322,7 +322,7 @@ void serial_ftdi_line(struct tendril_serial *port, struct serial_op *op) {
     ftdi_req(op, FTDI_SET_FLOW_CTRL, 0, req_index(port, flow));
 }
 
-void serial_ftdi_lines(struct tendril_serial *port, struct serial_op *op) {
+void tendril_serial_ftdi_lines(struct tendril_serial *port, struct serial_op *op) {
     uint32_t value = FTDI_MODEM_SET_DTR | FTDI_MODEM_SET_RTS;
 
     if (port->dtr) {
@@ -334,7 +334,7 @@ void serial_ftdi_lines(struct tendril_serial *port, struct serial_op *op) {
     ftdi_req(op, FTDI_MODEM_CTRL, (uint16_t)value, req_index(port, 0));
 }
 
-void serial_ftdi_break(struct tendril_serial *port, struct serial_op *op) {
+void tendril_serial_ftdi_break(struct tendril_serial *port, struct serial_op *op) {
     uint16_t data;
 
     if (!data_value(port, &data)) {
@@ -376,7 +376,7 @@ static uint32_t status_bits(uint8_t modem, uint8_t line) {
 }
 
 // Every packet starts with two status bytes (FTDI AN232B-04 Version 1.1, 3.1).
-void serial_ftdi_receive(struct tendril_serial *port, const uint8_t *buf, size_t len) {
+void tendril_serial_ftdi_receive(struct tendril_serial *port, const uint8_t *buf, size_t len) {
     size_t chunk = port->in_ep->max_packet;
     size_t off = 0;
 
@@ -389,9 +389,9 @@ void serial_ftdi_receive(struct tendril_serial *port, const uint8_t *buf, size_t
         if (n < 2) {
             break;
         }
-        serial_status_update(port, status_bits(buf[off], buf[off + 1]));
+        tendril_serial_status_update(port, status_bits(buf[off], buf[off + 1]));
         if (n > 2 && !port->stopped) {
-            serial_deliver(port, buf + off + 2, n - 2);
+            tendril_serial_deliver(port, buf + off + 2, n - 2);
         }
         off += n;
     }

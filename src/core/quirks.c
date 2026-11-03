@@ -181,7 +181,7 @@ struct hc_quirk {
 // (BSD-2-Clause), the latter's "dropped interrupts workaround".
 #define INTEL_LP \
     (TENDRIL_HC_QUIRK_INTEL_PORT_ROUTING | TENDRIL_HC_QUIRK_XHCI_CTRL_STEP \
-        | TENDRIL_HC_QUIRK_XHCI_IMOD_LP)
+   | TENDRIL_HC_QUIRK_XHCI_IMOD_LP)
 
 static const struct hc_quirk hc_quirks[] = {
     { 0x1033, 0x0194, TENDRIL_HC_XHCI, TENDRIL_HC_QUIRK_NO_64BIT },

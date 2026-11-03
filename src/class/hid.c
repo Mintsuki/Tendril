@@ -659,8 +659,7 @@ static void in_done(struct tendril_transfer *xfer) {
         default: {
             if (++hid->errors > HID_MAX_ERRORS) {
                 LOG_WARN(
-                    "HID: input keeps failing (%s), giving up",
-                    tendril_status_str(xfer->status)
+                    "HID: input keeps failing (%s), giving up", tendril_status_str(xfer->status)
                 );
                 return;
             }
@@ -847,8 +846,7 @@ static void report_fallback(struct tendril_hid *hid, int st, const char *what) {
 static bool has_keys(const struct tendril_hid_report_desc *rd) {
     for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];
-        if (f->type == TENDRIL_HID_INPUT
-         && (f->flags & TENDRIL_HID_CONSTANT) == 0
+        if (f->type == TENDRIL_HID_INPUT && (f->flags & TENDRIL_HID_CONSTANT) == 0
          && (f->usage_min >> 16) == TENDRIL_HID_PAGE_KEYBOARD) {
             return true;
         }
@@ -868,9 +866,11 @@ static void init_step(struct tendril_work *work) {
     switch (hid->step) {
         case STEP_SET_BOOT: {
             // A failure is ignored, as FreeBSD's hkbd.c does.
-            const uint8_t *desc = hid->protocol == 1 ? boot_keyboard_desc
+            const uint8_t *desc = hid->protocol == 1
+                                ? boot_keyboard_desc
                                 : boot_mouse_desc;
-            size_t len = hid->protocol == 1 ? sizeof(boot_keyboard_desc)
+            size_t len = hid->protocol == 1
+                       ? sizeof(boot_keyboard_desc)
                        : sizeof(boot_mouse_desc);
             st = tendril_hid_parse(desc, len, &hid->rd);
             if (st != TENDRIL_OK) {
@@ -945,8 +945,7 @@ static const uint8_t *find_hid_descriptor(struct tendril_interface *intf) {
 // END FreeBSD sys/dev/usb/usb_hid.c
 
 static bool hid_probe(struct tendril_interface *intf) {
-    const struct tendril_interface_descriptor *id
-        = tendril_interface_descriptor(intf);
+    const struct tendril_interface_descriptor *id = tendril_interface_descriptor(intf);
     if (id->interface_class != TENDRIL_CLASS_HID) {
         return false;
     }

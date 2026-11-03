@@ -134,8 +134,8 @@ static void out_number(
 #define LEN_MAX 6
 #define LEN_PTRDIFF 7
 
-static uint64_t fetch_unsigned(va_list *args, int len) {
-    switch (len) {
+static uint64_t fetch_unsigned(va_list *args, int modifier) {
+    switch (modifier) {
         case LEN_CHAR: {
             return (unsigned char)va_arg(*args, unsigned int);
         }
@@ -163,8 +163,8 @@ static uint64_t fetch_unsigned(va_list *args, int len) {
     }
 }
 
-static int64_t fetch_signed(va_list *args, int len) {
-    switch (len) {
+static int64_t fetch_signed(va_list *args, int modifier) {
+    switch (modifier) {
         case LEN_CHAR: {
             return (signed char)va_arg(*args, int);
         }
@@ -250,30 +250,30 @@ int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args_in) 
             }
         }
 
-        int len = LEN_DEFAULT;
+        int modifier = LEN_DEFAULT;
         if (*fmt == 'h') {
             fmt++;
-            len = LEN_SHORT;
+            modifier = LEN_SHORT;
             if (*fmt == 'h') {
                 fmt++;
-                len = LEN_CHAR;
+                modifier = LEN_CHAR;
             }
         } else if (*fmt == 'l') {
             fmt++;
-            len = LEN_LONG;
+            modifier = LEN_LONG;
             if (*fmt == 'l') {
                 fmt++;
-                len = LEN_LONG_LONG;
+                modifier = LEN_LONG_LONG;
             }
         } else if (*fmt == 'z') {
             fmt++;
-            len = LEN_SIZE;
+            modifier = LEN_SIZE;
         } else if (*fmt == 'j') {
             fmt++;
-            len = LEN_MAX;
+            modifier = LEN_MAX;
         } else if (*fmt == 't') {
             fmt++;
-            len = LEN_PTRDIFF;
+            modifier = LEN_PTRDIFF;
         }
 
         char conv = *fmt;
@@ -285,27 +285,28 @@ int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args_in) 
         switch (conv) {
             case 'd':
             case 'i': {
-                int64_t v = fetch_signed(&args, len);
+                int64_t v = fetch_signed(&args, modifier);
                 uint64_t mag = v < 0 ? (uint64_t)0 - (uint64_t)v : (uint64_t)v;
                 out_number(&o, mag, v < 0, 10, false, flags, width, precision);
                 break;
             }
             case 'u': {
                 out_number(
-                    &o, fetch_unsigned(&args, len), false, 10, false, flags, width, precision
+                    &o, fetch_unsigned(&args, modifier), false, 10, false, flags, width, precision
                 );
                 break;
             }
             case 'o': {
                 out_number(
-                    &o, fetch_unsigned(&args, len), false, 8, false, flags, width, precision
+                    &o, fetch_unsigned(&args, modifier), false, 8, false, flags, width, precision
                 );
                 break;
             }
             case 'x':
             case 'X': {
                 out_number(
-                    &o, fetch_unsigned(&args, len), false, 16, conv == 'X', flags, width, precision
+                    &o, fetch_unsigned(&args, modifier), false, 16, conv == 'X', flags, width,
+                    precision
                 );
                 break;
             }

@@ -162,8 +162,8 @@
 #define TD_CERR(n) ((uint32_t)(n) << 27)
 #define TD_SPD ((uint32_t)1 << 29)
 #define TD_ERRORS \
-    (TD_STATUS_BITSTUFF | TD_STATUS_CRC_TIMEOUT | TD_STATUS_BABBLE \
-        | TD_STATUS_DBE | TD_STATUS_STALLED)
+    (TD_STATUS_BITSTUFF | TD_STATUS_CRC_TIMEOUT | TD_STATUS_BABBLE | TD_STATUS_DBE \
+   | TD_STATUS_STALLED)
 // Lengths are stored minus one, so 7FFh means none.
 #define TD_ACTLEN(s) (((s) + 1) & (uint32_t)0x7ff)
 
@@ -444,7 +444,8 @@ static void unlink_qh(struct uhci_qh *qh) {
 }
 
 static size_t intr_level(struct tendril_endpoint *ep) {
-    size_t log2 = ep->interval_log2 > 3 ? ep->interval_log2 - (uint32_t)3
+    size_t log2 = ep->interval_log2 > 3
+                ? ep->interval_log2 - (uint32_t)3
                 : (uint32_t)0;
     return MIN(log2, (size_t)LEVELS - 1);
 }
@@ -727,10 +728,10 @@ static void sweep_qh(struct tendril_hc *hc, struct uhci_qh *qh) {
     struct tendril_list *tmp;
 
     scan_qh(hc, qh);
-    struct tendril_transfer *oldest = list_empty(&ep->transfers) ? NULL
-                                    : CONTAINER_OF(
-            ep->transfers.next, struct tendril_transfer, internal.node
-        );
+    struct tendril_transfer *oldest = NULL;
+    if (!list_empty(&ep->transfers)) {
+        oldest = CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
+    }
     bool restart = false;
     int toggle = -1;
 
@@ -1061,8 +1062,8 @@ static void check_ports(struct tendril_hc *hc) {
         uint16_t v = reg_read16(hc, REG_PORTSC(p));
         bool woke = (v & PORT_SUSP) != 0 && (v & PORT_RD) != 0
                  && !u->resuming[p - 1];
-        if ((v & PORT_RWC) != 0 || u->phase[p - 1] != PHASE_IDLE
-         || u->reset_changed[p - 1] || woke || u->resume_changed[p - 1]) {
+        if ((v & PORT_RWC) != 0 || u->phase[p - 1] != PHASE_IDLE || u->reset_changed[p - 1] || woke
+         || u->resume_changed[p - 1]) {
             tendril_roothub_changed(hc, (uint8_t)p);
         }
     }
@@ -1732,7 +1733,8 @@ static int uhci_start(struct tendril_hc *hc) {
         u->skel[l]->link = le((uint32_t)u->skel[l - 1]->dma | LINK_QH);
     }
     for (size_t f = 0; f < FRAMES; f++) {
-        size_t level = f == 0 ? LEVELS - 1
+        size_t level = f == 0
+                     ? LEVELS - 1
                      : MIN(lowest_bit(f), (size_t)LEVELS - 1);
         u->frame_list[f] = le((uint32_t)u->skel[level]->dma | LINK_QH);
     }

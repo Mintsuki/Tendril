@@ -390,7 +390,7 @@
 #define PIPE_BIT(id) ((uint32_t)1 << (id))
 #define UAS_PIPES \
     (PIPE_BIT(PIPE_COMMAND) | PIPE_BIT(PIPE_STATUS) | PIPE_BIT(PIPE_DATA_IN) \
-        | PIPE_BIT(PIPE_DATA_OUT))
+   | PIPE_BIT(PIPE_DATA_OUT))
 // A status IU always travels as one packet, so the largest packet holds any of
 // them.
 #define IU_BUF_SIZE 512
@@ -1457,8 +1457,7 @@ static void transport_finish(struct tendril_msc *msc, int st) {
         // device, which REQUEST SENSE leaves in that condition.
         if (sense_codes(orig, &key, &asc, &ascq)
          && (key == SENSE_NO_SENSE
-          || (key == SENSE_UNIT_ATTENTION
-           && (msc->quirks & MQ_NO_RS_CLEAR_UA) != 0
+          || (key == SENSE_UNIT_ATTENTION && (msc->quirks & MQ_NO_RS_CLEAR_UA) != 0
            && orig->cdb[0] == SCSI_INQUIRY))) {
             orig->scsi_status = STATUS_GOOD;
         }
@@ -1530,8 +1529,8 @@ static void bbb_check_csw(struct tendril_msc *msc) {
     }
     // Bulk-Only 1.0, 6.3 and 6.5: an invalid CSW, or a phase error, calls for
     // reset recovery.
-    if (msc->xfer.actual != CSW_SIZE || sig != CSW_SIGNATURE
-     || get_le32(csw + 4) != msc->tag || csw[12] > 1) {
+    if (msc->xfer.actual != CSW_SIZE || sig != CSW_SIGNATURE || get_le32(csw + 4) != msc->tag
+     || csw[12] > 1) {
         start_recovery(msc, TENDRIL_ERR_PROTOCOL);
         return;
     }
@@ -2218,8 +2217,8 @@ static void lun_issue(
 }
 
 static bool block_device(const struct tendril_msc_lun *lun) {
-    return lun->type == TYPE_DIRECT || lun->type == TYPE_CDROM
-        || lun->type == TYPE_OPTICAL || lun->type == TYPE_RBC;
+    return lun->type == TYPE_DIRECT || lun->type == TYPE_CDROM || lun->type == TYPE_OPTICAL
+        || lun->type == TYPE_RBC;
 }
 
 // Waits for a unit becoming ready, polling until READY_TIMEOUT_MS has passed.
@@ -2353,8 +2352,7 @@ static void probe_done(struct tendril_msc_lun *lun, bool present) {
         lun->write_protected = false;
     }
     lun->present = present;
-    bool changed = lun->changed || present != lun->old_present
-                || lun->blocks != lun->old_blocks
+    bool changed = lun->changed || present != lun->old_present || lun->blocks != lun->old_blocks
                 || lun->block_size != lun->old_block_size
                 || lun->write_protected != lun->old_write_protected;
     lun->changed = false;
@@ -2409,9 +2407,8 @@ static void probe_result(struct tendril_msc_lun *lun, int v, int st) {
                     copy_string(lun->revision, b + 32, 4);
                 }
                 LOG_INFO(
-                    "MSC: LUN %u: \"%s\" \"%s\" \"%s\", type %02x%s",
-                    lun->number, lun->vendor, lun->product, lun->revision,
-                    lun->type, lun->removable ? ", removable" : ""
+                    "MSC: LUN %u: \"%s\" \"%s\" \"%s\", type %02x%s", lun->number, lun->vendor,
+                    lun->product, lun->revision, lun->type, lun->removable ? ", removable" : ""
                 );
                 lun->tries = 0;
                 if (block_device(lun)) {
@@ -2491,9 +2488,7 @@ static void probe_result(struct tendril_msc_lun *lun, int v, int st) {
         }
         case LUN_CAPACITY10:
         case LUN_CAPACITY16: {
-            if (v == V_OK
-             && cmd->actual
-                 >= (size_t)(lun->step == LUN_CAPACITY10 ? 8 : 12)) {
+            if (v == V_OK && cmd->actual >= (size_t)(lun->step == LUN_CAPACITY10 ? 8 : 12)) {
                 const uint8_t *b = lun->buf;
                 uint64_t last;
                 if (lun->step == LUN_CAPACITY10) {
@@ -2923,14 +2918,24 @@ static size_t max_transfer(struct tendril_msc *msc) {
 static void create_luns(struct tendril_msc *msc, size_t count) {
     msc->max_bytes = max_transfer(msc);
     msc->num_luns = count;
-    const char *transport = msc->transport == TRANSPORT_UAS
-                          ? (msc->streams ? "UAS with streams" : "UAS")
-                          : msc->transport == TRANSPORT_BBB ? "Bulk-Only"
-                          : msc->transport == TRANSPORT_CBI ? "CBI"
-                          : "CB";
+    const char *transport = "CB";
+    switch (msc->transport) {
+        case TRANSPORT_UAS: {
+            transport = msc->streams ? "UAS with streams" : "UAS";
+            break;
+        }
+        case TRANSPORT_BBB: {
+            transport = "Bulk-Only";
+            break;
+        }
+        case TRANSPORT_CBI: {
+            transport = "CBI";
+            break;
+        }
+    }
     LOG_INFO(
-        "MSC: interface %u: %s, %zu LUN%s", msc->intf->number, transport,
-        count, count == 1 ? "" : "s"
+        "MSC: interface %u: %s, %zu LUN%s", msc->intf->number, transport, count,
+        count == 1 ? "" : "s"
     );
     for (size_t i = 0; i < count; i++) {
         struct tendril_msc_lun *lun = tendril_zalloc(sizeof(struct tendril_msc_lun));
@@ -3002,8 +3007,8 @@ static bool uas_endpoints(struct tendril_msc *msc) {
             }
         }
     }
-    return msc->cmd_ep != NULL && msc->status_ep != NULL
-        && msc->data_in_ep != NULL && msc->data_out_ep != NULL;
+    return msc->cmd_ep != NULL && msc->status_ep != NULL && msc->data_in_ep != NULL
+        && msc->data_out_ep != NULL;
 }
 
 static void setup_luns(struct tendril_msc *msc) {
@@ -3082,14 +3087,12 @@ static bool skip_cdrom(struct tendril_msc *msc) {
     int st = tendril_device_set_configuration(dev, cd->configuration_value, NULL, NULL);
     if (st != TENDRIL_OK) {
         LOG_WARN(
-            "MSC: leaving the auto-install CD-ROM configuration failed: %s",
-            tendril_status_str(st)
+            "MSC: leaving the auto-install CD-ROM configuration failed: %s", tendril_status_str(st)
         );
         return false;
     }
     LOG_INFO(
-        "MSC: interface %u looks like an auto-install CD-ROM; trying "
-        "configuration %u",
+        "MSC: interface %u looks like an auto-install CD-ROM; trying configuration %u",
         msc->intf->number, cd->configuration_value
     );
     msc->stopped = true;
@@ -3120,8 +3123,8 @@ static void pre_done(struct msc_cmd *cmd) {
                 hc_unlock(msc->hc);
                 return;
             }
-            if (good && cmd->actual > 0
-             && (msc->pre_buf[0] & 0x1f) == TYPE_CDROM && skip_cdrom(msc)) {
+            if (good && cmd->actual > 0 && (msc->pre_buf[0] & 0x1f) == TYPE_CDROM
+             && skip_cdrom(msc)) {
                 return;
             }
             break;
@@ -3133,16 +3136,14 @@ static void pre_done(struct msc_cmd *cmd) {
         }
         case PRE_EJECT_STOP: {
             LOG_INFO(
-                "MSC: interface %u: ejected, for the device to come back in "
-                "its other mode",
+                "MSC: interface %u: ejected, for the device to come back in its other mode",
                 msc->intf->number
             );
             msc->stopped = true;
             int st = tendril_device_set_configuration(dev, 0, NULL, NULL);
             if (st != TENDRIL_OK) {
                 LOG_WARN(
-                    "MSC: unconfiguring the ejected device failed: %s",
-                    tendril_status_str(st)
+                    "MSC: unconfiguring the ejected device failed: %s", tendril_status_str(st)
                 );
             }
             return;
@@ -3307,8 +3308,7 @@ static void setup_step(struct tendril_msc *msc, int st) {
 static struct tendril_driver msc_driver;
 
 static bool msc_probe(struct tendril_interface *intf) {
-    const struct tendril_interface_descriptor *id
-        = tendril_interface_descriptor(intf);
+    const struct tendril_interface_descriptor *id = tendril_interface_descriptor(intf);
     struct tendril_device *dev = intf->dev;
     struct tendril_hc *hc = dev->hc;
 
@@ -3350,14 +3350,12 @@ static bool msc_probe(struct tendril_interface *intf) {
     int uas = -1;
     bool streams_ok = hc->ops->alloc_streams != NULL
                    && (hc->quirks & TENDRIL_HC_QUIRK_NO_STREAMS) == 0;
-    bool uas_ok = dev->speed >= TENDRIL_SPEED_HIGH
-               && (!tendril_device_is_ss(dev) || streams_ok)
+    bool uas_ok = dev->speed >= TENDRIL_SPEED_HIGH && (!tendril_device_is_ss(dev) || streams_ok)
                && (quirks & (MQ_WIRE_BBB | MQ_WIRE_CB | MQ_WIRE_CBI)) == 0;
     for (size_t a = 0; a < intf->num_alts && uas_ok && uas < 0; a++) {
         const struct tendril_interface_descriptor *d = intf->alts[a];
         if (d->interface_class == TENDRIL_CLASS_MASS_STORAGE
-         && d->interface_subclass == SUBCLASS_SCSI
-         && d->interface_protocol == PROTO_UAS
+         && d->interface_subclass == SUBCLASS_SCSI && d->interface_protocol == PROTO_UAS
          && alt_pipes(intf, a) == UAS_PIPES) {
             uas = (int)a;
         }
@@ -3474,9 +3472,8 @@ static bool msc_idle(struct tendril_msc *msc) {
     for (size_t i = 0; i < msc->num_luns; i++) {
         struct tendril_msc_lun *lun = msc->luns[i];
         if (lun != NULL
-         && (lun->busy || lun->probe_pending || lun->current != NULL
-          || !list_empty(&lun->requests) || lun->check_done != NULL
-          || tendril_timer_armed(&lun->timer))) {
+         && (lun->busy || lun->probe_pending || lun->current != NULL || !list_empty(&lun->requests)
+          || lun->check_done != NULL || tendril_timer_armed(&lun->timer))) {
             return false;
         }
     }

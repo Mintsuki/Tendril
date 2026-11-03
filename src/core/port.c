@@ -494,9 +494,8 @@ static void evaluate(struct tendril_port *port) {
         port->attempts = 0;
         port->restarts = 0;
         port->config_failed = false;
-    } else if (!port->superspeed && (changes & TENDRIL_PORT_STAT_C_ENABLE) != 0
-            && !enabled(port) && port->state == PORT_ATTACHED
-            && port->device != NULL) {
+    } else if (!port->superspeed && (changes & TENDRIL_PORT_STAT_C_ENABLE) != 0 && !enabled(port)
+            && port->state == PORT_ATTACHED && port->device != NULL) {
         // BEGIN FreeBSD sys/dev/usb/usb_hub.c (and the condition above)
         // The hub disabled the port on its own, after a babble or a port
         // error: attach the device again, as FreeBSD's sys/dev/usb/usb_hub.c
@@ -507,8 +506,7 @@ static void evaluate(struct tendril_port *port) {
             port->state = PORT_DISABLED;
         } else {
             LOG_INFO(
-                "%s: port error, attaching the device again",
-                port_name(port, name, sizeof(name))
+                "%s: port error, attaching the device again", port_name(port, name, sizeof(name))
             );
             port->state = PORT_IDLE;
         }
@@ -521,11 +519,10 @@ static void evaluate(struct tendril_port *port) {
             disconnect_device(port);
             port->state = PORT_IDLE;
         }
-    } else if (port->state == PORT_SUSPENDED && port->device != NULL
-            && !enabled(port) && !link_suspended(port)) {
+    } else if (port->state == PORT_SUSPENDED && port->device != NULL && !enabled(port)
+            && !link_suspended(port)) {
         LOG_INFO(
-            "%s: suspended device lost, enumerating it again",
-            port_name(port, name, sizeof(name))
+            "%s: suspended device lost, enumerating it again", port_name(port, name, sizeof(name))
         );
         disconnect_device(port);
         port->state = PORT_IDLE;
@@ -608,8 +605,7 @@ static void status_done(struct tendril_port *port) {
         if (port->async.status != TENDRIL_ERR_NO_DEVICE) {
             char name[32];
             LOG_WARN(
-                "%s: status read failed: %s",
-                port_name(port, name, sizeof(name)),
+                "%s: status read failed: %s", port_name(port, name, sizeof(name)),
                 tendril_status_str(port->async.status)
             );
         }
@@ -704,9 +700,7 @@ static void reset_status_done(struct tendril_port *port) {
         }
     } else {
         done = !in_reset(port)
-            && (port->st.change
-              & (TENDRIL_PORT_STAT_C_RESET | TENDRIL_PORT_STAT_C_BH_RESET))
-                != 0;
+            && (port->st.change & (TENDRIL_PORT_STAT_C_RESET | TENDRIL_PORT_STAT_C_BH_RESET)) != 0;
         // PORT_RESET cleared with the port enabled ends the reset (USB 2.0
         // 11.24.2.7.1.5), C_PORT_RESET or not.
         if (!done && !in_reset(port) && enabled(port)

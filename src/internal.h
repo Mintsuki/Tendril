@@ -53,20 +53,20 @@
 // GCC's and Clang's builtins, which may still call the functions they are
 // named after, else those functions, which MSVC has intrinsics for.
 #if defined(__GNUC__)
-#   define memcpy __builtin_memcpy
-#   define memset __builtin_memset
-#   define memmove __builtin_memmove
-#   define memcmp __builtin_memcmp
-#   define PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
+#define memcpy __builtin_memcpy
+#define memset __builtin_memset
+#define memmove __builtin_memmove
+#define memcmp __builtin_memcmp
+#define PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
 #else
 void *memcpy(void *dest, const void *src, size_t size);
 void *memset(void *dest, int value, size_t size);
 void *memmove(void *dest, const void *src, size_t size);
 int memcmp(const void *a, const void *b, size_t size);
-#   if defined(_MSC_VER)
-#       pragma intrinsic(memcpy, memset, memcmp)
-#   endif
-#   define PRINTF_FORMAT(fmt, first)
+#if defined(_MSC_VER)
+#   pragma intrinsic(memcpy, memset, memcmp)
+#endif
+#define PRINTF_FORMAT(fmt, first)
 #endif
 
 // Lists
@@ -409,7 +409,8 @@ struct tendril_device {
     char *manufacturer;
     char *product;
     char *serial;
-    int active_config;
+    // SIZE_MAX while the device is unconfigured.
+    size_t active_config;
     // Configuration index 0 was chosen with others left to try, which msc.c
     // checks for an auto-install CD-ROM.
     bool cdrom_check;
@@ -473,49 +474,40 @@ struct tendril_hcd_ops {
     // Device and endpoint management. Asynchronous operations complete with
     // tendril_async_complete() on the given async, with the lock held.
     int (*device_init)(
-        struct tendril_hc *hc, struct tendril_device *dev,
-        struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
     );
     // Controllers that assign addresses themselves; NULL means SET_ADDRESS.
     int (*device_address)(
-        struct tendril_hc *hc, struct tendril_device *dev,
-        struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
     );
     // Endpoint 0 packet size or address changed.
     int (*ep0_update)(
-        struct tendril_hc *hc, struct tendril_device *dev,
-        struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
     );
     // Hub fields changed, after the hub descriptor was read.
     int (*hub_update)(
-        struct tendril_hc *hc, struct tendril_device *dev,
-        struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
     );
     // Drop then add endpoints, together, as for a configuration or alternate
     // setting change.
     int (*configure)(
-        struct tendril_hc *hc, struct tendril_device *dev,
-        struct tendril_endpoint **drop, size_t num_drop,
-        struct tendril_endpoint **add, size_t num_add,
-        struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_device *dev, struct tendril_endpoint **drop,
+        size_t num_drop, struct tendril_endpoint **add, size_t num_add, struct tendril_async *async
     );
     int (*endpoint_reset)(
-        struct tendril_hc *hc, struct tendril_endpoint *ep,
-        struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_endpoint *ep, struct tendril_async *async
     );
     int (*alloc_streams)(
-        struct tendril_hc *hc, struct tendril_endpoint **eps, size_t count,
-        size_t streams, struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_endpoint **eps, size_t count, size_t streams,
+        struct tendril_async *async
     );
     void (*device_free)(
-        struct tendril_hc *hc, struct tendril_device *dev,
-        struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
     );
     // Prepares an idle device's endpoints for its link suspending; NULL if
     // nothing is needed.
     int (*device_suspend)(
-        struct tendril_hc *hc, struct tendril_device *dev,
-        struct tendril_async *async
+        struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
     );
 
     // System sleep, with every port suspended or idle; resume() answers

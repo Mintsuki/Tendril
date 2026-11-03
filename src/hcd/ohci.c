@@ -149,8 +149,7 @@
 #define INT_OC ((uint32_t)1 << 30)
 #define INT_MIE ((uint32_t)1 << 31)
 #define INT_ALL \
-    (INT_SO | INT_WDH | INT_SF | INT_RD | INT_UE | INT_FNO | INT_RHSC \
-        | INT_OC)
+    (INT_SO | INT_WDH | INT_SF | INT_RD | INT_UE | INT_FNO | INT_RHSC | INT_OC)
 
 #define FI_MASK ((uint32_t)0x3fff)
 #define FI_DEFAULT ((uint32_t)11999)
@@ -489,7 +488,8 @@ static size_t take_buffer(struct cursor *c, size_t want, size_t mps, uint32_t *c
         }
     }
     *cbp = (uint32_t)start;
-    *be = total <= first ? (uint32_t)(start + total - 1)
+    *be = total <= first
+        ? (uint32_t)(start + total - 1)
         : (uint32_t)(second + (total - first) - 1);
     cursor_advance(c, total);
     return total;
@@ -537,7 +537,8 @@ static uint32_t ed_flags(struct tendril_endpoint *ep) {
         f |= ED_LOW_SPEED;
     }
     if (ep->type != TENDRIL_ENDPOINT_XFER_CONTROL) {
-        f |= (ep->address & TENDRIL_ENDPOINT_DIR_MASK) != 0 ? ED_DIR_IN
+        f |= (ep->address & TENDRIL_ENDPOINT_DIR_MASK) != 0
+           ? ED_DIR_IN
            : ED_DIR_OUT;
     }
     if (ep->type == TENDRIL_ENDPOINT_XFER_ISOC) {
@@ -590,7 +591,8 @@ static void unlink_ed(struct ohci_ed *ed) {
 }
 
 static size_t intr_level(struct tendril_endpoint *ep) {
-    size_t log2 = ep->interval_log2 > 3 ? ep->interval_log2 - (uint32_t)3
+    size_t log2 = ep->interval_log2 > 3
+                ? ep->interval_log2 - (uint32_t)3
                 : (uint32_t)0;
     return MIN(log2, (size_t)INTR_LEVELS - 1);
 }
@@ -723,8 +725,10 @@ static int submit_general(
         } else if (any) {
             zlp = false;
         }
-        uint32_t toggle = control ? ((packets & 1) != 0 ? TD_DATA1 : TD_DATA0)
-                        : TD_TOGGLE_CARRY;
+        uint32_t toggle = TD_TOGGLE_CARRY;
+        if (control) {
+            toggle = (packets & 1) != 0 ? TD_DATA1 : TD_DATA0;
+        }
         bool last_data = done + chunk == len;
         // Only the last IN TD may end short without an error; earlier ones
         // halt on underrun.
@@ -895,7 +899,8 @@ static size_t fill_itd(
         if (used + len > room) {
             break;
         }
-        uint32_t off = used < first ? (uint32_t)((start + used) & 0xfff)
+        uint32_t off = used < first
+                     ? (uint32_t)((start + used) & 0xfff)
                      : (uint32_t)(0x1000 | (used - first));
         itd->offset[n] = tendril_le16((uint16_t)(ITD_OFFSET_FRESH | off));
         used += len;
@@ -905,7 +910,8 @@ static size_t fill_itd(
         return 0;
     }
     // BufferEnd is the last byte; with no data, the byte before the start.
-    uint64_t be = used <= first ? start + used - 1
+    uint64_t be = used <= first
+                ? start + used - 1
                 : page1 + (used - first) - 1;
     itd->flags = le((frame & 0xffff) | TD_DI(0) | ITD_FC(n - 1) | TD_NOT_ACCESSED);
     itd->bp0 = le((uint32_t)(start & ~(uint64_t)0xfff));
@@ -1007,14 +1013,14 @@ static bool scan_iso(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_t
     dma_barrier();
     for (struct ohci_itd *itd = first; ; itd = itd->sw_next) {
         for (size_t i = 0; i < itd->count; i++) {
-            struct tendril_iso_packet *pkt
-                = &xfer->iso_packets[itd->first_packet + i];
+            struct tendril_iso_packet *pkt = &xfer->iso_packets[itd->first_packet + i];
             uint16_t psw = tendril_le16(itd->offset[i]);
             int cc = psw >> (uint32_t)12;
             pkt->status = psw_status(cc);
-            pkt->actual = pkt->status == TENDRIL_OK
-                        ? (in ? psw & (uint32_t)0x7ff : pkt->length)
-                        : 0;
+            pkt->actual = 0;
+            if (pkt->status == TENDRIL_OK) {
+                pkt->actual = in ? psw & (uint32_t)0x7ff : pkt->length;
+            }
             actual += pkt->actual;
             if (pkt->status != TENDRIL_OK && st == TENDRIL_OK) {
                 st = pkt->status;
@@ -1040,7 +1046,8 @@ static void scan_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
         if ((xfer->internal.hcd_data[XD_FLAGS] & XF_CANCEL) != 0) {
             break;
         }
-        bool done = ed->kind == KIND_ISO ? scan_iso(hc, ed, xfer)
+        bool done = ed->kind == KIND_ISO
+                  ? scan_iso(hc, ed, xfer)
                   : scan_general(hc, ed, xfer);
         if (!done) {
             break;
@@ -1082,10 +1089,10 @@ static void sweep_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
 
     uint32_t head = le(ed->head);
     uint32_t carry = head & ED_CARRY;
-    struct tendril_transfer *oldest = list_empty(&ep->transfers) ? NULL
-                                    : CONTAINER_OF(
-            ep->transfers.next, struct tendril_transfer, internal.node
-        );
+    struct tendril_transfer *oldest = NULL;
+    if (!list_empty(&ep->transfers)) {
+        oldest = CONTAINER_OF(ep->transfers.next, struct tendril_transfer, internal.node);
+    }
     bool restart = false;
 
     LIST_FOR_EACH_SAFE(it, tmp, &ep->transfers) {
@@ -1111,8 +1118,7 @@ static void sweep_ed(struct tendril_hc *hc, struct ohci_ed *ed) {
                     break;
                 }
                 if (!td->skipped
-                 && !(control
-                   && (td == xfer_first(xfer) || td == xfer_last(xfer)))) {
+                 && !(control && (td == xfer_first(xfer) || td == xfer_last(xfer)))) {
                     actual += td_moved(td);
                 }
             }
@@ -1803,8 +1809,8 @@ static int ohci_start(struct tendril_hc *hc) {
     for (size_t l = 0; l < INTR_LEVELS; l++) {
         o->skel[l] = skeleton(hc);
     }
-    bool ok = o->hcca != NULL && o->control_head != NULL
-           && o->bulk_head != NULL && o->iso_head != NULL;
+    bool ok = o->hcca != NULL && o->control_head != NULL && o->bulk_head != NULL
+           && o->iso_head != NULL;
     for (size_t l = 0; l < INTR_LEVELS; l++) {
         ok = ok && o->skel[l] != NULL;
     }
@@ -1819,7 +1825,8 @@ static int ohci_start(struct tendril_hc *hc) {
     }
     o->skel[0]->next = le((uint32_t)o->iso_head->dma);
     for (size_t i = 0; i < 32; i++) {
-        size_t level = i == 0 ? INTR_LEVELS - 1
+        size_t level = i == 0
+                     ? INTR_LEVELS - 1
                      : MIN(lowest_bit(i), (size_t)INTR_LEVELS - 1);
         o->hcca->intr_table[i] = le((uint32_t)o->skel[level]->dma);
     }

@@ -525,8 +525,8 @@ static const uint8_t *find_cs_desc(
     const uint8_t *p, const uint8_t *end, int subtype, size_t min_len
 ) {
     for (; p != NULL && end - p >= 3; p = tendril_desc_next(p, end)) {
-        if (p[1] == TENDRIL_DT_CS_INTERFACE && p[2] == subtype
-         && p[0] >= min_len && p[0] <= end - p) {
+        if (p[1] == TENDRIL_DT_CS_INTERFACE && p[2] == subtype && p[0] >= min_len
+         && p[0] <= end - p) {
             return p;
         }
     }
@@ -626,8 +626,7 @@ static struct tendril_interface *find_data_interface(struct tendril_interface *i
     // BEGIN OpenBSD sys/dev/usb/if_uncm.c
     // An IAD may group the two interfaces instead (CDC NCM 1.0 Errata 1, 7.4);
     // OpenBSD's sys/dev/usb/if_uncm.c (ISC license) falls back the same way.
-    if (data == NULL && intf->iad != NULL
-     && intf->iad->first_interface == intf->number
+    if (data == NULL && intf->iad != NULL && intf->iad->first_interface == intf->number
      && intf->iad->interface_count >= 2 && intf->number < 0xff) {
         data = tendril_device_find_interface(intf->dev, (uint8_t)(intf->number + 1));
     }
@@ -713,8 +712,7 @@ static void read_functional(struct tendril_net *net) {
         eth = find_cs_desc(desc, desc + size, CDC_DESC_ETHERNET, 13);
         ncm = find_cs_desc(desc, desc + size, CDC_DESC_NCM, 6);
     }
-    if (eth == NULL && dev->active_config >= 0
-     && (size_t)dev->active_config < dev->num_configs) {
+    if (eth == NULL && dev->active_config < dev->num_configs) {
         // Some devices put it elsewhere in the configuration (clean-room
         // specification).
         const uint8_t *config = dev->configs[dev->active_config];
@@ -813,10 +811,8 @@ static void make_up_mac(struct tendril_net *net) {
     net->mac[1] = net->dev->address;
     put_le32(net->mac + 2, mix);
     LOG_INFO(
-        "net: interface %u has no usable MAC address, using "
-        "%02x:%02x:%02x:%02x:%02x:%02x",
-        (unsigned int)net->ctrl_intf->number, mac[0], mac[1], mac[2], mac[3],
-        mac[4], mac[5]
+        "net: interface %u has no usable MAC address, using %02x:%02x:%02x:%02x:%02x:%02x",
+        (unsigned int)net->ctrl_intf->number, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
     );
 }
 // END OpenBSD sys/dev/usb/if_uncm.c
@@ -842,8 +838,7 @@ static bool ntb_params(struct tendril_net *net) {
     if (in_max < NTB_MIN_SIZE || out_max < NTB_MIN_SIZE) {
         LOG_WARN(
             "net: interface %u: NTB sizes %u and %u are too small",
-            (unsigned int)net->ctrl_intf->number, (unsigned int)in_max,
-            (unsigned int)out_max
+            (unsigned int)net->ctrl_intf->number, (unsigned int)in_max, (unsigned int)out_max
         );
         return false;
     }
@@ -959,8 +954,7 @@ static void setup_fail(struct tendril_net *net, const char *what, int status) {
     net->stopped = true;
     if (status != TENDRIL_ERR_NO_DEVICE) {
         LOG_WARN(
-            "net: interface %u: %s failed (%s)",
-            (unsigned int)net->ctrl_intf->number, what,
+            "net: interface %u: %s failed (%s)", (unsigned int)net->ctrl_intf->number, what,
             tendril_status_str(status)
         );
     }
@@ -1100,8 +1094,7 @@ static void setup_finish(struct tendril_net *net) {
 
     if (!alloc_buffers(net)) {
         LOG_WARN(
-            "net: interface %u: out of memory for buffers",
-            (unsigned int)net->ctrl_intf->number
+            "net: interface %u: out of memory for buffers", (unsigned int)net->ctrl_intf->number
         );
         net->stopped = true;
         return;
@@ -1117,8 +1110,8 @@ static void setup_finish(struct tendril_net *net) {
     }
     LOG_INFO(
         "net: interface %u ready (%s, %02x:%02x:%02x:%02x:%02x:%02x)",
-        (unsigned int)net->ctrl_intf->number, kind_name(net->kind), mac[0],
-        mac[1], mac[2], mac[3], mac[4], mac[5]
+        (unsigned int)net->ctrl_intf->number, kind_name(net->kind), mac[0], mac[1], mac[2], mac[3],
+        mac[4], mac[5]
     );
     if (net_callbacks->attach != NULL) {
         net_callbacks->attach(net);
@@ -1235,8 +1228,7 @@ static void setup_run(struct tendril_net *net) {
 
 static bool net_probe(struct tendril_interface *intf) {
     struct tendril_device *dev = intf->dev;
-    const struct tendril_interface_descriptor *id
-        = tendril_interface_descriptor(intf);
+    const struct tendril_interface_descriptor *id = tendril_interface_descriptor(intf);
     uint32_t quirks = tendril_id_quirks(net_quirks, ARRAY_SIZE(net_quirks), &dev->desc);
     int kind = TENDRIL_NET_ECM;
     bool vendor_ncm = false;
@@ -1522,8 +1514,8 @@ static void intr_done(struct tendril_transfer *xfer) {
 }
 
 static void intr_start(struct tendril_net *net) {
-    if (net->intr_ep != NULL && !net->stopped && !net->suspended
-     && !net->intr_busy && !net->intr_waiting) {
+    if (net->intr_ep != NULL && !net->stopped && !net->suspended && !net->intr_busy
+     && !net->intr_waiting) {
         intr_submit(net);
     }
 }
@@ -1611,15 +1603,13 @@ static void rndis_receive(struct tendril_net *net, const uint8_t *buf, size_t le
         // BEGIN FreeBSD sys/dev/usb/net/if_urndis.c
         // DataOffset counts from its own field; DataLength's bounds are the
         // ones FreeBSD's sys/dev/usb/net/if_urndis.c (ISC license) accepts.
-        if (get_le32(msg) != RNDIS_PACKET_MSG
-         || msg_len < RNDIS_PACKET_HEADER_LEN || msg_len > len - off
-         || (data_off & 3) != 0 || data_off > msg_len - 8
+        if (get_le32(msg) != RNDIS_PACKET_MSG || msg_len < RNDIS_PACKET_HEADER_LEN
+         || msg_len > len - off || (data_off & 3) != 0 || data_off > msg_len - 8
          || data_len > msg_len - 8 - data_off || data_len < ETH_HEADER_LEN
          || data_len > RNDIS_MAX_FRAME) {
             net->rndis_rx_bad++;
             LOG_DEBUG(
-                "net: interface %u: malformed RNDIS packet message (%zu so "
-                "far)",
+                "net: interface %u: malformed RNDIS packet message (%zu so far)",
                 (unsigned int)net->ctrl_intf->number, net->rndis_rx_bad
             );
             return;
@@ -2057,8 +2047,7 @@ static void op_done(struct tendril_transfer *xfer);
 static void op_finish(
     struct tendril_net *net, struct net_op *op, int status, const uint8_t *msg, size_t len
 ) {
-    void (*answer)(struct tendril_net *, int, const uint8_t *, size_t)
-        = op->answer;
+    void (*answer)(struct tendril_net *, int, const uint8_t *, size_t) = op->answer;
     void (*done)(void *, int) = op->done;
     void *ctx = op->ctx;
 
@@ -2092,9 +2081,8 @@ static void ops_fail(struct tendril_net *net) {
 // setup, as setup itself goes through them, the others once setup has
 // finished.
 static void op_kick(struct tendril_net *net) {
-    while ((net->ready || net->kind == TENDRIL_NET_RNDIS) && !net->stopped
-        && !net->suspended && net->op == NULL && !net->ctrl_busy
-        && !list_empty(&net->ops)) {
+    while ((net->ready || net->kind == TENDRIL_NET_RNDIS) && !net->stopped && !net->suspended
+        && net->op == NULL && !net->ctrl_busy && !list_empty(&net->ops)) {
         struct net_op *op = CONTAINER_OF(net->ops.next, struct net_op, node);
         int status;
 
@@ -2408,8 +2396,8 @@ static void rndis_indicate(struct tendril_net *net, const uint8_t *msg) {
         link_set(net, false, net->rx_bps, net->tx_bps);
     } else {
         LOG_DEBUG(
-            "net: interface %u: RNDIS status %08x",
-            (unsigned int)net->ctrl_intf->number, (unsigned int)status
+            "net: interface %u: RNDIS status %08x", (unsigned int)net->ctrl_intf->number,
+            (unsigned int)status
         );
     }
 }
@@ -2757,8 +2745,7 @@ static void rndis_init_answer(
     if (net->rndis_max_transfer < RNDIS_MIN_TRANSFER) {
         LOG_WARN(
             "net: interface %u: RNDIS MaxTransferSize %u is too small",
-            (unsigned int)net->ctrl_intf->number,
-            (unsigned int)net->rndis_max_transfer
+            (unsigned int)net->ctrl_intf->number, (unsigned int)net->rndis_max_transfer
         );
         net->stopped = true;
         return;
@@ -2799,8 +2786,7 @@ static void rndis_readdress_answer(
     (void)len;
     if (status != TENDRIL_OK && status != TENDRIL_ERR_NO_DEVICE) {
         LOG_WARN(
-            "net: interface %u: restoring the RNDIS filters after a reset "
-            "failed (%s)",
+            "net: interface %u: restoring the RNDIS filters after a reset failed (%s)",
             (unsigned int)net->ctrl_intf->number, tendril_status_str(status)
         );
     }
@@ -2845,8 +2831,8 @@ static void rndis_reset_answer(
     }
     if (status != TENDRIL_OK) {
         LOG_WARN(
-            "net: interface %u: RNDIS reset failed (%s)",
-            (unsigned int)net->ctrl_intf->number, tendril_status_str(status)
+            "net: interface %u: RNDIS reset failed (%s)", (unsigned int)net->ctrl_intf->number,
+            tendril_status_str(status)
         );
         return;
     }
@@ -2876,8 +2862,8 @@ static void rndis_keepalive_answer(
 ) {
     (void)msg;
     (void)len;
-    if (status != TENDRIL_OK && status != TENDRIL_ERR_NO_DEVICE
-     && status != TENDRIL_ERR_SUSPENDED && !net->stopped) {
+    if (status != TENDRIL_OK && status != TENDRIL_ERR_NO_DEVICE && status != TENDRIL_ERR_SUSPENDED
+     && !net->stopped) {
         rndis_reset(net);
     }
 }
@@ -3078,8 +3064,8 @@ static bool net_suspend(struct tendril_interface *intf) {
         return true;
     }
     if (!net->stopped
-     && (!net->ready || !list_empty(&net->frames) || tx_any_busy(net)
-      || net->op != NULL || !list_empty(&net->ops) || net->ctrl_busy)) {
+     && (!net->ready || !list_empty(&net->frames) || tx_any_busy(net) || net->op != NULL
+      || !list_empty(&net->ops) || net->ctrl_busy)) {
         return false;
     }
     net->suspended = true;

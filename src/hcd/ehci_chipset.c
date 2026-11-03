@@ -31,6 +31,7 @@
 #   error "this file is C, not C++"
 #endif
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "../internal.h"
 #include <tendril/glue.h>

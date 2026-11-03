@@ -450,10 +450,8 @@ static void xfer_done_work(struct tendril_work *work) {
     struct tendril_device *dev = xfer->endpoint->dev;
 
     release_buffer(hc, xfer, true);
-    if (xfer->status == TENDRIL_OK
-     && (xfer->flags & TENDRIL_XFER_SHORT_NOT_OK) != 0
-     && xfer->endpoint->type != TENDRIL_ENDPOINT_XFER_ISOC
-     && xfer->actual < data_length(xfer)) {
+    if (xfer->status == TENDRIL_OK && (xfer->flags & TENDRIL_XFER_SHORT_NOT_OK) != 0
+     && xfer->endpoint->type != TENDRIL_ENDPOINT_XFER_ISOC && xfer->actual < data_length(xfer)) {
         xfer->status = TENDRIL_ERR_SHORT;
     }
     int type = xfer->endpoint->type;

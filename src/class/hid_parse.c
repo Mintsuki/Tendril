@@ -273,8 +273,8 @@ static int add_field(struct parser *p, int type, uint32_t flags) {
         }
         size_t k = 0;
         for (size_t i = 0; i < p->num_ranges && k < n; i++) {
-            for (uint32_t u = p->ranges[i].min; k < n; u++) {
-                f->usages[k++] = u;
+            for (size_t u = p->ranges[i].min; k < n; u++) {
+                f->usages[k++] = (uint32_t)u;
                 if (u == p->ranges[i].max) {
                     break;
                 }
@@ -412,9 +412,11 @@ int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_repor
                 }
                 case GLOBAL_UNIT_EXPONENT: {
                     // HID 1.11 6.2.2.7: a 4-bit two's complement value.
-                    g->unit_exponent = v <= 0xf
-                                     ? (v < 8 ? (int32_t)v : (int32_t)v - 16)
-                                     : sign_extend(v, len);
+                    if (v <= 0xf) {
+                        g->unit_exponent = v < 8 ? (int32_t)v : (int32_t)v - 16;
+                    } else {
+                        g->unit_exponent = sign_extend(v, len);
+                    }
                     break;
                 }
                 case GLOBAL_UNIT: {
@@ -456,7 +458,8 @@ int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_repor
         if (type == TYPE_LOCAL) {
             // 16-bit usages take the current usage page; 32-bit ones carry
             // their own.
-            uint32_t usage = len == 4 ? v
+            uint32_t usage = len == 4
+                           ? v
                            : (g->usage_page << 16) | (v & 0xffff);
             switch (tag) {
                 case LOCAL_USAGE: {
@@ -584,7 +587,8 @@ uint32_t tendril_hid_field_usage(const struct tendril_hid_field *f, size_t index
     if (f->usage_max < f->usage_min) {
         return f->usage_min;
     }
-    return index > f->usage_max - f->usage_min ? f->usage_max
+    return index > f->usage_max - f->usage_min
+         ? f->usage_max
          : f->usage_min + (uint32_t)index;
 }
 

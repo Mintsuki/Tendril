@@ -160,18 +160,18 @@ static void put_le32(uint8_t *p, uint32_t v) {
 }
 
 static void vendor_read(struct serial_op *op, uint16_t value, uint16_t index) {
-    serial_op_add(op, REQ_VENDOR_IN, PL2303_VENDOR, value, index, NULL, 1);
+    tendril_serial_op_add(op, REQ_VENDOR_IN, PL2303_VENDOR, value, index, NULL, 1);
 }
 
 static void vendor_write(struct serial_op *op, uint16_t value, uint16_t index) {
-    serial_op_add(op, REQ_VENDOR_OUT, PL2303_VENDOR, value, index, NULL, 0);
+    tendril_serial_op_add(op, REQ_VENDOR_OUT, PL2303_VENDOR, value, index, NULL, 0);
 }
 
 static void hxn_write(struct serial_op *op, uint16_t value, uint16_t index) {
-    serial_op_add(op, REQ_VENDOR_OUT, PL2303_HXN_WRITE, value, index, NULL, 0);
+    tendril_serial_op_add(op, REQ_VENDOR_OUT, PL2303_HXN_WRITE, value, index, NULL, 0);
 }
 
-void serial_pl2303_init(struct tendril_serial *port) {
+void tendril_serial_pl2303_init(struct tendril_serial *port) {
     const struct tendril_device_descriptor *desc = &port->dev->desc;
     uint16_t bcd = tendril_le16(desc->bcd_device);
     int chip;
@@ -210,8 +210,8 @@ static void add_setup(struct tendril_serial *port, struct serial_op *op) {
             vendor_write(op, 9, 0);
         }
     }
-    serial_pl2303_line(port, op);
-    serial_pl2303_lines(port, op);
+    tendril_serial_pl2303_line(port, op);
+    tendril_serial_pl2303_lines(port, op);
 }
 
 static void probe_done(
@@ -226,7 +226,7 @@ static void probe_done(
     add_setup(port, op);
 }
 
-void serial_pl2303_setup(struct tendril_serial *port, struct serial_op *op) {
+void tendril_serial_pl2303_setup(struct tendril_serial *port, struct serial_op *op) {
     if (port->chip == PL2303_HX) {
         // An HXN, guessed as an HX, rejects the older request code (clean-room
         // specification).
@@ -296,14 +296,13 @@ static bool encode_rate(int chip, uint32_t rate, uint32_t *out) {
     return true;
 }
 
-void serial_pl2303_line(struct tendril_serial *port, struct serial_op *op) {
+void tendril_serial_pl2303_line(struct tendril_serial *port, struct serial_op *op) {
     const struct tendril_serial_config *config = &port->config;
     uint32_t rate;
     uint8_t coding[7];
 
     if (config->data_bits < 5 || config->data_bits > 8
-     || config->parity > TENDRIL_SERIAL_PARITY_SPACE
-     || config->stop_bits > TENDRIL_SERIAL_STOP_2
+     || config->parity > TENDRIL_SERIAL_PARITY_SPACE || config->stop_bits > TENDRIL_SERIAL_STOP_2
      || !encode_rate(port->chip, config->baud, &rate)) {
         op->status = TENDRIL_ERR_INVALID;
         return;
@@ -314,7 +313,7 @@ void serial_pl2303_line(struct tendril_serial *port, struct serial_op *op) {
     coding[4] = config->stop_bits;
     coding[5] = config->parity;
     coding[6] = config->data_bits;
-    serial_op_add(
+    tendril_serial_op_add(
         op, REQ_CLASS_OUT, PSTN_SET_LINE_CODING, 0, port->intf->number, coding,
         (uint16_t)sizeof(coding)
     );
@@ -338,7 +337,7 @@ void serial_pl2303_line(struct tendril_serial *port, struct serial_op *op) {
 }
 
 // SET_CONTROL_LINE_STATE (CDC PSTN 1.2, 6.3.12).
-void serial_pl2303_lines(struct tendril_serial *port, struct serial_op *op) {
+void tendril_serial_pl2303_lines(struct tendril_serial *port, struct serial_op *op) {
     uint32_t value = 0;
 
     if (port->dtr) {
@@ -347,7 +346,7 @@ void serial_pl2303_lines(struct tendril_serial *port, struct serial_op *op) {
     if (port->rts) {
         value |= PSTN_LINE_RTS;
     }
-    serial_op_add(
+    tendril_serial_op_add(
         op, REQ_CLASS_OUT, PSTN_SET_CONTROL_LINE_STATE, (uint16_t)value, port->intf->number, NULL,
         0
     );
@@ -355,20 +354,22 @@ void serial_pl2303_lines(struct tendril_serial *port, struct serial_op *op) {
 
 // SEND_BREAK, where 0xffff holds the break until one with 0 (CDC PSTN 1.2,
 // 6.3.13).
-void serial_pl2303_break(struct tendril_serial *port, struct serial_op *op) {
+void tendril_serial_pl2303_break(struct tendril_serial *port, struct serial_op *op) {
     uint16_t duration = 0;
 
     if (port->in_break) {
         duration = 0xffff;
     }
-    serial_op_add(op, REQ_CLASS_OUT, PSTN_SEND_BREAK, duration, port->intf->number, NULL, 0);
+    tendril_serial_op_add(
+        op, REQ_CLASS_OUT, PSTN_SEND_BREAK, duration, port->intf->number, NULL, 0
+    );
 }
 
 // Byte 8 of an interrupt packet holds TENDRIL_SERIAL_* bits (clean-room
 // specification).
-void serial_pl2303_status(struct tendril_serial *port, const uint8_t *buf, size_t len) {
+void tendril_serial_pl2303_status(struct tendril_serial *port, const uint8_t *buf, size_t len) {
     if (len <= 8) {
         return;
     }
-    serial_status_update(port, (uint32_t)buf[8]);
+    tendril_serial_status_update(port, (uint32_t)buf[8]);
 }

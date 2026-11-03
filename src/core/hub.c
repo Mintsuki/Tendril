@@ -211,7 +211,8 @@ static void port_request(
     xfer->timeout_ms = HUB_CTRL_TIMEOUT_MS;
     xfer->callback = port_xfer_done;
     xfer->context = port;
-    int st = hub->stopping ? TENDRIL_ERR_NO_DEVICE
+    int st = hub->stopping
+           ? TENDRIL_ERR_NO_DEVICE
            : tendril_transfer_submit(xfer);
     if (st != TENDRIL_OK) {
         struct tendril_hc *hc = hub->hc;
@@ -284,7 +285,8 @@ static void hub_status_read(struct tendril_transfer *xfer) {
         hub->ctrl_busy = false;
         return;
     }
-    uint32_t cleared = feature == TENDRIL_HUB_C_LOCAL_POWER ? (uint32_t)0x0001
+    uint32_t cleared = feature == TENDRIL_HUB_C_LOCAL_POWER
+                     ? (uint32_t)0x0001
                      : (uint32_t)0x0002;
     if ((change & ~cleared & 0x0003) != 0) {
         hub->hub_change_pending = true;
@@ -406,8 +408,7 @@ static void hub_status_submit(struct tendril_hub *hub) {
     tendril_transfer_init(xfer, ep);
     xfer->buffer = hub->status_buf;
     xfer->length = MIN(
-        (size_t)(hub->num_ports / 8 + 1),
-        MIN((size_t)ep->max_packet, sizeof(hub->status_buf))
+        (size_t)(hub->num_ports / 8 + 1), MIN((size_t)ep->max_packet, sizeof(hub->status_buf))
     );
     xfer->callback = hub_status_done;
     xfer->context = hub;
@@ -543,12 +544,10 @@ static void hub_init_step(struct tendril_hub *hub) {
                 tendril_port_init(&hub->ports[i], hub, i + 1);
             }
             hub_name(hub, name, sizeof(name));
-            LOG_INFO(
-                "%s: %zu ports%s", name, hub->num_ports,
-                hub->superspeed ? ", SuperSpeed"
-                    : multi_tt_alt(hub) >= 0 ? ", multiple TTs"
-                    : ""
-            );
+            const char *kind = hub->superspeed
+                             ? ", SuperSpeed"
+                             : multi_tt_alt(hub) >= 0 ? ", multiple TTs" : "";
+            LOG_INFO("%s: %zu ports%s", name, hub->num_ports, kind);
             if (hub->superspeed) {
                 hub->init_step = HUB_SET_DEPTH;
                 hub_ctrl(
@@ -595,7 +594,8 @@ static void hub_init_step(struct tendril_hub *hub) {
             if (hc->ops->hub_update != NULL) {
                 hub->init_step = HUB_UPDATE_HC;
                 hc_lock(hc);
-                st = hc->dead ? TENDRIL_ERR_NO_DEVICE
+                st = hc->dead
+                   ? TENDRIL_ERR_NO_DEVICE
                    : hc->ops->hub_update(hc, dev, &hub->init_async);
                 hc_unlock(hc);
                 if (st != TENDRIL_OK) {
