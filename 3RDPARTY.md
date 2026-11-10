@@ -12,10 +12,10 @@ takes.
 Some facts Tendril needs about devices are documented only by sources whose
 code it may not use. The files relying on them, `src/class/net.c`,
 `src/class/serial_ftdi.c`, `src/class/serial_pl2303.c`,
-`src/class/msc_shuttle.c`, and `src/hcd/ehci_chipset.c`, were written
-clean-room: from a specification stating the facts, by an implementer that had
-no access to those sources. Their comments mark such facts as coming from the
-clean-room specification.
+`src/class/msc_shuttle.c`, `src/class/hid.c`, and `src/hcd/ehci_chipset.c`,
+were written clean-room, in whole or in part: from a specification stating the
+facts, by an implementer that had no access to those sources. Their comments
+mark such facts as coming from the clean-room specification.
 
 ## FreeBSD: `sys/dev/usb/quirk/usb_quirk.c`
 
@@ -949,7 +949,8 @@ POSSIBILITY OF SUCH DAMAGE.
 ## FreeBSD: `sys/dev/hid/hkbd.c`
 
 Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. When a keyboard uses the
-boot protocol (`src/class/hid.c`).
+boot protocol: when a quirk asks for it, or when its report descriptor cannot
+be read or parsed (`src/class/hid.c`).
 
 ```text
 SPDX-License-Identifier: BSD-2-Clause

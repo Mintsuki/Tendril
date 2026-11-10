@@ -865,13 +865,14 @@ functions, and their asynchronous calls follow the [conventions](#conventions).
   IDs, and `pointer(hid, event)` with relative motion, absolute position,
   wheel, pan, and buttons.
 - As FreeBSD's `sys/dev/hid/hkbd.c` and `hms.c` (BSD-2-Clause) do, a boot
-  keyboard or mouse whose report descriptor cannot be read or parsed, and a
-  boot keyboard whose report descriptor has no keys, use the boot protocol; so
-  do the keyboards FreeBSD's quirk tables list, and the devices they list as
-  not HID are left alone. The Kensington SlimBlade's two vendor-defined buttons
-  are reported as buttons 2 and 3, as FreeBSD's `hms.c` maps them, and on the
-  Apple ISO keyboards FreeBSD's `sys/dev/usb/input/ukbd.c` lists, keyboard
-  usages 35h and 64h are swapped back.
+  keyboard or mouse whose report descriptor cannot be read or parsed uses the
+  boot protocol; so do the keyboards FreeBSD's quirk tables list, and the
+  devices they list as not HID are left alone. A boot keyboard whose report
+  descriptor has no keys is read through that descriptor, like any other
+  interface. The Kensington SlimBlade's two vendor-defined buttons are reported
+  as buttons 2 and 3, as FreeBSD's `hms.c` maps them, and on the Apple ISO
+  keyboards FreeBSD's `sys/dev/usb/input/ukbd.c` lists, keyboard usages 35h and
+  64h are swapped back.
 - `int tendril_hid_set_leds(hid, uint8_t leds)` sets keyboard LEDs
   (`TENDRIL_HID_LED_*`) without a completion function. **Returns** `TENDRIL_OK`
   (sent, or kept for when the previous update is done or the device resumes);

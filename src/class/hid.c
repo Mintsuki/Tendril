@@ -828,10 +828,9 @@ static void start_boot(struct tendril_hid *hid) {
 }
 
 // BEGIN FreeBSD sys/dev/hid/hkbd.c, hms.c
-// A boot keyboard or mouse whose report descriptor cannot be read or parsed,
-// and a boot keyboard whose report descriptor has no keys, use the boot
-// protocol instead, as FreeBSD's sys/dev/hid/hkbd.c and hms.c (BSD-2-Clause)
-// do.
+// A boot keyboard or mouse whose report descriptor cannot be read or parsed
+// uses the boot protocol instead, as FreeBSD's sys/dev/hid/hkbd.c and hms.c
+// (BSD-2-Clause) do, and has_keys() looks for keys as hkbd.c does.
 static void report_fallback(struct tendril_hid *hid, int st, const char *what) {
     if (!boot_capable(hid->subclass, hid->protocol)) {
         hid_fail(hid, st, what);
@@ -891,14 +890,18 @@ static void init_step(struct tendril_work *work) {
                 report_fallback(hid, st, "report descriptor parsing");
                 return;
             }
+            // END FreeBSD sys/dev/hid/hkbd.c, hms.c
+            // A boot keyboard whose report descriptor has no keys is read
+            // through it like any other interface: some ignore the switch to
+            // the boot protocol, and their report IDs would read as modifier
+            // keys (clean-room specification).
             if (hid->subclass == 1 && hid->protocol == 1
              && !has_keys(hid->rd)) {
-                report_fallback(
-                    hid, TENDRIL_ERR_UNSUPPORTED, "finding keys in the report descriptor"
+                LOG_INFO(
+                    "HID: interface %u calls itself a boot keyboard, but its report descriptor "
+                    "has no keys", hid->intf->number
                 );
-                return;
             }
-            // END FreeBSD sys/dev/hid/hkbd.c, hms.c
             if (hid->subclass == 1) {
                 ctrl(
                     hid, STEP_SET_REPORT_PROTOCOL,
