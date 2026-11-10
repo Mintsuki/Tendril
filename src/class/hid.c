@@ -613,6 +613,15 @@ static void process_pointer(
     }
 }
 
+static bool has_input_report(const struct tendril_hid_report_desc *rd, uint8_t id) {
+    for (size_t i = 0; i < rd->num_reports; i++) {
+        if (rd->reports[i].type == TENDRIL_HID_INPUT && rd->reports[i].id == id) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void in_submit(struct tendril_hid *hid);
 
 static void in_done(struct tendril_transfer *xfer) {
@@ -629,7 +638,10 @@ static void in_done(struct tendril_transfer *xfer) {
             size_t size = xfer->actual;
             uint8_t id = 0;
             if (hid->rd->numbered && !hid->boot) {
-                if (size == 0) {
+                // Reports with the reserved ID 0 (HID 1.11 6.2.2.7), or an ID
+                // that no input report of the descriptor has, are dropped
+                // (clean-room specification).
+                if (size == 0 || data[0] == 0 || !has_input_report(hid->rd, data[0])) {
                     break;
                 }
                 id = data[0];

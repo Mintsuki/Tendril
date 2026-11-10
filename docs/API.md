@@ -861,7 +861,8 @@ functions, and their asynchronous calls follow the [conventions](#conventions).
   `TENDRIL_HID_BOOT_PROTOCOL` in `flags` uses the boot protocol on keyboards
   and mice that support it. Callbacks: `attach`, `detach`,
   `report(hid, id, data, size)` for every input report (without its report ID
-  byte, which is `id`), `key(hid, key, pressed, modifiers)` with keyboard usage
+  byte, which is `id`; input reports with an ID the report descriptor does not
+  define are dropped), `key(hid, key, pressed, modifiers)` with keyboard usage
   IDs, and `pointer(hid, event)` with relative motion, absolute position,
   wheel, pan, and buttons.
 - As FreeBSD's `sys/dev/hid/hkbd.c` and `hms.c` (BSD-2-Clause) do, a boot

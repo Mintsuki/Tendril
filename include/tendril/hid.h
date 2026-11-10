@@ -191,6 +191,8 @@ struct tendril_hid_callbacks {
     // The interface is gone; no callbacks follow.
     void (*detach)(struct tendril_hid *hid);
     // Every input report, without its report ID byte, which is passed as `id`.
+    // Input reports with an ID the report descriptor does not define are
+    // dropped.
     void (*report)(struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size);
     // A key, as a keyboard usage page ID, went down or up.
     void (*key)(struct tendril_hid *hid, uint16_t key, bool pressed, uint8_t modifiers);
