@@ -1000,7 +1000,6 @@ static bool scan_iso(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_t
     uint32_t hp = ed_head(ed);
     bool in = is_in(xfer);
     size_t actual = 0;
-    int st = TENDRIL_OK;
 
     for (struct ohci_itd *itd = first; ; itd = itd->sw_next) {
         if ((uint32_t)itd->dma == hp) {
@@ -1022,9 +1021,6 @@ static bool scan_iso(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_t
                 pkt->actual = in ? psw & (uint32_t)0x7ff : pkt->length;
             }
             actual += pkt->actual;
-            if (pkt->status != TENDRIL_OK && st == TENDRIL_OK) {
-                st = pkt->status;
-            }
         }
         if (itd == last) {
             break;
@@ -1032,7 +1028,6 @@ static bool scan_iso(struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_t
     }
     free_itd_chain(hc, first, last->sw_next);
     // Packet errors are in the packets; the transfer itself completed.
-    (void)st;
     tendril_transfer_complete(hc, xfer, TENDRIL_OK, actual);
     return true;
 }
