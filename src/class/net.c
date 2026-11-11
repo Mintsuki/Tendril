@@ -136,9 +136,10 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <tendril/net.h>
-#include "../core.h"
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 #define CTRL_TIMEOUT_MS 5000
 #define ECM_RX_XFERS 8

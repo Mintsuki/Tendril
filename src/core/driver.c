@@ -31,8 +31,9 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include "../core.h"
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 struct tendril_driver *tendril_drivers;
 

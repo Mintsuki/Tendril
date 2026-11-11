@@ -163,9 +163,10 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "../core.h"
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 #define ANY 0xffff
 

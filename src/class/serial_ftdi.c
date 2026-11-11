@@ -70,11 +70,12 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../core.h"
-#include "serial.h"
 #include <tendril/serial.h>
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
+#include "serial.h"
 
 // BEGIN FreeBSD sys/dev/usb/serial/uftdi.c
 #define FTDI_FT232A 0

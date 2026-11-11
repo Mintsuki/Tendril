@@ -33,8 +33,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "../core.h"
 #include <tendril/glue.h>
+
+#include "../core.h"
 
 void tendril_ehci_chipset_fixes(void *ctx) {
     // Type 0 header (PCI Local Bus Specification Revision 3.0, 6.2.1).

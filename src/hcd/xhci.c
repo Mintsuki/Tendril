@@ -96,10 +96,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../core.h"
 #include <tendril/glue.h>
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 #define CAP_CAPLENGTH 0x00
 #define CAP_HCSPARAMS1 0x04

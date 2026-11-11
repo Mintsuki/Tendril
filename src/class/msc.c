@@ -297,9 +297,10 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <tendril/msc.h>
-#include "../core.h"
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 #define SUBCLASS_NOT_REPORTED 0x00
 #define SUBCLASS_RBC 0x01

@@ -33,9 +33,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../core.h"
 #include <tendril/glue.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 int tendril_log_threshold = TENDRIL_LOG_INFO;
 

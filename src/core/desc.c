@@ -32,8 +32,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../core.h"
 #include <tendril/spec.h>
+
+#include "../core.h"
 
 // Returns the descriptor after `p`, or NULL at the end or on a malformed
 // length.

@@ -104,10 +104,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../core.h"
 #include <tendril/glue.h>
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 #define REG_USBCMD 0x00
 #define REG_USBSTS 0x02

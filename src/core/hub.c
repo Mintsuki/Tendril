@@ -130,9 +130,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../core.h"
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 #define HUB_CTRL_TIMEOUT_MS 5000
 #define STATUS_RETRY_MS 100

@@ -360,10 +360,11 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <tendril/serial.h>
-#include "../core.h"
-#include "serial.h"
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
+#include "serial.h"
 
 #define CTRL_TIMEOUT_MS 5000
 #define RETRY_MS 20

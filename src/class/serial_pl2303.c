@@ -95,11 +95,12 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../core.h"
-#include "serial.h"
 #include <tendril/serial.h>
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
+#include "serial.h"
 
 #define PL2303_ORIGINAL 0
 #define PL2303_HX 1

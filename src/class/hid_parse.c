@@ -32,9 +32,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../core.h"
 #include <tendril/hid.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 // HID 1.11 6.2.2: report descriptor items.
 

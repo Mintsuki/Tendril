@@ -194,9 +194,10 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <tendril/hid.h>
-#include "../core.h"
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 // HID 1.11 6.2.1: a HID descriptor with one class descriptor entry.
 #define HID_DESCRIPTOR_MIN_SIZE 9

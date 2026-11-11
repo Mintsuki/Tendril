@@ -162,9 +162,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../core.h"
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 // BEGIN FreeBSD sys/dev/usb/usb.h, usb_request.c
 // USB 2.0 7.1.7.3 and 7.1.7.5 ask for at least 100 ms of debounce (TATTDB) and

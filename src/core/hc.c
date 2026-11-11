@@ -32,9 +32,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../core.h"
 #include <tendril/glue.h>
 #include <tendril/tendril.h>
+
+#include "../core.h"
 
 bool tendril_pci_hc_type(uint32_t class_code, int *type) {
     if ((class_code >> 8) != 0x0c03) {
