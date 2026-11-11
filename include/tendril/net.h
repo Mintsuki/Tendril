@@ -71,7 +71,10 @@ void tendril_net_register(const struct tendril_net_callbacks *callbacks);
 // Queues a frame, which must stay valid until `done`; frames go out in order.
 // While the device is suspended, frames wait for it to resume.
 int tendril_net_send(
-    struct tendril_net *net, const void *frame, size_t len, void (*done)(void *ctx, int status),
+    struct tendril_net *net,
+    const void *frame,
+    size_t len,
+    void (*done)(void *ctx, int status),
     void *ctx
 );
 
@@ -85,14 +88,20 @@ int tendril_net_send(
 // Picks the frames the adapter passes on; adapters may pass on more than asked
 // for. TENDRIL_ERR_UNSUPPORTED if the adapter has no packet filter.
 int tendril_net_set_filter(
-    struct tendril_net *net, uint16_t filter, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_net *net,
+    uint16_t filter,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 // Sets the multicast addresses passed on under TENDRIL_NET_FILTER_MULTICAST:
 // `count` 6-byte addresses back to back, copied before returning.
 int tendril_net_set_multicast(
-    struct tendril_net *net, const uint8_t *addrs, size_t count,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_net *net,
+    const uint8_t *addrs,
+    size_t count,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 // Synchronous helper, running tendril_hc_poll() until done.

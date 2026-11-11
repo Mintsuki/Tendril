@@ -94,7 +94,11 @@ void tendril_glue_pci_write32(void *ctx, uint16_t offset, uint32_t value);
 // with these vendor and device IDs, which some controllers' chipset fixes
 // depend on; false if there is none, or the embedder cannot look.
 bool tendril_glue_pci_find_read8(
-    void *ctx, uint16_t vendor, uint16_t device, uint16_t offset, uint8_t *value
+    void *ctx,
+    uint16_t vendor,
+    uint16_t device,
+    uint16_t offset,
+    uint8_t *value
 );
 
 // Monotonic time in nanoseconds.

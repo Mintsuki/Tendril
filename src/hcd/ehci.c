@@ -598,7 +598,11 @@ static void cursor_advance(struct cursor *c, size_t n) {
 // keeping the size a multiple of `mps` unless it is the remainder. Returns the
 // bytes covered.
 static size_t fill_qtd_buffers(
-    struct tendril_hc *hc, struct ehci_qtd *qtd, struct cursor *c, size_t want, size_t mps
+    struct tendril_hc *hc,
+    struct ehci_qtd *qtd,
+    struct cursor *c,
+    size_t want,
+    size_t mps
 ) {
     struct cursor probe = *c;
     size_t total = 0;
@@ -748,7 +752,11 @@ static size_t *tt_usage(struct tendril_device *dev) {
 }
 
 static void adjust_usage(
-    struct tendril_hc *hc, struct tendril_device *dev, size_t slot, uint8_t mask, size_t len,
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    size_t slot,
+    uint8_t mask,
+    size_t len,
     bool add
 ) {
     size_t *bus = ehci_of(hc)->uframe_usage;
@@ -1332,7 +1340,11 @@ static void process_unlinks(struct tendril_hc *hc, bool iaa) {
 // Isochronous transfers
 
 static void iso_link(
-    struct tendril_hc *hc, struct ehci_iso *iso, uint32_t *hw_next, uint32_t link, size_t frame
+    struct tendril_hc *hc,
+    struct ehci_iso *iso,
+    uint32_t *hw_next,
+    uint32_t link,
+    size_t frame
 ) {
     struct ehci *e = ehci_of(hc);
     iso->frame = frame;
@@ -1395,7 +1407,10 @@ static void set_page(uint32_t *lo, uint32_t *hi, bool ac64, uint64_t addr, uint3
 }
 
 static int build_itds(
-    struct tendril_hc *hc, struct tendril_transfer *xfer, struct ehci_iso_xfer *ix, size_t start
+    struct tendril_hc *hc,
+    struct tendril_transfer *xfer,
+    struct ehci_iso_xfer *ix,
+    size_t start
 ) {
     struct ehci *e = ehci_of(hc);
     struct tendril_endpoint *ep = xfer->endpoint;
@@ -1507,7 +1522,10 @@ static size_t sitd_start(struct tendril_hc *hc, struct tendril_device *dev, size
 // END FreeBSD sys/dev/usb/usb_hub.c
 
 static int build_sitds(
-    struct tendril_hc *hc, struct tendril_transfer *xfer, struct ehci_iso_xfer *ix, size_t start
+    struct tendril_hc *hc,
+    struct tendril_transfer *xfer,
+    struct ehci_iso_xfer *ix,
+    size_t start
 ) {
     struct ehci *e = ehci_of(hc);
     struct tendril_endpoint *ep = xfer->endpoint;
@@ -1599,7 +1617,10 @@ static int build_sitds(
 // How build_itds() and build_sitds() lay a transfer out: `count` descriptors,
 // `step` frames apart.
 static void iso_layout(
-    struct tendril_transfer *xfer, bool high_speed, size_t *count, uint32_t *step
+    struct tendril_transfer *xfer,
+    bool high_speed,
+    size_t *count,
+    uint32_t *step
 ) {
     struct tendril_endpoint *ep = xfer->endpoint;
     if (high_speed) {
@@ -1866,7 +1887,9 @@ static int open_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep) {
 
 // Closes an endpoint; returns whether the caller must wait on `close`.
 static bool close_endpoint(
-    struct tendril_hc *hc, struct tendril_endpoint *ep, struct ehci_close *close
+    struct tendril_hc *hc,
+    struct tendril_endpoint *ep,
+    struct ehci_close *close
 ) {
     void *hcd = ep->hcd;
     ep->open = false;
@@ -1906,8 +1929,13 @@ static bool close_endpoint(
 }
 
 static int ehci_configure(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_endpoint **drop,
-    size_t num_drop, struct tendril_endpoint **add, size_t num_add, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_endpoint **drop,
+    size_t num_drop,
+    struct tendril_endpoint **add,
+    size_t num_add,
+    struct tendril_async *async
 ) {
     (void)dev;
     struct ehci_close *close = tendril_zalloc(sizeof(struct ehci_close));
@@ -1936,7 +1964,9 @@ static int ehci_configure(
 }
 
 static int ehci_device_init(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     int st = open_endpoint(hc, &dev->ep0);
     if (st == TENDRIL_OK) {
@@ -1946,7 +1976,9 @@ static int ehci_device_init(
 }
 
 static int ehci_ep0_update(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     struct ehci_qh *qh = dev->ep0.hcd;
     // The queue head is idle here, so its characteristics can change in place.
@@ -1957,7 +1989,9 @@ static int ehci_ep0_update(
 }
 
 static int ehci_endpoint_reset(
-    struct tendril_hc *hc, struct tendril_endpoint *ep, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_endpoint *ep,
+    struct tendril_async *async
 ) {
     struct ehci_qh *qh = ep->hcd;
     if (qh != NULL && ep->type != TENDRIL_ENDPOINT_XFER_ISOC
@@ -1970,7 +2004,9 @@ static int ehci_endpoint_reset(
 }
 
 static void ehci_device_free(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     struct ehci_close *close = tendril_zalloc(sizeof(struct ehci_close));
     if (close != NULL) {

@@ -397,7 +397,10 @@ int tendril_transfer_submit(struct tendril_transfer *xfer) {
 }
 
 void tendril_transfer_complete(
-    struct tendril_hc *hc, struct tendril_transfer *xfer, int status, size_t actual
+    struct tendril_hc *hc,
+    struct tendril_transfer *xfer,
+    int status,
+    size_t actual
 ) {
     struct tendril_transfer_internal *in = &xfer->internal;
 
@@ -413,7 +416,9 @@ void tendril_transfer_complete(
 }
 
 void tendril_transfer_fail_endpoint(
-    struct tendril_hc *hc, struct tendril_endpoint *ep, int status
+    struct tendril_hc *hc,
+    struct tendril_endpoint *ep,
+    int status
 ) {
     while (!list_empty(&ep->transfers)) {
         struct tendril_transfer *xfer = CONTAINER_OF(
@@ -479,7 +484,9 @@ static void xfer_done_work(struct tendril_work *work) {
 }
 
 void tendril_transfer_cancel_locked(
-    struct tendril_hc *hc, struct tendril_transfer *xfer, int status
+    struct tendril_hc *hc,
+    struct tendril_transfer *xfer,
+    int status
 ) {
     struct tendril_transfer_internal *in = &xfer->internal;
 
@@ -531,8 +538,15 @@ int tendril_transfer_run(struct tendril_transfer *xfer) {
 }
 
 int tendril_control(
-    struct tendril_device *dev, uint8_t request_type, uint8_t request, uint16_t value,
-    uint16_t index, void *data, size_t length, size_t *actual, uint32_t timeout_ms
+    struct tendril_device *dev,
+    uint8_t request_type,
+    uint8_t request,
+    uint16_t value,
+    uint16_t index,
+    void *data,
+    size_t length,
+    size_t *actual,
+    uint32_t timeout_ms
 ) {
     struct tendril_transfer xfer;
 

@@ -145,8 +145,13 @@ struct tendril_serial {
 // Appends a request; IN requests read up to 16 bytes into its data. Setting
 // op->status instead fails the operation before anything is sent.
 void tendril_serial_op_add(
-    struct serial_op *op, uint8_t type, uint8_t request, uint16_t value, uint16_t index,
-    const void *data, size_t length
+    struct serial_op *op,
+    uint8_t type,
+    uint8_t request,
+    uint16_t value,
+    uint16_t index,
+    const void *data,
+    size_t length
 );
 // Reports line states and events (TENDRIL_SERIAL_*).
 void tendril_serial_status_update(struct tendril_serial *port, uint32_t status);

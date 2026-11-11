@@ -530,7 +530,10 @@ static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *dat
 }
 
 static void process_pointer(
-    struct tendril_hid *hid, uint8_t id, const uint8_t *data, size_t size
+    struct tendril_hid *hid,
+    uint8_t id,
+    const uint8_t *data,
+    size_t size
 ) {
     const struct tendril_hid_report_desc *rd = hid->rd;
     struct tendril_hid_pointer_event ev;
@@ -804,8 +807,13 @@ static void hid_fail(struct tendril_hid *hid, int st, const char *what) {
 }
 
 static void ctrl(
-    struct tendril_hid *hid, int step, uint8_t request_type, uint8_t request, uint16_t value,
-    void *data, size_t length
+    struct tendril_hid *hid,
+    int step,
+    uint8_t request_type,
+    uint8_t request,
+    uint16_t value,
+    void *data,
+    size_t length
 ) {
     hid->step = step;
     int st = tendril_control_async(
@@ -1193,8 +1201,13 @@ static int report_op_submit(struct report_op *op) {
 }
 
 int tendril_hid_get_report(
-    struct tendril_hid *hid, int type, uint8_t id, void *buf, size_t size,
-    void (*done)(void *ctx, int status, size_t actual), void *ctx
+    struct tendril_hid *hid,
+    int type,
+    uint8_t id,
+    void *buf,
+    size_t size,
+    void (*done)(void *ctx, int status, size_t actual),
+    void *ctx
 ) {
     if (hid->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
@@ -1226,8 +1239,13 @@ int tendril_hid_get_report(
 }
 
 int tendril_hid_set_report(
-    struct tendril_hid *hid, int type, uint8_t id, const void *buf, size_t size,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_hid *hid,
+    int type,
+    uint8_t id,
+    const void *buf,
+    size_t size,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     if (hid->stopped) {
         return TENDRIL_ERR_NO_DEVICE;

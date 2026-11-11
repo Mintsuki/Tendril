@@ -665,7 +665,9 @@ static void fill_td(struct ohci_td *td, uint32_t flags, uint32_t cbp, uint32_t b
 static void list_filled(struct tendril_hc *hc, struct ohci_ed *ed);
 
 static int submit_general(
-    struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_transfer *xfer
+    struct tendril_hc *hc,
+    struct ohci_ed *ed,
+    struct tendril_transfer *xfer
 ) {
     struct tendril_endpoint *ep = xfer->endpoint;
     bool control = ep->type == TENDRIL_ENDPOINT_XFER_CONTROL;
@@ -788,7 +790,10 @@ static void list_filled(struct tendril_hc *hc, struct ohci_ed *ed) {
 // Points the halted or skipped descriptor at `td`, keeping the toggle carry,
 // and has the controller look again.
 static void ed_restart(
-    struct tendril_hc *hc, struct ohci_ed *ed, uint64_t td_dma, uint32_t carry
+    struct tendril_hc *hc,
+    struct ohci_ed *ed,
+    uint64_t td_dma,
+    uint32_t carry
 ) {
     ed->head = le((uint32_t)td_dma | carry);
     dma_barrier();
@@ -798,7 +803,9 @@ static void ed_restart(
 // Checks the oldest transfer of a descriptor. TDs retire in order, so those
 // ahead of HeadP are done. Returns true if the transfer completed.
 static bool scan_general(
-    struct tendril_hc *hc, struct ohci_ed *ed, struct tendril_transfer *xfer
+    struct tendril_hc *hc,
+    struct ohci_ed *ed,
+    struct tendril_transfer *xfer
 ) {
     bool control = xfer->endpoint->type == TENDRIL_ENDPOINT_XFER_CONTROL;
     struct ohci_td *first = xfer_first(xfer);
@@ -875,7 +882,11 @@ static void free_itd_chain(struct tendril_hc *hc, struct ohci_itd *itd, struct o
 // back to back in the rest of one page and the start of another, the same
 // two-page buffer a general TD has (OHCI 1.0a, 4.3.2.3.1). Returns the count.
 static size_t fill_itd(
-    struct ohci_itd *itd, struct tendril_transfer *xfer, size_t p, struct cursor *c, uint32_t frame
+    struct ohci_itd *itd,
+    struct tendril_transfer *xfer,
+    size_t p,
+    struct cursor *c,
+    uint32_t frame
 ) {
     uint64_t start = cursor_addr(c);
     size_t first = cursor_page_room(c);
@@ -1368,7 +1379,9 @@ static int open_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep) {
 }
 
 static void close_endpoint(
-    struct tendril_hc *hc, struct tendril_endpoint *ep, struct ohci_close *close
+    struct tendril_hc *hc,
+    struct tendril_endpoint *ep,
+    struct ohci_close *close
 ) {
     struct ohci *o = ohci_of(hc);
     struct ohci_ed *ed = ep->hcd;
@@ -1411,8 +1424,13 @@ static void close_endpoint(
 }
 
 static int ohci_configure(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_endpoint **drop,
-    size_t num_drop, struct tendril_endpoint **add, size_t num_add, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_endpoint **drop,
+    size_t num_drop,
+    struct tendril_endpoint **add,
+    size_t num_add,
+    struct tendril_async *async
 ) {
     (void)dev;
     struct ohci_close *close = tendril_zalloc(sizeof(struct ohci_close));
@@ -1441,7 +1459,9 @@ static int ohci_configure(
 }
 
 static int ohci_device_init(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     int st = open_endpoint(hc, &dev->ep0);
     if (st == TENDRIL_OK) {
@@ -1451,7 +1471,9 @@ static int ohci_device_init(
 }
 
 static int ohci_ep0_update(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     struct ohci_ed *ed = dev->ep0.hcd;
     // Nothing is queued on endpoint 0 here, so its address and packet size can
@@ -1463,7 +1485,9 @@ static int ohci_ep0_update(
 }
 
 static int ohci_endpoint_reset(
-    struct tendril_hc *hc, struct tendril_endpoint *ep, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_endpoint *ep,
+    struct tendril_async *async
 ) {
     struct ohci_ed *ed = ep->hcd;
     // With no TDs queued the controller leaves HeadP alone, so the carry can
@@ -1477,7 +1501,9 @@ static int ohci_endpoint_reset(
 }
 
 static void ohci_device_free(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     struct ohci_close *close = tendril_zalloc(sizeof(struct ohci_close));
     if (close != NULL) {

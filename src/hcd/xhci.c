@@ -576,7 +576,11 @@ static size_t ring_index(struct xhci_ring *ring, uint64_t addr) {
 
 // Writes a TRB at the enqueue pointer; the cycle bit is applied here.
 static size_t ring_push(
-    struct xhci_ring *ring, uint64_t param, uint32_t status, uint32_t control, bool valid
+    struct xhci_ring *ring,
+    uint64_t param,
+    uint32_t status,
+    uint32_t control,
+    bool valid
 ) {
     size_t index = ring->enq;
     uint32_t cycle = valid ? ring->cycle : ring->cycle ^ 1;
@@ -662,10 +666,15 @@ static void port_timer_work(struct tendril_work *work);
 // Commands
 
 static int cmd_submit(
-    struct tendril_hc *hc, uint64_t param, uint32_t status, uint32_t control,
-    void (*done)(
-        struct tendril_hc *, struct xhci_cmd *, int, struct xhci_trb *
-    ), struct tendril_async *async, struct tendril_device *dev, struct xhci_ep *xep, uint32_t arg
+    struct tendril_hc *hc,
+    uint64_t param,
+    uint32_t status,
+    uint32_t control,
+    void (*done)(struct tendril_hc *, struct xhci_cmd *, int, struct xhci_trb *),
+    struct tendril_async *async,
+    struct tendril_device *dev,
+    struct xhci_ep *xep,
+    uint32_t arg
 ) {
     struct xhci *x = xhci_of(hc);
     if (hc->dead) {
@@ -724,7 +733,10 @@ static void handle_command_completion(struct tendril_hc *hc, struct xhci_trb *ev
 
 // Completes an async-backed command with its translated completion code.
 static void cmd_async_done(
-    struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev
+    struct tendril_hc *hc,
+    struct xhci_cmd *cmd,
+    int code,
+    struct xhci_trb *ev
 ) {
     (void)ev;
     tendril_async_complete(hc, cmd->async, code == CC_SUCCESS ? TENDRIL_OK : cc_status(code));
@@ -784,14 +796,19 @@ static void retire_span(struct xhci_ring *ring, struct tendril_transfer *xfer) {
 }
 
 static void complete_xfer(
-    struct tendril_hc *hc, struct tendril_transfer *xfer, int st, size_t actual
+    struct tendril_hc *hc,
+    struct tendril_transfer *xfer,
+    int st,
+    size_t actual
 ) {
     retire_span(xfer_ring(xfer), xfer);
     tendril_transfer_complete(hc, xfer, st, actual);
 }
 
 static struct tendril_transfer *find_xfer(
-    struct xhci_ep *xep, struct xhci_ring *ring, size_t index
+    struct xhci_ep *xep,
+    struct xhci_ring *ring,
+    size_t index
 ) {
     struct tendril_list *it;
     LIST_FOR_EACH(it, &xep->ep->transfers) {
@@ -876,14 +893,20 @@ static uint64_t ring_hw_dequeue(struct tendril_hc *hc, struct xhci_ep *xep, uint
 }
 
 static void set_deq_done(
-    struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev
+    struct tendril_hc *hc,
+    struct xhci_cmd *cmd,
+    int code,
+    struct xhci_trb *ev
 );
 
 // With the endpoint stopped, completes cancelled and failed transfers and
 // moves the dequeue pointer of each ring past them. Returns the number of Set
 // TR Dequeue Pointer commands issued.
 static size_t sweep_ring(
-    struct tendril_hc *hc, struct xhci_ep *xep, struct xhci_ring *ring, uint16_t stream
+    struct tendril_hc *hc,
+    struct xhci_ep *xep,
+    struct xhci_ring *ring,
+    uint16_t stream
 ) {
     size_t hw = ring_index(ring, ring_hw_dequeue(hc, xep, stream));
     size_t hw_index = hw == SIZE_MAX ? ring->deq : hw;
@@ -954,7 +977,10 @@ static void sweep(struct tendril_hc *hc, struct xhci_ep *xep) {
 }
 
 static void set_deq_done(
-    struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev
+    struct tendril_hc *hc,
+    struct xhci_cmd *cmd,
+    int code,
+    struct xhci_trb *ev
 ) {
     struct xhci_ep *xep = cmd->xep;
     (void)ev;
@@ -1005,7 +1031,10 @@ static void start_stop(struct tendril_hc *hc, struct xhci_ep *xep) {
 }
 
 static void reset_ep_done(
-    struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev
+    struct tendril_hc *hc,
+    struct xhci_cmd *cmd,
+    int code,
+    struct xhci_trb *ev
 ) {
     struct xhci_ep *xep = cmd->xep;
     (void)ev;
@@ -1037,8 +1066,13 @@ static bool halting_code(int code) {
 }
 
 static void finish_control(
-    struct tendril_hc *hc, struct xhci_ep *xep, struct tendril_transfer *xfer,
-    struct xhci_ring *ring, size_t index, int code, size_t residual
+    struct tendril_hc *hc,
+    struct xhci_ep *xep,
+    struct tendril_transfer *xfer,
+    struct xhci_ring *ring,
+    size_t index,
+    int code,
+    size_t residual
 ) {
     uintptr_t *hd = xfer->internal.hcd_data;
     size_t first = xfer_first(xfer);
@@ -2060,7 +2094,10 @@ static void dev_free_mem(struct tendril_hc *hc, struct xhci_dev *xd) {
 }
 
 static void enable_slot_done(
-    struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev
+    struct tendril_hc *hc,
+    struct xhci_cmd *cmd,
+    int code,
+    struct xhci_trb *ev
 ) {
     struct xhci *x = xhci_of(hc);
     struct tendril_device *dev = cmd->dev;
@@ -2082,7 +2119,9 @@ static void enable_slot_done(
 }
 
 static int xhci_device_init(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     struct xhci_dev *xd = tendril_zalloc(sizeof(struct xhci_dev));
     if (xd == NULL) {
@@ -2198,7 +2237,10 @@ static void fill_slot_ctx(struct tendril_hc *hc, struct tendril_device *dev, siz
 }
 
 static void address_done(
-    struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev
+    struct tendril_hc *hc,
+    struct xhci_cmd *cmd,
+    int code,
+    struct xhci_trb *ev
 ) {
     struct tendril_device *dev = cmd->dev;
     (void)ev;
@@ -2209,7 +2251,9 @@ static void address_done(
 }
 
 static int xhci_device_address(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     struct xhci_dev *xd = xdev(dev);
     clear_input(hc, xd);
@@ -2223,7 +2267,9 @@ static int xhci_device_address(
 }
 
 static int xhci_ep0_update(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     struct xhci_dev *xd = xdev(dev);
     uint32_t *out = out_ep(hc, xd, 1);
@@ -2259,7 +2305,9 @@ static void copy_out_slot(struct tendril_hc *hc, struct xhci_dev *xd) {
 }
 
 static int xhci_hub_update(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     struct xhci_dev *xd = xdev(dev);
     clear_input(hc, xd);
@@ -2280,7 +2328,10 @@ struct config_change {
 };
 
 static void configure_done(
-    struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev
+    struct tendril_hc *hc,
+    struct xhci_cmd *cmd,
+    int code,
+    struct xhci_trb *ev
 ) {
     struct tendril_device *dev = cmd->dev;
     struct xhci_dev *xd = xdev(dev);
@@ -2317,8 +2368,13 @@ static void configure_done(
 }
 
 static int xhci_configure(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_endpoint **drop,
-    size_t num_drop, struct tendril_endpoint **add, size_t num_add, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_endpoint **drop,
+    size_t num_drop,
+    struct tendril_endpoint **add,
+    size_t num_add,
+    struct tendril_async *async
 ) {
     struct xhci_dev *xd = xdev(dev);
     uint32_t drop_flags = 0;
@@ -2397,7 +2453,9 @@ static int xhci_configure(
 // already reset it with Reset Endpoint after a halt; otherwise, dropping and
 // re-adding the endpoint does.
 static int xhci_endpoint_reset(
-    struct tendril_hc *hc, struct tendril_endpoint *ep, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_endpoint *ep,
+    struct tendril_async *async
 ) {
     struct xhci_ep *xep = xep_of(ep);
     if (xep == NULL || ep->type == TENDRIL_ENDPOINT_XFER_CONTROL || xep->num_streams != 0
@@ -2423,7 +2481,10 @@ static int xhci_endpoint_reset(
 }
 
 static int xhci_alloc_streams(
-    struct tendril_hc *hc, struct tendril_endpoint **eps, size_t count, size_t streams,
+    struct tendril_hc *hc,
+    struct tendril_endpoint **eps,
+    size_t count,
+    size_t streams,
     struct tendril_async *async
 ) {
     struct xhci *x = xhci_of(hc);
@@ -2507,7 +2568,10 @@ fail:
 }
 
 static void disable_slot_done(
-    struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev
+    struct tendril_hc *hc,
+    struct xhci_cmd *cmd,
+    int code,
+    struct xhci_trb *ev
 ) {
     struct xhci *x = xhci_of(hc);
     struct tendril_device *dev = cmd->dev;
@@ -2522,7 +2586,9 @@ static void disable_slot_done(
 }
 
 static void xhci_device_free(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     struct xhci *x = xhci_of(hc);
     struct xhci_dev *xd = xdev(dev);
@@ -2620,8 +2686,13 @@ static void tb_push(struct td_builder *tb, uint64_t param, uint32_t status, uint
 }
 
 static void push_td(
-    struct td_builder *tb, struct cursor *c, size_t len, size_t mps, uint32_t first_ctl,
-    uint32_t all_ctl, uint32_t last_ctl
+    struct td_builder *tb,
+    struct cursor *c,
+    size_t len,
+    size_t mps,
+    uint32_t first_ctl,
+    uint32_t all_ctl,
+    uint32_t last_ctl
 ) {
     size_t tdpc = len == 0 ? 0 : (len + mps - 1) / mps;
     size_t done = 0;
@@ -2656,7 +2727,9 @@ static uint64_t setup_param(const struct tendril_setup *setup) {
 }
 
 static int submit_control(
-    struct tendril_hc *hc, struct xhci_ep *xep, struct tendril_transfer *xfer
+    struct tendril_hc *hc,
+    struct xhci_ep *xep,
+    struct tendril_transfer *xfer
 ) {
     struct xhci_ring *ring = &xep->ring;
     uintptr_t *hd = xfer->internal.hcd_data;
@@ -2711,7 +2784,9 @@ static int submit_control(
 }
 
 static int submit_bulk(
-    struct tendril_hc *hc, struct xhci_ep *xep, struct xhci_ring *ring,
+    struct tendril_hc *hc,
+    struct xhci_ep *xep,
+    struct xhci_ring *ring,
     struct tendril_transfer *xfer
 ) {
     uintptr_t *hd = xfer->internal.hcd_data;
@@ -2874,11 +2949,17 @@ static void xhci_cancel(struct tendril_hc *hc, struct tendril_transfer *xfer) {
 // Power management
 
 static void suspend_next(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async, uint8_t dci
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async,
+    uint8_t dci
 );
 
 static void suspend_stop_done(
-    struct tendril_hc *hc, struct xhci_cmd *cmd, int code, struct xhci_trb *ev
+    struct tendril_hc *hc,
+    struct xhci_cmd *cmd,
+    int code,
+    struct xhci_trb *ev
 ) {
     (void)ev;
     if (code != CC_SUCCESS && code != CC_CONTEXT_STATE) {
@@ -2890,7 +2971,10 @@ static void suspend_stop_done(
 // xHCI 1.2, 4.15.1.1: endpoints stop, flagged as suspending, before the link
 // is suspended.
 static void suspend_next(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async, uint8_t dci
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async,
+    uint8_t dci
 ) {
     struct xhci_dev *xd = xdev(dev);
     for (; xd != NULL && dci < 32; dci++) {
@@ -2913,7 +2997,9 @@ static void suspend_next(
 }
 
 static int xhci_device_suspend(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     // Stopped endpoints start again when their doorbells next ring.
     suspend_next(hc, dev, async, 1);

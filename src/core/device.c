@@ -382,7 +382,9 @@ static void set_ep0_mps(struct tendril_device *dev, size_t mps) {
 }
 
 struct tendril_device *tendril_device_alloc(
-    struct tendril_hc *hc, struct tendril_port *port, int speed
+    struct tendril_hc *hc,
+    struct tendril_port *port,
+    int speed
 ) {
     struct tendril_device *dev = tendril_zalloc(sizeof(struct tendril_device));
     if (dev == NULL) {
@@ -496,8 +498,11 @@ void tendril_device_put(struct tendril_device *dev) {
 // Endpoints
 
 void tendril_endpoint_setup(
-    struct tendril_endpoint *ep, struct tendril_device *dev, struct tendril_interface *intf,
-    const struct tendril_endpoint_descriptor *desc, const uint8_t *end
+    struct tendril_endpoint *ep,
+    struct tendril_device *dev,
+    struct tendril_interface *intf,
+    const struct tendril_endpoint_descriptor *desc,
+    const uint8_t *end
 ) {
     memset(ep, 0, sizeof(struct tendril_endpoint));
     ep->dev = dev;
@@ -608,9 +613,16 @@ static void control_async_done(struct tendril_transfer *xfer) {
 }
 
 static int control_async_ms(
-    struct tendril_device *dev, struct tendril_transfer *xfer, uint8_t request_type,
-    uint8_t request, uint16_t value, uint16_t index, void *data, size_t length,
-    struct tendril_async *async, uint32_t timeout_ms
+    struct tendril_device *dev,
+    struct tendril_transfer *xfer,
+    uint8_t request_type,
+    uint8_t request,
+    uint16_t value,
+    uint16_t index,
+    void *data,
+    size_t length,
+    struct tendril_async *async,
+    uint32_t timeout_ms
 ) {
     if (length > UINT16_MAX) {
         return TENDRIL_ERR_INVALID;
@@ -630,8 +642,14 @@ static int control_async_ms(
 }
 
 int tendril_control_async(
-    struct tendril_device *dev, struct tendril_transfer *xfer, uint8_t request_type,
-    uint8_t request, uint16_t value, uint16_t index, void *data, size_t length,
+    struct tendril_device *dev,
+    struct tendril_transfer *xfer,
+    uint8_t request_type,
+    uint8_t request,
+    uint16_t value,
+    uint16_t index,
+    void *data,
+    size_t length,
     struct tendril_async *async
 ) {
     return control_async_ms(
@@ -676,7 +694,11 @@ static void enum_fail(struct tendril_device *dev, int status, const char *what) 
 }
 
 static void get_descriptor(
-    struct tendril_device *dev, int step, uint8_t type, uint8_t index, uint16_t langid,
+    struct tendril_device *dev,
+    int step,
+    uint8_t type,
+    uint8_t index,
+    uint16_t langid,
     size_t length
 ) {
     dev->step = step;
@@ -697,10 +719,10 @@ static void get_descriptor(
 }
 
 static void hc_op(
-    struct tendril_device *dev, int step,
-    int (*op)(
-        struct tendril_hc *, struct tendril_device *, struct tendril_async *
-    ), const char *what
+    struct tendril_device *dev,
+    int step,
+    int (*op)(struct tendril_hc *, struct tendril_device *, struct tendril_async *),
+    const char *what
 ) {
     struct tendril_hc *hc = dev->hc;
     dev->step = step;
@@ -1110,7 +1132,10 @@ static const uint8_t *next_endpoint(const uint8_t *q, const uint8_t *end, uint32
 
 // Creates endpoint objects for alternate setting `alt` of an interface.
 int tendril_interface_build_endpoints(
-    struct tendril_interface *intf, size_t alt, struct tendril_endpoint **eps, size_t *count
+    struct tendril_interface *intf,
+    size_t alt,
+    struct tendril_endpoint **eps,
+    size_t *count
 ) {
     const uint8_t *p = (const uint8_t *)intf->alts[alt];
     const uint8_t *end = p + intf->alt_sizes[alt];
@@ -1146,8 +1171,11 @@ int tendril_interface_build_endpoints(
 // those open on interfaces other than `skip`: not when it takes no transfers,
 // having a packet size of 0, nor when another has its address.
 static bool endpoint_addable(
-    struct tendril_device *dev, struct tendril_interface *skip, struct tendril_endpoint *ep,
-    struct tendril_endpoint **list, size_t n
+    struct tendril_device *dev,
+    struct tendril_interface *skip,
+    struct tendril_endpoint *ep,
+    struct tendril_endpoint **list,
+    size_t n
 ) {
     if (ep->max_packet == 0 || n >= MAX_DEVICE_ENDPOINTS) {
         return false;
@@ -1187,7 +1215,9 @@ static size_t collect_endpoints(struct tendril_device *dev, struct tendril_endpo
 // Collects the endpoints set up on the controller into `list`, from `intf`
 // only unless NULL.
 static size_t collect_open_endpoints(
-    struct tendril_device *dev, struct tendril_interface *only, struct tendril_endpoint **list
+    struct tendril_device *dev,
+    struct tendril_interface *only,
+    struct tendril_endpoint **list
 ) {
     size_t n = 0;
     for (size_t i = 0; i < dev->num_interfaces; i++) {
@@ -1434,8 +1464,14 @@ void tendril_device_hub_ready(struct tendril_device *dev, int status) {
 }
 
 static void control_step(
-    struct tendril_device *dev, int step, uint8_t request_type, uint8_t request, uint16_t value,
-    uint16_t index, uint32_t timeout_ms, const char *what
+    struct tendril_device *dev,
+    int step,
+    uint8_t request_type,
+    uint8_t request,
+    uint16_t value,
+    uint16_t index,
+    uint32_t timeout_ms,
+    const char *what
 ) {
     dev->step = step;
     dev->op_busy = true;
@@ -1960,7 +1996,8 @@ const struct tendril_device_descriptor *tendril_device_descriptor(struct tendril
 }
 
 const struct tendril_config_descriptor *tendril_device_config_descriptor(
-    struct tendril_device *dev, size_t index
+    struct tendril_device *dev,
+    size_t index
 ) {
     if (index >= dev->num_configs) {
         return NULL;
@@ -2018,7 +2055,8 @@ struct tendril_interface *tendril_device_interface(struct tendril_device *dev, s
 }
 
 struct tendril_interface *tendril_device_find_interface(
-    struct tendril_device *dev, uint8_t number
+    struct tendril_device *dev,
+    uint8_t number
 ) {
     return find_interface(dev, number);
 }
@@ -2049,7 +2087,8 @@ size_t tendril_interface_num_alts(struct tendril_interface *intf) {
 }
 
 const struct tendril_interface_descriptor *tendril_interface_alt_descriptor(
-    struct tendril_interface *intf, size_t index
+    struct tendril_interface *intf,
+    size_t index
 ) {
     if (index >= intf->num_alts) {
         return NULL;
@@ -2069,7 +2108,9 @@ struct tendril_endpoint *tendril_interface_endpoint(struct tendril_interface *in
 }
 
 struct tendril_endpoint *tendril_interface_find_endpoint(
-    struct tendril_interface *intf, int type, int dir
+    struct tendril_interface *intf,
+    int type,
+    int dir
 ) {
     for (size_t i = 0; i < intf->num_endpoints; i++) {
         struct tendril_endpoint *ep = &intf->endpoints[i];
@@ -2151,7 +2192,9 @@ struct dev_op {
 static void config_work(struct tendril_work *work);
 
 static struct dev_op *op_alloc(
-    struct tendril_device *dev, void (*fn)(struct tendril_work *), void (*done)(void *, int),
+    struct tendril_device *dev,
+    void (*fn)(struct tendril_work *),
+    void (*done)(void *, int),
     void *ctx
 ) {
     struct dev_op *op = tendril_zalloc(sizeof(struct dev_op));
@@ -2267,7 +2310,10 @@ static void alt_work(struct tendril_work *work) {
 }
 
 int tendril_interface_set_alt(
-    struct tendril_interface *intf, uint8_t alt, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_interface *intf,
+    uint8_t alt,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     struct tendril_device *dev = intf->dev;
     struct tendril_hc *hc = dev->hc;
@@ -2368,7 +2414,9 @@ static void halt_work(struct tendril_work *work) {
 }
 
 int tendril_endpoint_clear_halt(
-    struct tendril_endpoint *ep, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_endpoint *ep,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     struct tendril_device *dev = ep->dev;
 
@@ -2400,8 +2448,11 @@ static void streams_work(struct tendril_work *work) {
 }
 
 int tendril_endpoint_alloc_streams(
-    struct tendril_endpoint **eps, size_t count, size_t *streams,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_endpoint **eps,
+    size_t count,
+    size_t *streams,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     if (count == 0 || *streams == 0) {
         return TENDRIL_ERR_INVALID;
@@ -2490,8 +2541,12 @@ static void string_work(struct tendril_work *work) {
 }
 
 int tendril_device_read_string(
-    struct tendril_device *dev, uint8_t index, char *buf, size_t size,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_device *dev,
+    uint8_t index,
+    char *buf,
+    size_t size,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     if (index == 0) {
         return TENDRIL_ERR_INVALID;
@@ -2697,7 +2752,10 @@ static void config_op_step(struct dev_op *op) {
 }
 
 int tendril_device_set_configuration(
-    struct tendril_device *dev, uint8_t value, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_device *dev,
+    uint8_t value,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     if (dev->gone) {
         return TENDRIL_ERR_NO_DEVICE;
@@ -2806,7 +2864,11 @@ static void pm_finish(struct dev_op *op, int status) {
 }
 
 static void pm_request(
-    struct dev_op *op, uint8_t request_type, uint8_t request, uint16_t value, uint16_t index
+    struct dev_op *op,
+    uint8_t request_type,
+    uint8_t request,
+    uint16_t value,
+    uint16_t index
 ) {
     op->requested = true;
     int st = tendril_control_async(
@@ -3060,7 +3122,10 @@ static void pm_step(struct dev_op *op) {
 }
 
 int tendril_device_suspend(
-    struct tendril_device *dev, bool remote_wake, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_device *dev,
+    bool remote_wake,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     struct tendril_hc *hc = dev->hc;
 
@@ -3106,7 +3171,9 @@ int tendril_device_suspend(
 }
 
 int tendril_device_resume(
-    struct tendril_device *dev, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_device *dev,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     if (dev->gone) {
         return TENDRIL_ERR_NO_DEVICE;

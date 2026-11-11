@@ -140,14 +140,25 @@ void tendril_hid_free(struct tendril_hid_report_desc *rd);
 size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, int type, uint8_t id);
 uint32_t tendril_hid_extract(const uint8_t *data, size_t size, size_t bit_offset, size_t bit_size);
 void tendril_hid_insert(
-    uint8_t *data, size_t size, size_t bit_offset, size_t bit_size, uint32_t value
+    uint8_t *data,
+    size_t size,
+    size_t bit_offset,
+    size_t bit_size,
+    uint32_t value
 );
 // Element `index` of a field, sign-extended when the logical range is signed.
 int32_t tendril_hid_field_get(
-    const struct tendril_hid_field *f, const uint8_t *data, size_t size, size_t index
+    const struct tendril_hid_field *f,
+    const uint8_t *data,
+    size_t size,
+    size_t index
 );
 void tendril_hid_field_set(
-    const struct tendril_hid_field *f, uint8_t *data, size_t size, size_t index, int32_t value
+    const struct tendril_hid_field *f,
+    uint8_t *data,
+    size_t size,
+    size_t index,
+    int32_t value
 );
 // The usage of element `index` of a variable field.
 uint32_t tendril_hid_field_usage(const struct tendril_hid_field *f, size_t index);
@@ -155,7 +166,10 @@ uint32_t tendril_hid_field_usage(const struct tendril_hid_field *f, size_t index
 uint32_t tendril_hid_array_usage(const struct tendril_hid_field *f, int32_t value);
 // Finds the variable field element with `usage` in reports of `type`.
 const struct tendril_hid_field *tendril_hid_find(
-    const struct tendril_hid_report_desc *rd, int type, uint32_t usage, size_t *index
+    const struct tendril_hid_report_desc *rd,
+    int type,
+    uint32_t usage,
+    size_t *index
 );
 
 // Class driver
@@ -216,13 +230,23 @@ void *tendril_hid_user(struct tendril_hid *hid);
 int tendril_hid_set_leds(struct tendril_hid *hid, uint8_t leds);
 
 int tendril_hid_get_report(
-    struct tendril_hid *hid, int type, uint8_t id, void *buf, size_t size,
-    void (*done)(void *ctx, int status, size_t actual), void *ctx
+    struct tendril_hid *hid,
+    int type,
+    uint8_t id,
+    void *buf,
+    size_t size,
+    void (*done)(void *ctx, int status, size_t actual),
+    void *ctx
 );
 // Output reports go to the interrupt OUT endpoint if there is one.
 int tendril_hid_set_report(
-    struct tendril_hid *hid, int type, uint8_t id, const void *buf, size_t size,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_hid *hid,
+    int type,
+    uint8_t id,
+    const void *buf,
+    size_t size,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 #ifdef __cplusplus

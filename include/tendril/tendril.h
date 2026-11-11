@@ -377,7 +377,8 @@ bool tendril_device_gone(struct tendril_device *dev);
 const struct tendril_device_descriptor *tendril_device_descriptor(struct tendril_device *dev);
 // Configuration `index`, with all of its subordinate descriptors.
 const struct tendril_config_descriptor *tendril_device_config_descriptor(
-    struct tendril_device *dev, size_t index
+    struct tendril_device *dev,
+    size_t index
 );
 // The active configuration, or NULL if unconfigured.
 const struct tendril_config_descriptor *tendril_device_active_config(struct tendril_device *dev);
@@ -392,7 +393,8 @@ struct tendril_endpoint *tendril_device_ep0(struct tendril_device *dev);
 size_t tendril_device_num_interfaces(struct tendril_device *dev);
 struct tendril_interface *tendril_device_interface(struct tendril_device *dev, size_t index);
 struct tendril_interface *tendril_device_find_interface(
-    struct tendril_device *dev, uint8_t number
+    struct tendril_device *dev,
+    uint8_t number
 );
 
 // Keeps the device structure valid past its removal.
@@ -403,13 +405,20 @@ void tendril_device_unref(struct tendril_device *dev);
 // drivers. `done` is called once finished. A value no configuration has fails
 // with TENDRIL_ERR_INVALID, leaving the device as it was.
 int tendril_device_set_configuration(
-    struct tendril_device *dev, uint8_t value, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_device *dev,
+    uint8_t value,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 // Reads string descriptor `index` as UTF-8, in the device's first language.
 int tendril_device_read_string(
-    struct tendril_device *dev, uint8_t index, char *buf, size_t size,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_device *dev,
+    uint8_t index,
+    char *buf,
+    size_t size,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 // Selectively suspends a device, arming its remote wakeup if `remote_wake` and
@@ -418,12 +427,17 @@ int tendril_device_read_string(
 // `done` is called once finished. Transfers to a suspended device fail with
 // TENDRIL_ERR_SUSPENDED.
 int tendril_device_suspend(
-    struct tendril_device *dev, bool remote_wake, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_device *dev,
+    bool remote_wake,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 // Resumes a suspended device, resuming its suspended hubs first.
 int tendril_device_resume(
-    struct tendril_device *dev, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_device *dev,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 bool tendril_device_suspended(struct tendril_device *dev);
@@ -446,13 +460,16 @@ const struct tendril_interface_assoc_descriptor *tendril_interface_association(
 );
 size_t tendril_interface_num_alts(struct tendril_interface *intf);
 const struct tendril_interface_descriptor *tendril_interface_alt_descriptor(
-    struct tendril_interface *intf, size_t index
+    struct tendril_interface *intf,
+    size_t index
 );
 size_t tendril_interface_num_endpoints(struct tendril_interface *intf);
 struct tendril_endpoint *tendril_interface_endpoint(struct tendril_interface *intf, size_t index);
 // The first endpoint of the current alternate setting of a type and direction.
 struct tendril_endpoint *tendril_interface_find_endpoint(
-    struct tendril_interface *intf, int type, int dir
+    struct tendril_interface *intf,
+    int type,
+    int dir
 );
 void tendril_interface_set_data(struct tendril_interface *intf, void *data);
 void *tendril_interface_data(struct tendril_interface *intf);
@@ -460,7 +477,10 @@ void *tendril_interface_data(struct tendril_interface *intf);
 // Selects an alternate setting. Transfers on the interface's endpoints must
 // have completed first.
 int tendril_interface_set_alt(
-    struct tendril_interface *intf, uint8_t alt, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_interface *intf,
+    uint8_t alt,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 // Endpoints
@@ -478,14 +498,19 @@ size_t tendril_endpoint_max_streams(struct tendril_endpoint *ep);
 
 // Clears a halt on the device and resets the endpoint's data toggle.
 int tendril_endpoint_clear_halt(
-    struct tendril_endpoint *ep, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_endpoint *ep,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 // Gives bulk endpoints `streams` streams (IDs 1 to `streams`), shrunk to what
 // the endpoints and controller support, in which case `*streams` is updated.
 int tendril_endpoint_alloc_streams(
-    struct tendril_endpoint **eps, size_t count, size_t *streams,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_endpoint **eps,
+    size_t count,
+    size_t *streams,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 // Transfers
@@ -560,8 +585,15 @@ bool tendril_transfer_done(struct tendril_transfer *xfer);
 
 // Synchronous control transfer on endpoint 0, by tendril_transfer_run().
 int tendril_control(
-    struct tendril_device *dev, uint8_t request_type, uint8_t request, uint16_t value,
-    uint16_t index, void *data, size_t length, size_t *actual, uint32_t timeout_ms
+    struct tendril_device *dev,
+    uint8_t request_type,
+    uint8_t request,
+    uint16_t value,
+    uint16_t index,
+    void *data,
+    size_t length,
+    size_t *actual,
+    uint32_t timeout_ms
 );
 
 // Drivers

@@ -1355,7 +1355,11 @@ static void op_done(void *ctx, int st) {
 }
 
 static void submit(
-    struct tendril_msc *msc, int step, struct tendril_endpoint *ep, void *buf, size_t len,
+    struct tendril_msc *msc,
+    int step,
+    struct tendril_endpoint *ep,
+    void *buf,
+    size_t len,
     uint32_t timeout_ms
 ) {
     struct tendril_transfer *xfer = &msc->xfer;
@@ -1381,7 +1385,12 @@ static void clear_halt(struct tendril_msc *msc, int step, struct tendril_endpoin
 }
 
 static void class_request(
-    struct tendril_msc *msc, int step, uint8_t request, void *data, size_t len, uint32_t timeout_ms
+    struct tendril_msc *msc,
+    int step,
+    uint8_t request,
+    void *data,
+    size_t len,
+    uint32_t timeout_ms
 ) {
     struct tendril_transfer *xfer = &msc->ctrl;
     msc->xstep = step;
@@ -1744,8 +1753,13 @@ static void uas_xfer_done(struct tendril_transfer *xfer);
 static void uas_tm_kick(struct tendril_msc *msc);
 
 static int uas_post(
-    struct tendril_msc *msc, struct msc_cmd *cmd, struct tendril_transfer *xfer,
-    struct tendril_endpoint *ep, void *buf, size_t len, bool stream
+    struct tendril_msc *msc,
+    struct msc_cmd *cmd,
+    struct tendril_transfer *xfer,
+    struct tendril_endpoint *ep,
+    void *buf,
+    size_t len,
+    bool stream
 ) {
     tendril_transfer_init(xfer, ep);
     xfer->buffer = buf;
@@ -2193,8 +2207,14 @@ static void lun_cmd_done(struct msc_cmd *cmd);
 static void lun_next(struct tendril_msc_lun *lun);
 
 static void lun_issue(
-    struct tendril_msc_lun *lun, int step, const uint8_t *cdb, size_t cdb_len, void *data,
-    size_t len, bool in, uint32_t timeout_ms
+    struct tendril_msc_lun *lun,
+    int step,
+    const uint8_t *cdb,
+    size_t cdb_len,
+    void *data,
+    size_t len,
+    bool in,
+    uint32_t timeout_ms
 ) {
     struct tendril_msc *msc = lun->msc;
     struct msc_cmd *cmd = &lun->cmd;
@@ -3032,7 +3052,11 @@ static const uint8_t pre_inquiry_cdb[6] = { SCSI_INQUIRY, 0, 0, 0, 36, 0 };
 static void pre_done(struct msc_cmd *cmd);
 
 static void pre_issue(
-    struct tendril_msc *msc, int step, const uint8_t *cdb, void *data, size_t len
+    struct tendril_msc *msc,
+    int step,
+    const uint8_t *cdb,
+    void *data,
+    size_t len
 ) {
     struct msc_cmd *cmd = &msc->pre_cmd;
 
@@ -3638,7 +3662,11 @@ static void sync_request_done(struct tendril_msc_request *req) {
 }
 
 static int sync_request(
-    struct tendril_msc_lun *lun, int op, uint64_t lba, size_t count, void *buf
+    struct tendril_msc_lun *lun,
+    int op,
+    uint64_t lba,
+    size_t count,
+    void *buf
 ) {
     struct tendril_hc *hc = lun->msc->hc;
     struct tendril_msc_request req;
@@ -3701,8 +3729,14 @@ static void passthrough_done(struct msc_cmd *cmd) {
 }
 
 int tendril_msc_command(
-    struct tendril_msc_lun *lun, const uint8_t *cdb, size_t cdb_len, void *data, size_t len,
-    bool in, uint8_t *sense, void (*done)(void *ctx, int status, int scsi_status, size_t actual),
+    struct tendril_msc_lun *lun,
+    const uint8_t *cdb,
+    size_t cdb_len,
+    void *data,
+    size_t len,
+    bool in,
+    uint8_t *sense,
+    void (*done)(void *ctx, int status, int scsi_status, size_t actual),
     void *ctx
 ) {
     struct tendril_msc *msc = lun->msc;
@@ -3740,7 +3774,9 @@ int tendril_msc_command(
 }
 
 int tendril_msc_check_medium(
-    struct tendril_msc_lun *lun, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_msc_lun *lun,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     if (lun->msc->stopped) {
         return TENDRIL_ERR_NO_DEVICE;

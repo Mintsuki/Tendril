@@ -90,7 +90,11 @@ void *tendril_dma_alloc(struct tendril_hc *hc, size_t size, size_t align, uint64
 }
 
 void *tendril_dma_alloc_limit(
-    struct tendril_hc *hc, size_t size, size_t align, bool dma32, uint64_t *dma
+    struct tendril_hc *hc,
+    size_t size,
+    size_t align,
+    bool dma32,
+    uint64_t *dma
 ) {
     void *p = tendril_glue_dma_alloc(hc->ctx, size, align, dma32, dma);
     if (p == NULL) {
@@ -112,7 +116,10 @@ void tendril_dma_free(struct tendril_hc *hc, void *ptr, size_t size) {
 }
 
 void tendril_dma_pool_init(
-    struct tendril_dma_pool *pool, struct tendril_hc *hc, size_t size, size_t align
+    struct tendril_dma_pool *pool,
+    struct tendril_hc *hc,
+    size_t size,
+    size_t align
 ) {
     pool->hc = hc;
     pool->align = align;

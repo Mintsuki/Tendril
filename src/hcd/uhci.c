@@ -643,7 +643,9 @@ static void queue_restart(struct uhci_qh *qh, struct uhci_td *td) {
 // Checks the oldest transfer of a queue. A short IN packet or an error leaves
 // the queue stopped on that TD, which is restarted past the transfer here.
 static bool scan_queue_xfer(
-    struct tendril_hc *hc, struct uhci_qh *qh, struct tendril_transfer *xfer
+    struct tendril_hc *hc,
+    struct uhci_qh *qh,
+    struct tendril_transfer *xfer
 ) {
     bool control = xfer->endpoint->type == TENDRIL_ENDPOINT_XFER_CONTROL;
     struct uhci_td *first = xfer_first(xfer);
@@ -1200,7 +1202,9 @@ static int open_endpoint(struct tendril_hc *hc, struct tendril_endpoint *ep) {
 }
 
 static void close_endpoint(
-    struct tendril_hc *hc, struct tendril_endpoint *ep, struct uhci_close *close
+    struct tendril_hc *hc,
+    struct tendril_endpoint *ep,
+    struct uhci_close *close
 ) {
     void *hcd = ep->hcd;
     ep->open = false;
@@ -1237,8 +1241,13 @@ static void close_endpoint(
 }
 
 static int uhci_configure(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_endpoint **drop,
-    size_t num_drop, struct tendril_endpoint **add, size_t num_add, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_endpoint **drop,
+    size_t num_drop,
+    struct tendril_endpoint **add,
+    size_t num_add,
+    struct tendril_async *async
 ) {
     (void)dev;
     struct uhci_close *close = tendril_zalloc(sizeof(struct uhci_close));
@@ -1267,7 +1276,9 @@ static int uhci_configure(
 }
 
 static int uhci_device_init(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     int st = open_endpoint(hc, &dev->ep0);
     if (st == TENDRIL_OK) {
@@ -1277,7 +1288,9 @@ static int uhci_device_init(
 }
 
 static int uhci_ep0_update(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     // The address and packet size go into each TD as it is built; nothing is
     // stored.
@@ -1287,7 +1300,9 @@ static int uhci_ep0_update(
 }
 
 static int uhci_endpoint_reset(
-    struct tendril_hc *hc, struct tendril_endpoint *ep, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_endpoint *ep,
+    struct tendril_async *async
 ) {
     struct uhci_qh *qh = ep->hcd;
     if (qh != NULL && ep->type != TENDRIL_ENDPOINT_XFER_ISOC
@@ -1299,7 +1314,9 @@ static int uhci_endpoint_reset(
 }
 
 static void uhci_device_free(
-    struct tendril_hc *hc, struct tendril_device *dev, struct tendril_async *async
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    struct tendril_async *async
 ) {
     struct uhci_close *close = tendril_zalloc(sizeof(struct uhci_close));
     if (close != NULL) {

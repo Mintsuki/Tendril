@@ -253,7 +253,8 @@ uint32_t tendril_hc_quirk_lookup(struct tendril_hc *hc) {
 }
 
 uint32_t tendril_id_quirks(
-    const struct tendril_id_quirk *table, size_t count,
+    const struct tendril_id_quirk *table,
+    size_t count,
     const struct tendril_device_descriptor *desc
 ) {
     uint16_t vendor = tendril_le16(desc->vendor_id);

@@ -1698,8 +1698,13 @@ static struct serial_op *op_new(void (*done)(void *, int), void *ctx) {
 }
 
 void tendril_serial_op_add(
-    struct serial_op *op, uint8_t type, uint8_t request, uint16_t value, uint16_t index,
-    const void *data, size_t length
+    struct serial_op *op,
+    uint8_t type,
+    uint8_t request,
+    uint16_t value,
+    uint16_t index,
+    const void *data,
+    size_t length
 ) {
     if (op->count >= MAX_REQS || length > sizeof(op->reqs[0].data)) {
         op->status = TENDRIL_ERR_INVALID;
@@ -1841,7 +1846,11 @@ static void acm_break(struct tendril_serial *port, struct serial_op *op) {
 
 // BEGIN FreeBSD sys/dev/usb/serial/uchcom.c
 static void ch_write_reg(
-    struct tendril_serial *port, struct serial_op *op, uint8_t reg1, uint8_t val1, uint8_t reg2,
+    struct tendril_serial *port,
+    struct serial_op *op,
+    uint8_t reg1,
+    uint8_t val1,
+    uint8_t reg2,
     uint8_t val2
 ) {
     tendril_serial_op_add(
@@ -1912,7 +1921,10 @@ static void ch_lines(struct tendril_serial *port, struct serial_op *op) {
 }
 
 static void ch_break_after(
-    struct tendril_serial *port, struct serial_op *op, size_t index, int st
+    struct tendril_serial *port,
+    struct serial_op *op,
+    size_t index,
+    int st
 ) {
     if (index != 0 || st != TENDRIL_OK) {
         return;
@@ -1983,7 +1995,10 @@ static void cp_break(struct tendril_serial *port, struct serial_op *op) {
 }
 
 static void cp_status_after(
-    struct tendril_serial *port, struct serial_op *op, size_t index, int st
+    struct tendril_serial *port,
+    struct serial_op *op,
+    size_t index,
+    int st
 ) {
     (void)index;
     port->poll_queued = false;
@@ -2350,7 +2365,10 @@ static void port_ready(void *ctx, int st) {
 
 // BEGIN FreeBSD sys/dev/usb/serial/uchcom.c
 static void ch_version_after(
-    struct tendril_serial *port, struct serial_op *op, size_t index, int st
+    struct tendril_serial *port,
+    struct serial_op *op,
+    size_t index,
+    int st
 ) {
     if (index != 0) {
         return;
@@ -2469,7 +2487,8 @@ static const uint8_t *cdc_descriptor(struct tendril_interface *intf, int subtype
 // Union one (CDC PSTN 1.2, 5.3.1; CDC 1.2, 5.2.3.2), else a neighbour, the one
 // after winning unless only the one before is a CDC data interface.
 static struct tendril_interface *acm_data_interface(
-    struct tendril_interface *intf, uint32_t quirks
+    struct tendril_interface *intf,
+    uint32_t quirks
 ) {
     struct tendril_device *dev = intf->dev;
     const uint8_t *cm = (quirks & SQ_IGNORE_CDC_CM) != 0
@@ -2784,8 +2803,10 @@ static bool config_valid(const struct tendril_serial_config *c) {
 }
 
 int tendril_serial_configure(
-    struct tendril_serial *port, const struct tendril_serial_config *config,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_serial *port,
+    const struct tendril_serial_config *config,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     if (port->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
@@ -2812,7 +2833,11 @@ int tendril_serial_configure(
 }
 
 int tendril_serial_set_lines(
-    struct tendril_serial *port, bool dtr, bool rts, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_serial *port,
+    bool dtr,
+    bool rts,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     if (port->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
@@ -2828,7 +2853,10 @@ int tendril_serial_set_lines(
 }
 
 int tendril_serial_set_break(
-    struct tendril_serial *port, bool on, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_serial *port,
+    bool on,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     if (port->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
@@ -2843,7 +2871,10 @@ int tendril_serial_set_break(
 }
 
 int tendril_serial_write(
-    struct tendril_serial *port, const void *data, size_t len, void (*done)(void *ctx, int status),
+    struct tendril_serial *port,
+    const void *data,
+    size_t len,
+    void (*done)(void *ctx, int status),
     void *ctx
 ) {
     if (port->stopped) {
@@ -2879,7 +2910,8 @@ static void sync_done(void *ctx, int st) {
 }
 
 int tendril_serial_configure_sync(
-    struct tendril_serial *port, const struct tendril_serial_config *config
+    struct tendril_serial *port,
+    const struct tendril_serial_config *config
 ) {
     struct tendril_hc *hc = port->hc;
     struct sync_wait w = { false, TENDRIL_OK };

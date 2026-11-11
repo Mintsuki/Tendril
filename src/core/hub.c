@@ -193,7 +193,11 @@ static void port_xfer_done(struct tendril_transfer *xfer) {
 }
 
 static void port_request(
-    struct tendril_port *port, uint8_t request_type, uint8_t request, int feature, size_t length
+    struct tendril_port *port,
+    uint8_t request_type,
+    uint8_t request,
+    int feature,
+    size_t length
 ) {
     struct tendril_hub *hub = port->hub;
     struct tendril_transfer *xfer = &port->xfer;
@@ -439,8 +443,13 @@ static void hub_ctrl_done(struct tendril_transfer *xfer) {
 }
 
 static void hub_ctrl(
-    struct tendril_hub *hub, uint8_t request_type, uint8_t request, uint16_t value, uint16_t index,
-    size_t length, const char *what
+    struct tendril_hub *hub,
+    uint8_t request_type,
+    uint8_t request,
+    uint16_t value,
+    uint16_t index,
+    size_t length,
+    const char *what
 ) {
     struct tendril_transfer *xfer = &hub->ctrl;
     tendril_transfer_init(xfer, &hub->dev->ep0);

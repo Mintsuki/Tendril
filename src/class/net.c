@@ -522,7 +522,10 @@ static void rndis_poll(struct tendril_net *net);
 // The first class-specific interface descriptor of `subtype` at least
 // `min_len` bytes long.
 static const uint8_t *find_cs_desc(
-    const uint8_t *p, const uint8_t *end, int subtype, size_t min_len
+    const uint8_t *p,
+    const uint8_t *end,
+    int subtype,
+    size_t min_len
 ) {
     for (; p != NULL && end - p >= 3; p = tendril_desc_next(p, end)) {
         if (p[1] == TENDRIL_DT_CS_INTERFACE && p[2] == subtype && p[0] >= min_len
@@ -568,7 +571,9 @@ static bool find_data_alt(struct tendril_interface *intf, size_t *alt) {
 }
 
 static bool match_class(
-    struct tendril_device *dev, const struct tendril_interface_descriptor *id, int *kind,
+    struct tendril_device *dev,
+    const struct tendril_interface_descriptor *id,
+    int *kind,
     bool *vendor_ncm
 ) {
     if (id->interface_class == TENDRIL_CLASS_CDC) {
@@ -653,7 +658,8 @@ static const uint8_t rndis_classes[][3] = {
 // The table follows OpenBSD's sys/dev/usb/if_urndis.c and FreeBSD's
 // sys/dev/usb/net/if_urndis.c (ISC license).
 static bool match_rndis(
-    struct tendril_device *dev, const struct tendril_interface_descriptor *id
+    struct tendril_device *dev,
+    const struct tendril_interface_descriptor *id
 ) {
     // FUJITSUCOMP VIRTETH advertises RNDIS and CDC Ethernet, but its RNDIS
     // does not work: OpenBSD's sys/dev/usb/if_urndis.c (ISC license) excludes
@@ -740,8 +746,13 @@ static void read_functional(struct tendril_net *net) {
 }
 
 static int ctrl_submit(
-    struct tendril_net *net, uint8_t type, uint8_t request, uint16_t value, void *data,
-    size_t length, void (*callback)(struct tendril_transfer *xfer)
+    struct tendril_net *net,
+    uint8_t type,
+    uint8_t request,
+    uint16_t value,
+    void *data,
+    size_t length,
+    void (*callback)(struct tendril_transfer *xfer)
 ) {
     struct tendril_transfer *xfer = &net->ctrl;
 
@@ -1061,7 +1072,11 @@ static void setup_async_done(void *ctx, int status) {
 }
 
 static void setup_request(
-    struct tendril_net *net, uint8_t type, uint8_t request, uint16_t value, size_t length
+    struct tendril_net *net,
+    uint8_t type,
+    uint8_t request,
+    uint16_t value,
+    size_t length
 ) {
     void *buf = NULL;
     int status;
@@ -1320,7 +1335,11 @@ static void clear_halt(struct tendril_endpoint *ep, bool *clearing) {
 // Counts a failed receive or interrupt transfer; false once the endpoint is
 // given up on.
 static bool in_failed(
-    struct tendril_endpoint *ep, size_t *errors, bool *gave_up, bool *clearing, int status
+    struct tendril_endpoint *ep,
+    size_t *errors,
+    bool *gave_up,
+    bool *clearing,
+    int status
 ) {
     if (*gave_up) {
         return false;
@@ -2018,7 +2037,10 @@ static void tx_done(struct tendril_transfer *xfer) {
 }
 
 int tendril_net_send(
-    struct tendril_net *net, const void *frame, size_t len, void (*done)(void *ctx, int status),
+    struct tendril_net *net,
+    const void *frame,
+    size_t len,
+    void (*done)(void *ctx, int status),
     void *ctx
 ) {
     struct net_frame *entry;
@@ -2045,7 +2067,11 @@ int tendril_net_send(
 static void op_done(struct tendril_transfer *xfer);
 
 static void op_finish(
-    struct tendril_net *net, struct net_op *op, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    struct net_op *op,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     void (*answer)(struct tendril_net *, int, const uint8_t *, size_t) = op->answer;
     void (*done)(void *, int) = op->done;
@@ -2139,8 +2165,13 @@ static void op_done(struct tendril_transfer *xfer) {
 }
 
 static int op_queue(
-    struct tendril_net *net, uint8_t request, uint16_t value, const uint8_t *data, size_t length,
-    void (*done)(void *, int), void *ctx
+    struct tendril_net *net,
+    uint8_t request,
+    uint16_t value,
+    const uint8_t *data,
+    size_t length,
+    void (*done)(void *, int),
+    void *ctx
 ) {
     struct net_op *op = tendril_zalloc(sizeof(struct net_op));
 
@@ -2189,7 +2220,9 @@ static struct net_op *rndis_alloc(uint32_t type, size_t len) {
 
 // A request with the next RequestID, never 0 ([MS-RNDIS] v20130118, 2.2.2).
 static struct net_op *rndis_request(
-    struct tendril_net *net, uint32_t type, size_t len,
+    struct tendril_net *net,
+    uint32_t type,
+    size_t len,
     void (*answer)(struct tendril_net *, int, const uint8_t *, size_t)
 ) {
     struct net_op *op = rndis_alloc(type, len);
@@ -2485,7 +2518,10 @@ static void rndis_read_done(struct tendril_transfer *xfer) {
 // InformationBufferOffset from the RequestID field ([MS-RNDIS] v20130118,
 // 2.2.10), within MessageLength.
 static bool rndis_query_data(
-    const uint8_t *msg, size_t len, const uint8_t **data, size_t *data_len
+    const uint8_t *msg,
+    size_t len,
+    const uint8_t **data,
+    size_t *data_len
 ) {
     uint32_t info_len;
     uint32_t info_off;
@@ -2518,7 +2554,10 @@ static bool rndis_answer_u32(int status, const uint8_t *msg, size_t len, uint32_
 // REMOTE_NDIS_SET_MSG with its data right after the header ([MS-RNDIS]
 // v20130118, 2.2.5).
 static struct net_op *rndis_set_request(
-    struct tendril_net *net, uint32_t oid, const uint8_t *data, size_t len,
+    struct tendril_net *net,
+    uint32_t oid,
+    const uint8_t *data,
+    size_t len,
     void (*answer)(struct tendril_net *, int, const uint8_t *, size_t)
 ) {
     struct net_op *op = rndis_request(net, RNDIS_SET_MSG, RNDIS_SET_LEN + len, answer);
@@ -2546,7 +2585,8 @@ static bool rndis_setup_over(struct tendril_net *net, int status) {
 
 // REMOTE_NDIS_QUERY_MSG without input data ([MS-RNDIS] v20130118, 2.2.4).
 static void rndis_query_step(
-    struct tendril_net *net, uint32_t oid,
+    struct tendril_net *net,
+    uint32_t oid,
     void (*answer)(struct tendril_net *, int, const uint8_t *, size_t)
 ) {
     struct net_op *op = rndis_request(net, RNDIS_QUERY_MSG, RNDIS_QUERY_LEN, answer);
@@ -2560,7 +2600,10 @@ static void rndis_query_step(
 }
 
 static void rndis_filter_answer(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     (void)msg;
     (void)len;
@@ -2597,7 +2640,10 @@ static void rndis_filter_step(struct tendril_net *net) {
 // OID_GEN_LINK_SPEED, in units of 100 bit/s, for both directions; 0 if
 // unknown.
 static void rndis_speed_answer(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     uint32_t speed;
 
@@ -2614,7 +2660,10 @@ static void rndis_speed_answer(
 
 // OID_GEN_MEDIA_CONNECT_STATUS: 0 connected, 1 disconnected.
 static void rndis_media_answer(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     uint32_t state;
 
@@ -2634,7 +2683,10 @@ static void rndis_media_answer(
 // OID_802_3_MAXIMUM_LIST_SIZE: how many multicast addresses the device takes,
 // 0 if unknown.
 static void rndis_list_answer(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     uint32_t size;
 
@@ -2651,7 +2703,10 @@ static void rndis_list_answer(
 // OID_GEN_MAXIMUM_FRAME_SIZE: the largest payload, without the Ethernet
 // header.
 static void rndis_frame_answer(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     size_t cap = MIN((size_t)net->rndis_max_transfer, (size_t)RNDIS_MAX_TRANSFER)
                - RNDIS_PACKET_HEADER_LEN;
@@ -2686,7 +2741,10 @@ static bool rndis_take_mac(struct tendril_net *net, int status, const uint8_t *m
 }
 
 static void rndis_cur_addr_answer(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     if (rndis_setup_over(net, status)) {
         return;
@@ -2702,7 +2760,10 @@ static void rndis_cur_addr_answer(
 }
 
 static void rndis_perm_addr_answer(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     if (rndis_setup_over(net, status)) {
         return;
@@ -2716,7 +2777,10 @@ static void rndis_perm_addr_answer(
 
 // REMOTE_NDIS_INITIALIZE_CMPLT ([MS-RNDIS] v20130118, 2.2.9)
 static void rndis_init_answer(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     (void)len;
     if (rndis_setup_over(net, status)) {
@@ -2780,7 +2844,10 @@ static void rndis_alt_done(void *ctx, int status) {
 }
 
 static void rndis_readdress_answer(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     (void)msg;
     (void)len;
@@ -2823,7 +2890,10 @@ static void rndis_readdress(struct tendril_net *net) {
 
 // REMOTE_NDIS_RESET_CMPLT ([MS-RNDIS] v20130118, 2.2.12 and 3.1.5.5)
 static void rndis_reset_answer(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     (void)len;
     if (status == TENDRIL_ERR_NO_DEVICE || net->stopped) {
@@ -2858,7 +2928,10 @@ static void rndis_reset(struct tendril_net *net) {
 // A failed or unsuccessful keepalive resets the device ([MS-RNDIS] v20130118,
 // 3.1.5.4).
 static void rndis_keepalive_answer(
-    struct tendril_net *net, int status, const uint8_t *msg, size_t len
+    struct tendril_net *net,
+    int status,
+    const uint8_t *msg,
+    size_t len
 ) {
     (void)msg;
     (void)len;
@@ -2943,8 +3016,12 @@ static uint32_t rndis_filter_bits(uint16_t filter) {
 }
 
 static int rndis_set_oid(
-    struct tendril_net *net, uint32_t oid, const uint8_t *data, size_t len,
-    void (*done)(void *, int), void *ctx
+    struct tendril_net *net,
+    uint32_t oid,
+    const uint8_t *data,
+    size_t len,
+    void (*done)(void *, int),
+    void *ctx
 ) {
     struct net_op *op = rndis_set_request(net, oid, data, len, NULL);
 
@@ -2960,7 +3037,10 @@ static int rndis_set_oid(
 // SET_ETHERNET_PACKET_FILTER (CDC ECM 1.2, 6.2.4, Table 8), or
 // OID_GEN_CURRENT_PACKET_FILTER for RNDIS.
 int tendril_net_set_filter(
-    struct tendril_net *net, uint16_t filter, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_net *net,
+    uint16_t filter,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     if (net->stopped) {
         return TENDRIL_ERR_NO_DEVICE;
@@ -2981,8 +3061,11 @@ int tendril_net_set_filter(
 
 // SET_ETHERNET_MULTICAST_FILTERS (CDC ECM 1.2, 6.2.1)
 int tendril_net_set_multicast(
-    struct tendril_net *net, const uint8_t *addrs, size_t count,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_net *net,
+    const uint8_t *addrs,
+    size_t count,
+    void (*done)(void *ctx, int status),
+    void *ctx
 ) {
     if (net->stopped) {
         return TENDRIL_ERR_NO_DEVICE;

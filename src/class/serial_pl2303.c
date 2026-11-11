@@ -215,7 +215,10 @@ static void add_setup(struct tendril_serial *port, struct serial_op *op) {
 }
 
 static void probe_done(
-    struct tendril_serial *port, struct serial_op *op, size_t index, int status
+    struct tendril_serial *port,
+    struct serial_op *op,
+    size_t index,
+    int status
 ) {
     if (index != 0 || status == TENDRIL_ERR_NO_DEVICE) {
         return;

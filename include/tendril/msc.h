@@ -108,14 +108,22 @@ int tendril_msc_flush(struct tendril_msc_lun *lun);
 // Runs one command, padded as the device's command set wants. `sense`, if not
 // NULL, receives up to 32 bytes of sense data after a CHECK CONDITION.
 int tendril_msc_command(
-    struct tendril_msc_lun *lun, const uint8_t *cdb, size_t cdb_len, void *data, size_t len,
-    bool in, uint8_t *sense, void (*done)(void *ctx, int status, int scsi_status, size_t actual),
+    struct tendril_msc_lun *lun,
+    const uint8_t *cdb,
+    size_t cdb_len,
+    void *data,
+    size_t len,
+    bool in,
+    uint8_t *sense,
+    void (*done)(void *ctx, int status, int scsi_status, size_t actual),
     void *ctx
 );
 
 // Probes a removable medium again, reporting changes through medium_changed.
 int tendril_msc_check_medium(
-    struct tendril_msc_lun *lun, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_msc_lun *lun,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 #ifdef __cplusplus

@@ -39,8 +39,12 @@
 #include <tendril/tendril.h>
 
 int tendril_msc_shuttle_init(
-    struct tendril_device *dev, uint8_t interface_number, struct tendril_transfer *xfer,
-    uint8_t *buf, size_t size, struct tendril_async *async
+    struct tendril_device *dev,
+    uint8_t interface_number,
+    struct tendril_transfer *xfer,
+    uint8_t *buf,
+    size_t size,
+    struct tendril_async *async
 ) {
     if (size < 2) {
         return TENDRIL_ERR_INVALID;

@@ -74,7 +74,11 @@ uint32_t tendril_frame_update(struct tendril_hc *hc, uint32_t raw, uint32_t mask
 }
 
 bool tendril_hc_wait32(
-    struct tendril_hc *hc, uint32_t off, uint32_t mask, uint32_t value, uint64_t timeout_us
+    struct tendril_hc *hc,
+    uint32_t off,
+    uint32_t mask,
+    uint32_t value,
+    uint64_t timeout_us
 ) {
     uint64_t end = tendril_now() + timeout_us * NS_PER_US;
     for (;;) {
@@ -92,7 +96,11 @@ bool tendril_hc_wait32(
 }
 
 bool tendril_hc_wait16(
-    struct tendril_hc *hc, uint32_t off, uint16_t mask, uint16_t value, uint64_t timeout_us
+    struct tendril_hc *hc,
+    uint32_t off,
+    uint16_t mask,
+    uint16_t value,
+    uint64_t timeout_us
 ) {
     uint64_t end = tendril_now() + timeout_us * NS_PER_US;
     for (;;) {
@@ -432,7 +440,10 @@ static void pm_wait_done(void *ctx, int status) {
 }
 
 static int run_device_pm(
-    struct tendril_hc *hc, struct tendril_device *dev, bool suspend, bool wake
+    struct tendril_hc *hc,
+    struct tendril_device *dev,
+    bool suspend,
+    bool wake
 ) {
     struct pm_wait w = { false, TENDRIL_OK };
     tendril_device_ref(dev);

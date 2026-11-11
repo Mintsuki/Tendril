@@ -69,8 +69,14 @@ static void out_pad(struct out *o, char c, int count) {
 #define FLAG_ALT 0x10
 
 static void out_number(
-    struct out *o, uint64_t value, bool negative, unsigned int base, bool upper, int flags,
-    int width, int precision
+    struct out *o,
+    uint64_t value,
+    bool negative,
+    unsigned int base,
+    bool upper,
+    int flags,
+    int width,
+    int precision
 ) {
     const char *digits = upper ? "0123456789ABCDEF" : "0123456789abcdef";
     char tmp[24];

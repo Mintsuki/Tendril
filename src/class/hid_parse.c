@@ -528,7 +528,10 @@ size_t tendril_hid_report_size(const struct tendril_hid_report_desc *rd, int typ
 }
 
 uint32_t tendril_hid_extract(
-    const uint8_t *data, size_t size, size_t bit_offset, size_t bit_size
+    const uint8_t *data,
+    size_t size,
+    size_t bit_offset,
+    size_t bit_size
 ) {
     uint32_t v = 0;
     for (size_t b = 0; b < bit_size && b < 32; b++) {
@@ -544,7 +547,11 @@ uint32_t tendril_hid_extract(
 }
 
 void tendril_hid_insert(
-    uint8_t *data, size_t size, size_t bit_offset, size_t bit_size, uint32_t value
+    uint8_t *data,
+    size_t size,
+    size_t bit_offset,
+    size_t bit_size,
+    uint32_t value
 ) {
     for (size_t b = 0; b < bit_size && b < 32; b++) {
         size_t bit = bit_offset + b;
@@ -560,7 +567,10 @@ void tendril_hid_insert(
 }
 
 int32_t tendril_hid_field_get(
-    const struct tendril_hid_field *f, const uint8_t *data, size_t size, size_t index
+    const struct tendril_hid_field *f,
+    const uint8_t *data,
+    size_t size,
+    size_t index
 ) {
     uint32_t v = tendril_hid_extract(
         data, size, f->bit_offset + (uint32_t)index * f->bit_size, f->bit_size
@@ -573,7 +583,11 @@ int32_t tendril_hid_field_get(
 }
 
 void tendril_hid_field_set(
-    const struct tendril_hid_field *f, uint8_t *data, size_t size, size_t index, int32_t value
+    const struct tendril_hid_field *f,
+    uint8_t *data,
+    size_t size,
+    size_t index,
+    int32_t value
 ) {
     tendril_hid_insert(
         data, size, f->bit_offset + (uint32_t)index * f->bit_size, f->bit_size, (uint32_t)value
@@ -607,7 +621,10 @@ uint32_t tendril_hid_array_usage(const struct tendril_hid_field *f, int32_t valu
 }
 
 const struct tendril_hid_field *tendril_hid_find(
-    const struct tendril_hid_report_desc *rd, int type, uint32_t usage, size_t *index
+    const struct tendril_hid_report_desc *rd,
+    int type,
+    uint32_t usage,
+    size_t *index
 ) {
     for (size_t i = 0; i < rd->num_fields; i++) {
         const struct tendril_hid_field *f = &rd->fields[i];

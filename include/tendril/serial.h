@@ -102,26 +102,39 @@ struct tendril_serial_config {
 // `done`; those still queued fail with TENDRIL_ERR_NO_DEVICE if the port goes
 // away.
 int tendril_serial_configure(
-    struct tendril_serial *port, const struct tendril_serial_config *config,
-    void (*done)(void *ctx, int status), void *ctx
+    struct tendril_serial *port,
+    const struct tendril_serial_config *config,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 int tendril_serial_set_lines(
-    struct tendril_serial *port, bool dtr, bool rts, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_serial *port,
+    bool dtr,
+    bool rts,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 int tendril_serial_set_break(
-    struct tendril_serial *port, bool on, void (*done)(void *ctx, int status), void *ctx
+    struct tendril_serial *port,
+    bool on,
+    void (*done)(void *ctx, int status),
+    void *ctx
 );
 
 // Queues `len` bytes, which must stay valid until `done`; writes go out in
 // order.
 int tendril_serial_write(
-    struct tendril_serial *port, const void *data, size_t len, void (*done)(void *ctx, int status),
+    struct tendril_serial *port,
+    const void *data,
+    size_t len,
+    void (*done)(void *ctx, int status),
     void *ctx
 );
 
 // Synchronous helpers, running tendril_hc_poll() until done.
 int tendril_serial_configure_sync(
-    struct tendril_serial *port, const struct tendril_serial_config *config
+    struct tendril_serial *port,
+    const struct tendril_serial_config *config
 );
 int tendril_serial_write_sync(struct tendril_serial *port, const void *data, size_t len);
 
