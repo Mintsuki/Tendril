@@ -33,7 +33,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "../internal.h"
+#include "../core.h"
 #include <tendril/glue.h>
 
 void tendril_ehci_chipset_fixes(void *ctx) {

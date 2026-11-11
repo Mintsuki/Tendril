@@ -70,8 +70,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../internal.h"
-#include "serial_internal.h"
+#include "../core.h"
+#include "serial.h"
 #include <tendril/serial.h>
 #include <tendril/spec.h>
 #include <tendril/tendril.h>

@@ -32,7 +32,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../internal.h"
+#include "../core.h"
 #include <tendril/spec.h>
 
 // Returns the descriptor after `p`, or NULL at the end or on a malformed

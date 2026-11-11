@@ -62,7 +62,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../internal.h"
+#include "../core.h"
 #include <tendril/glue.h>
 #include <tendril/spec.h>
 #include <tendril/tendril.h>

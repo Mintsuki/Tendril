@@ -194,7 +194,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <tendril/hid.h>
-#include "../internal.h"
+#include "../core.h"
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
 

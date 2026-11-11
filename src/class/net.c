@@ -136,7 +136,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <tendril/net.h>
-#include "../internal.h"
+#include "../core.h"
 #include <tendril/spec.h>
 #include <tendril/tendril.h>
 

@@ -25,8 +25,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TENDRIL_CLASS_SERIAL_INTERNAL_H
-#define TENDRIL_CLASS_SERIAL_INTERNAL_H 1
+#ifndef TENDRIL_CLASS_SERIAL_H
+#define TENDRIL_CLASS_SERIAL_H 1
 
 #if !defined(__cplusplus) && (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L)
 #   error "Tendril needs C99 or later."
@@ -35,7 +35,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../internal.h"
+#include "../core.h"
 #include <tendril/serial.h>
 #include <tendril/spec.h>
 #include <tendril/tendril.h>

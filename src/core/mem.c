@@ -32,7 +32,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../internal.h"
+#include "../core.h"
 #include <tendril/glue.h>
 
 #define CHUNK_SIZE 4096
