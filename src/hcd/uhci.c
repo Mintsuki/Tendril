@@ -98,7 +98,7 @@
  */
 
 #ifdef __cplusplus
-#   error "this file is C, not C++"
+#   error "This file is C, not C++."
 #endif
 
 #include <stdbool.h>

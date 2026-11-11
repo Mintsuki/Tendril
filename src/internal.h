@@ -29,7 +29,7 @@
 #define TENDRIL_INTERNAL_H 1
 
 #if !defined(__cplusplus) && (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L)
-#   error "internal.h needs C99 or later"
+#   error "Tendril needs C99 or later."
 #endif
 
 #include <stdarg.h>
