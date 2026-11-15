@@ -53,6 +53,9 @@ are all up.
 ## License
 
 BSD-2-Clause; see `LICENSE`. Every source file opens with that license. A file
-with parts derived from other projects follows it with their notices, and
-brackets those parts with `BEGIN` and `END` comments naming their source; see
-`3RDPARTY.md`.
+with parts derived from other projects follows it with their notices, names
+their licenses beside its own in its SPDX identifier, and brackets those parts
+with `BEGIN` and `END` comments naming their source; see `3RDPARTY.md`. Those
+parts are under BSD-2-Clause too, but for some in `src/class/net.c` and
+`src/class/serial.c`, which are under ISC, so that those two files' SPDX
+identifiers read `BSD-2-Clause AND ISC`.
