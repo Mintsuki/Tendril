@@ -1314,6 +1314,13 @@ struct tendril_msc_lun {
     struct tendril_msc_request *current;
     void (*check_done)(void *ctx, int status);
     void *check_ctx;
+    // Reports that came during a call from the embedder and wait for
+    // done_work: the unit, a change of its medium, and the outcome of the
+    // medium check, which keeps check_done until then.
+    bool attach_waiting;
+    bool changed_waiting;
+    bool check_waiting;
+    int check_status;
 };
 
 #define SETUP_ALT 0
@@ -1423,9 +1430,19 @@ struct tendril_msc {
     struct msc_cmd pre_cmd;
     uint8_t pre_buf[36];
     struct tendril_timer pre_timer;
+    // Requests and commands that finished during a call from the embedder,
+    // whose `done` waits for tendril_hc_poll() to run done_work, and how many
+    // such calls are under way.
+    struct tendril_list done_reqs;
+    struct tendril_list done_cmds;
+    struct tendril_work done_work;
+    size_t in_call;
 };
 
 static const struct tendril_msc_callbacks *callbacks;
+
+static void done_deliver(struct tendril_msc *msc);
+static void done_work_fn(struct tendril_work *work);
 
 static void put_be16(uint8_t *p, uint16_t v) {
     p[0] = (uint8_t)(v >> 8);
@@ -2538,6 +2555,58 @@ static void lun_free(struct tendril_msc_lun *lun) {
     tendril_free(lun, sizeof(struct tendril_msc_lun));
 }
 
+// What finishes during a call from the embedder is reported from
+// tendril_hc_poll() instead, by done_work, as the conventions promise.
+
+static void done_later(struct tendril_msc *msc) {
+    hc_lock(msc->hc);
+    tendril_queue_work(msc->hc, &msc->done_work);
+    hc_unlock(msc->hc);
+}
+
+static void req_finish(struct tendril_msc *msc, struct tendril_msc_request *req) {
+    if (msc->in_call != 0) {
+        list_add_tail(&msc->done_reqs, &req->internal.node);
+        done_later(msc);
+        return;
+    }
+    req->done(req);
+}
+
+// Calls `attach` for a new unit, or `medium_changed`.
+static void lun_report(struct tendril_msc_lun *lun, bool changed) {
+    if (lun->msc->in_call != 0) {
+        if (changed) {
+            lun->changed_waiting = true;
+        } else {
+            lun->attach_waiting = true;
+        }
+        done_later(lun->msc);
+        return;
+    }
+    if (!changed && callbacks->attach != NULL) {
+        callbacks->attach(lun);
+    } else if (changed && callbacks->medium_changed != NULL) {
+        callbacks->medium_changed(lun);
+    }
+}
+
+// Ends the medium check, if one is under way and not ended already.
+static void check_finish(struct tendril_msc_lun *lun, int st) {
+    if (lun->check_done == NULL || lun->check_waiting) {
+        return;
+    }
+    if (lun->msc->in_call != 0) {
+        lun->check_waiting = true;
+        lun->check_status = st;
+        done_later(lun->msc);
+        return;
+    }
+    void (*done)(void *, int) = lun->check_done;
+    lun->check_done = NULL;
+    done(lun->check_ctx, st);
+}
+
 static void probe_done(struct tendril_msc_lun *lun, bool present) {
     struct tendril_msc *msc = lun->msc;
 
@@ -2565,17 +2634,11 @@ static void probe_done(struct tendril_msc_lun *lun, bool present) {
     }
     if (!lun->attached) {
         lun->attached = true;
-        if (callbacks->attach != NULL) {
-            callbacks->attach(lun);
-        }
-    } else if (changed && callbacks->medium_changed != NULL) {
-        callbacks->medium_changed(lun);
+        lun_report(lun, false);
+    } else if (changed) {
+        lun_report(lun, true);
     }
-    if (lun->check_done != NULL) {
-        void (*done)(void *, int) = lun->check_done;
-        lun->check_done = NULL;
-        done(lun->check_ctx, TENDRIL_OK);
-    }
+    check_finish(lun, TENDRIL_OK);
     if (!msc->stopped) {
         lun_next(lun);
     }
@@ -2772,7 +2835,7 @@ static void io_finish(struct tendril_msc_lun *lun, int st) {
     lun->current = NULL;
     lun->busy = false;
     req->status = st;
-    req->done(req);
+    req_finish(lun->msc, req);
     lun_next(lun);
 }
 
@@ -2792,7 +2855,7 @@ static void io_fail_all(struct tendril_msc_lun *lun, int st) {
         lun->current = NULL;
         lun->busy = false;
         cur->status = st;
-        cur->done(cur);
+        req_finish(lun->msc, cur);
     }
     while (!list_empty(&list)) {
         struct tendril_msc_request *req = CONTAINER_OF(
@@ -2800,7 +2863,7 @@ static void io_fail_all(struct tendril_msc_lun *lun, int st) {
         );
         list_del(&req->internal.node);
         req->status = st;
-        req->done(req);
+        req_finish(lun->msc, req);
     }
 }
 
@@ -2939,11 +3002,7 @@ static void lun_cmd_done(struct msc_cmd *cmd) {
         // disconnection may come later.
         lun->msc->stopped = true;
         io_fail_all(lun, st);
-        if (lun->check_done != NULL) {
-            void (*done)(void *, int) = lun->check_done;
-            lun->check_done = NULL;
-            done(lun->check_ctx, st);
-        }
+        check_finish(lun, st);
         return;
     }
     if (lun->step >= LUN_IO) {
@@ -3574,6 +3633,9 @@ static bool msc_probe(struct tendril_interface *intf) {
     msc->fallback_alt = -1;
     list_init(&msc->queue);
     list_init(&msc->pre_cmd.node);
+    list_init(&msc->done_reqs);
+    list_init(&msc->done_cmds);
+    tendril_work_init(&msc->done_work, done_work_fn);
     tendril_async_init(&msc->async, setup_async_work);
     tendril_timer_init(&msc->pre_timer, pre_timer_work);
     // BEGIN FreeBSD sys/dev/usb/usb_msctest.c, usb_device.c
@@ -3631,7 +3693,19 @@ static void msc_disconnect(struct tendril_interface *intf) {
     msc->stopped = true;
     hc_lock(msc->hc);
     tendril_timer_cancel(msc->hc, &msc->pre_timer);
+    tendril_work_cancel(msc->hc, &msc->done_work);
     hc_unlock(msc->hc);
+    // A unit the embedder has not heard of yet goes unannounced, and so does a
+    // change of a medium that goes too.
+    for (size_t i = 0; i < msc->num_luns; i++) {
+        struct tendril_msc_lun *lun = msc->luns[i];
+        if (lun != NULL) {
+            lun->attached = lun->attached && !lun->attach_waiting;
+            lun->attach_waiting = false;
+            lun->changed_waiting = false;
+        }
+    }
+    done_deliver(msc);
     while (!list_empty(&msc->queue)) {
         struct msc_cmd *cmd = CONTAINER_OF(msc->queue.next, struct msc_cmd, node);
         list_del(&cmd->node);
@@ -3647,10 +3721,7 @@ static void msc_disconnect(struct tendril_interface *intf) {
         tendril_timer_cancel(msc->hc, &lun->timer);
         hc_unlock(msc->hc);
         io_fail_all(lun, TENDRIL_ERR_NO_DEVICE);
-        if (lun->check_done != NULL) {
-            lun->check_done(lun->check_ctx, TENDRIL_ERR_NO_DEVICE);
-            lun->check_done = NULL;
-        }
+        check_finish(lun, TENDRIL_ERR_NO_DEVICE);
         if (lun->attached && callbacks->detach != NULL) {
             callbacks->detach(lun);
         }
@@ -3672,7 +3743,8 @@ static bool msc_idle(struct tendril_msc *msc) {
         struct tendril_msc_lun *lun = msc->luns[i];
         if (lun != NULL
          && (lun->busy || lun->probe_pending || lun->current != NULL || !list_empty(&lun->requests)
-          || lun->check_done != NULL || tendril_timer_armed(&lun->timer))) {
+          || (lun->check_done != NULL && !lun->check_waiting)
+          || tendril_timer_armed(&lun->timer))) {
             return false;
         }
     }
@@ -3821,7 +3893,9 @@ int tendril_msc_submit(struct tendril_msc_lun *lun, struct tendril_msc_request *
     req->internal.chunk = 0;
     req->internal.retries = 0;
     list_add_tail(&lun->requests, &req->internal.node);
+    msc->in_call++;
     lun_next(lun);
+    msc->in_call--;
     return TENDRIL_OK;
 }
 
@@ -3885,7 +3959,7 @@ struct passthrough {
     void *ctx;
 };
 
-static void passthrough_done(struct msc_cmd *cmd) {
+static void passthrough_report(struct msc_cmd *cmd) {
     struct passthrough *p = CONTAINER_OF(cmd, struct passthrough, cmd);
     void (*done)(void *, int, int, size_t) = p->done;
     void *ctx = p->ctx;
@@ -3893,14 +3967,73 @@ static void passthrough_done(struct msc_cmd *cmd) {
     int scsi_status = cmd->scsi_status;
     size_t actual = cmd->actual;
 
-    if (p->sense != NULL && st == TENDRIL_OK && scsi_status == STATUS_CHECK) {
-        memset(p->sense, 0, sizeof(cmd->sense));
-        memcpy(p->sense, cmd->sense, cmd->sense_len);
-    }
     tendril_free(p, sizeof(struct passthrough));
     if (done != NULL) {
         done(ctx, st, scsi_status, actual);
     }
+}
+
+static void passthrough_done(struct msc_cmd *cmd) {
+    struct passthrough *p = CONTAINER_OF(cmd, struct passthrough, cmd);
+    struct tendril_msc *msc = cmd->msc;
+
+    if (p->sense != NULL && cmd->status == TENDRIL_OK && cmd->scsi_status == STATUS_CHECK) {
+        memset(p->sense, 0, sizeof(cmd->sense));
+        memcpy(p->sense, cmd->sense, cmd->sense_len);
+    }
+    if (msc->in_call != 0) {
+        list_add_tail(&msc->done_cmds, &cmd->node);
+        done_later(msc);
+        return;
+    }
+    passthrough_report(cmd);
+}
+
+static void done_deliver(struct tendril_msc *msc) {
+    for (size_t i = 0; i < msc->num_luns; i++) {
+        struct tendril_msc_lun *lun = msc->luns[i];
+        if (lun != NULL && lun->attach_waiting) {
+            lun->attach_waiting = false;
+            if (callbacks->attach != NULL) {
+                callbacks->attach(lun);
+            }
+        }
+    }
+    while (!list_empty(&msc->done_reqs)) {
+        struct tendril_msc_request *req = CONTAINER_OF(
+            msc->done_reqs.next, struct tendril_msc_request, internal.node
+        );
+        list_del(&req->internal.node);
+        req->done(req);
+    }
+    while (!list_empty(&msc->done_cmds)) {
+        struct msc_cmd *cmd = CONTAINER_OF(msc->done_cmds.next, struct msc_cmd, node);
+        list_del(&cmd->node);
+        passthrough_report(cmd);
+    }
+    for (size_t i = 0; i < msc->num_luns; i++) {
+        struct tendril_msc_lun *lun = msc->luns[i];
+        if (lun == NULL) {
+            continue;
+        }
+        if (lun->changed_waiting) {
+            lun->changed_waiting = false;
+            if (callbacks->medium_changed != NULL) {
+                callbacks->medium_changed(lun);
+            }
+        }
+        if (lun->check_waiting) {
+            void (*done)(void *, int) = lun->check_done;
+            void *ctx = lun->check_ctx;
+            lun->check_waiting = false;
+            lun->check_done = NULL;
+            done(ctx, lun->check_status);
+        }
+    }
+}
+
+static void done_work_fn(struct tendril_work *work) {
+    done_deliver(CONTAINER_OF(work, struct tendril_msc, done_work));
 }
 
 int tendril_msc_command(
@@ -3944,7 +4077,9 @@ int tendril_msc_command(
     p->cmd.timeout_ms = LONG_TIMEOUT_MS;
     p->cmd.done = passthrough_done;
     list_init(&p->cmd.node);
+    msc->in_call++;
     cmd_queue(msc, &p->cmd);
+    msc->in_call--;
     return TENDRIL_OK;
 }
 
@@ -3965,6 +4100,8 @@ int tendril_msc_check_medium(
     lun->check_done = done;
     lun->check_ctx = ctx;
     lun->probe_pending = true;
+    lun->msc->in_call++;
     lun_next(lun);
+    lun->msc->in_call--;
     return TENDRIL_OK;
 }

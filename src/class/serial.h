@@ -89,6 +89,8 @@ struct serial_write {
     size_t len;
     void (*done)(void *ctx, int status);
     void *ctx;
+    // What `done` reports, once the write is finished.
+    int status;
 };
 
 struct tendril_serial {
@@ -140,6 +142,13 @@ struct tendril_serial {
     struct tendril_list writes;
     struct serial_write *writing;
     struct tendril_transfer tx;
+    // Operations and writes that finished during a call from the embedder,
+    // whose `done` waits for tendril_hc_poll() to run done_work, and how many
+    // such calls are under way.
+    struct tendril_list done_ops;
+    struct tendril_list done_writes;
+    struct tendril_work done_work;
+    size_t in_call;
 };
 
 // Appends a request; IN requests read up to 16 bytes into its data. Setting

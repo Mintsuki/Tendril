@@ -330,6 +330,8 @@ struct net_op {
     bool no_reply;
     // Reads the completion, valid only during the call, before `done` runs.
     void (*answer)(struct tendril_net *net, int status, const uint8_t *msg, size_t len);
+    // What `answer` and `done` report, once the operation is finished.
+    int status;
 };
 
 struct net_rx {
@@ -457,6 +459,14 @@ struct tendril_net {
     bool link_up;
     uint32_t rx_bps;
     uint32_t tx_bps;
+
+    // Operations and frames that finished during a call from the embedder,
+    // which wait for tendril_hc_poll() to run done_work, and how many such
+    // calls are under way.
+    struct tendril_list done_ops;
+    struct tendril_list done_frames;
+    struct tendril_work done_work;
+    size_t in_call;
 };
 
 static uint16_t get_le16(const uint8_t *p) {
@@ -506,6 +516,7 @@ static void rx_start(struct tendril_net *net);
 static void intr_start(struct tendril_net *net);
 static void tx_kick(struct tendril_net *net);
 static void op_kick(struct tendril_net *net);
+static void done_work_fn(struct tendril_work *work);
 static void rndis_setup(struct tendril_net *net);
 static int rndis_send(struct tendril_net *net, struct net_op *op);
 static void rndis_poll(struct tendril_net *net);
@@ -1289,6 +1300,9 @@ static bool net_probe(struct tendril_interface *intf) {
     }
     list_init(&net->ops);
     list_init(&net->frames);
+    list_init(&net->done_ops);
+    list_init(&net->done_frames);
+    tendril_work_init(&net->done_work, done_work_fn);
     for (size_t i = 0; i < MAX_XFERS; i++) {
         net->rx[i].net = net;
         net->tx[i].net = net;
@@ -1727,7 +1741,7 @@ static void frames_move(struct tendril_list *dst, struct tendril_list *src, int 
 
 // Calls `done` for every frame of a list private to the caller, which
 // callbacks cannot reach.
-static void frames_complete(struct tendril_list *list) {
+static void frames_report(struct tendril_list *list) {
     while (!list_empty(list)) {
         struct net_frame *frame = CONTAINER_OF(list->next, struct net_frame, node);
         void (*done)(void *ctx, int status) = frame->done;
@@ -1739,6 +1753,33 @@ static void frames_complete(struct tendril_list *list) {
         if (done != NULL) {
             done(ctx, status);
         }
+    }
+}
+
+// Moves every node of `from` to the tail of `to`, in order.
+static void list_move_all(struct tendril_list *to, struct tendril_list *from) {
+    while (!list_empty(from)) {
+        struct tendril_list *node = from->next;
+        list_del(node);
+        list_add_tail(to, node);
+    }
+}
+
+static void done_later(struct tendril_net *net) {
+    hc_lock(net->hc);
+    tendril_queue_work(net->hc, &net->done_work);
+    hc_unlock(net->hc);
+}
+
+// frames_report(), but for frames that finish during a call from the embedder,
+// whose `done` tendril_hc_poll() calls instead, by done_work, as the
+// conventions promise.
+static void frames_complete(struct tendril_net *net, struct tendril_list *list) {
+    if (net->in_call == 0) {
+        frames_report(list);
+    } else if (!list_empty(list)) {
+        list_move_all(&net->done_frames, list);
+        done_later(net);
     }
 }
 
@@ -1987,7 +2028,7 @@ static void tx_kick(struct tendril_net *net) {
 
     list_init(&completed);
     tx_start(net, &completed);
-    frames_complete(&completed);
+    frames_complete(net, &completed);
 }
 
 static void tx_clear_done(void *ctx, int status) {
@@ -2024,7 +2065,7 @@ static void tx_done(struct tendril_transfer *xfer) {
     }
     // Further transfers start before the completed frames' callbacks run.
     tx_start(net, &completed);
-    frames_complete(&completed);
+    frames_complete(net, &completed);
 }
 
 int tendril_net_send(
@@ -2051,13 +2092,15 @@ int tendril_net_send(
     entry->done = done;
     entry->ctx = ctx;
     list_add_tail(&net->frames, &entry->node);
+    net->in_call++;
     tx_kick(net);
+    net->in_call--;
     return TENDRIL_OK;
 }
 
 static void op_done(struct tendril_transfer *xfer);
 
-static void op_finish(
+static void op_report(
     struct tendril_net *net,
     struct net_op *op,
     int status,
@@ -2076,6 +2119,43 @@ static void op_finish(
     if (done != NULL) {
         done(ctx, status);
     }
+}
+
+// op_report(), but an operation that finishes during a call from the embedder
+// is reported from tendril_hc_poll() instead, by done_work, as the conventions
+// promise. Nothing is received during such a call, so it has no message for
+// `answer` to read.
+static void op_finish(
+    struct tendril_net *net,
+    struct net_op *op,
+    int status,
+    const uint8_t *msg,
+    size_t len
+) {
+    if (net->in_call == 0) {
+        op_report(net, op, status, msg, len);
+        return;
+    }
+    op->status = status;
+    list_add_tail(&net->done_ops, &op->node);
+    done_later(net);
+}
+
+static void done_deliver(struct tendril_net *net) {
+    struct tendril_list frames;
+
+    while (!list_empty(&net->done_ops)) {
+        struct net_op *op = CONTAINER_OF(net->done_ops.next, struct net_op, node);
+        list_del(&op->node);
+        op_report(net, op, op->status, NULL, 0);
+    }
+    list_init(&frames);
+    list_move_all(&frames, &net->done_frames);
+    frames_report(&frames);
+}
+
+static void done_work_fn(struct tendril_work *work) {
+    done_deliver(CONTAINER_OF(work, struct tendril_net, done_work));
 }
 
 static void ops_fail(struct tendril_net *net) {
@@ -2155,6 +2235,7 @@ static void op_done(struct tendril_transfer *xfer) {
     op_kick(net);
 }
 
+// Queues a class request for a call from the embedder.
 static int op_queue(
     struct tendril_net *net,
     uint8_t request,
@@ -2183,7 +2264,9 @@ static int op_queue(
     op->done = done;
     op->ctx = ctx;
     list_add_tail(&net->ops, &op->node);
+    net->in_call++;
     op_kick(net);
+    net->in_call--;
     return TENDRIL_OK;
 }
 
@@ -3006,6 +3089,7 @@ static uint32_t rndis_filter_bits(uint16_t filter) {
     return bits;
 }
 
+// Queues an OID to set for a call from the embedder.
 static int rndis_set_oid(
     struct tendril_net *net,
     uint32_t oid,
@@ -3021,7 +3105,9 @@ static int rndis_set_oid(
     }
     op->done = done;
     op->ctx = ctx;
+    net->in_call++;
     rndis_queue(net, op);
+    net->in_call--;
     return TENDRIL_OK;
 }
 
@@ -3097,14 +3183,16 @@ static void net_disconnect(struct tendril_interface *intf) {
         tendril_timer_cancel(net->hc, &net->rndis_timeout_timer);
         tendril_timer_cancel(net->hc, &net->rndis_keepalive_timer);
     }
+    tendril_work_cancel(net->hc, &net->done_work);
     hc_unlock(net->hc);
+    done_deliver(net);
 
     list_init(&completed);
     for (size_t i = 0; i < MAX_XFERS; i++) {
         frames_move(&completed, &net->tx[i].frames, TENDRIL_ERR_NO_DEVICE);
     }
     frames_move(&completed, &net->frames, TENDRIL_ERR_NO_DEVICE);
-    frames_complete(&completed);
+    frames_complete(net, &completed);
     if (net->op != NULL) {
         struct net_op *op = net->op;
         net->op = NULL;

@@ -595,6 +595,7 @@ static inline void hc_unlock(struct tendril_hc *hc) {
 
 // Work and timers, with the lock held.
 void tendril_queue_work(struct tendril_hc *hc, struct tendril_work *work);
+void tendril_work_cancel(struct tendril_hc *hc, struct tendril_work *work);
 void tendril_work_init(struct tendril_work *work, void (*fn)(struct tendril_work *work));
 void tendril_timer_init(struct tendril_timer *timer, void (*fn)(struct tendril_work *work));
 void tendril_timer_arm(struct tendril_hc *hc, struct tendril_timer *timer, uint64_t delay_ns);

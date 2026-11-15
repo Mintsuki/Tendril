@@ -1682,6 +1682,71 @@ void tendril_serial_op_add(
 
 static void op_kick(struct tendril_serial *port);
 
+// What finishes during a call from the embedder is reported from
+// tendril_hc_poll() instead, by done_work, as the conventions promise.
+
+static void op_report(struct serial_op *op) {
+    void (*done)(void *, int) = op->done;
+    void *ctx = op->ctx;
+    int st = op->status;
+    tendril_free(op, sizeof(struct serial_op));
+    if (done != NULL) {
+        done(ctx, st);
+    }
+}
+
+static void write_report(struct serial_write *w) {
+    void (*done)(void *, int) = w->done;
+    void *ctx = w->ctx;
+    int st = w->status;
+    tendril_free(w, sizeof(struct serial_write));
+    if (done != NULL) {
+        done(ctx, st);
+    }
+}
+
+static void done_later(struct tendril_serial *port) {
+    hc_lock(port->hc);
+    tendril_queue_work(port->hc, &port->done_work);
+    hc_unlock(port->hc);
+}
+
+static void op_finish(struct tendril_serial *port, struct serial_op *op) {
+    if (port->in_call != 0) {
+        list_add_tail(&port->done_ops, &op->node);
+        done_later(port);
+        return;
+    }
+    op_report(op);
+}
+
+static void write_finish(struct tendril_serial *port, struct serial_write *w, int st) {
+    w->status = st;
+    if (port->in_call != 0) {
+        list_add_tail(&port->done_writes, &w->node);
+        done_later(port);
+        return;
+    }
+    write_report(w);
+}
+
+static void done_deliver(struct tendril_serial *port) {
+    while (!list_empty(&port->done_ops)) {
+        struct serial_op *op = CONTAINER_OF(port->done_ops.next, struct serial_op, node);
+        list_del(&op->node);
+        op_report(op);
+    }
+    while (!list_empty(&port->done_writes)) {
+        struct serial_write *w = CONTAINER_OF(port->done_writes.next, struct serial_write, node);
+        list_del(&w->node);
+        write_report(w);
+    }
+}
+
+static void done_work_fn(struct tendril_work *work) {
+    done_deliver(CONTAINER_OF(work, struct tendril_serial, done_work));
+}
+
 static void op_request_done(struct tendril_serial *port, int st) {
     struct serial_op *op = port->op;
     if (st == TENDRIL_ERR_SHORT) {
@@ -1747,13 +1812,10 @@ static void op_kick(struct tendril_serial *port) {
             continue;
         }
         port->op = NULL;
-        int st = port->stopped ? TENDRIL_ERR_NO_DEVICE : op->status;
-        void (*done)(void *, int) = op->done;
-        void *ctx = op->ctx;
-        tendril_free(op, sizeof(struct serial_op));
-        if (done != NULL) {
-            done(ctx, st);
+        if (port->stopped) {
+            op->status = TENDRIL_ERR_NO_DEVICE;
         }
+        op_finish(port, op);
     }
     port->in_kick = false;
 }
@@ -1767,6 +1829,14 @@ static int op_queue(struct tendril_serial *port, struct serial_op *op) {
     list_add_tail(&port->ops, &op->node);
     op_kick(port);
     return TENDRIL_OK;
+}
+
+// op_queue() for a call from the embedder.
+static int op_queue_call(struct tendril_serial *port, struct serial_op *op) {
+    port->in_call++;
+    int st = op_queue(port, op);
+    port->in_call--;
+    return st;
 }
 
 // CDC ACM
@@ -2245,10 +2315,7 @@ static void tx_done(struct tendril_transfer *xfer) {
     if (st == TENDRIL_ERR_STALL) {
         tendril_endpoint_clear_halt(port->out_ep, NULL, NULL);
     }
-    if (w->done != NULL) {
-        w->done(w->ctx, st);
-    }
-    tendril_free(w, sizeof(struct serial_write));
+    write_finish(port, w, st);
     tx_kick(port);
 }
 
@@ -2272,10 +2339,7 @@ static void tx_kick(struct tendril_serial *port) {
             }
             port->writing = NULL;
         }
-        if (w->done != NULL) {
-            w->done(w->ctx, st);
-        }
-        tendril_free(w, sizeof(struct serial_write));
+        write_finish(port, w, st);
     }
 }
 
@@ -2573,6 +2637,9 @@ static bool serial_probe(struct tendril_interface *intf) {
     port->rts = true;
     list_init(&port->ops);
     list_init(&port->writes);
+    list_init(&port->done_ops);
+    list_init(&port->done_writes);
+    tendril_work_init(&port->done_work, done_work_fn);
     tendril_timer_init(&port->timer, timer_work);
 
     switch (kind) {
@@ -2733,14 +2800,13 @@ static void serial_disconnect(struct tendril_interface *intf) {
     port->stopped = true;
     hc_lock(port->hc);
     tendril_timer_cancel(port->hc, &port->timer);
+    tendril_work_cancel(port->hc, &port->done_work);
     hc_unlock(port->hc);
+    done_deliver(port);
     while (!list_empty(&port->writes)) {
         struct serial_write *w = CONTAINER_OF(port->writes.next, struct serial_write, node);
         list_del(&w->node);
-        if (w->done != NULL) {
-            w->done(w->ctx, TENDRIL_ERR_NO_DEVICE);
-        }
-        tendril_free(w, sizeof(struct serial_write));
+        write_finish(port, w, TENDRIL_ERR_NO_DEVICE);
     }
     op_kick(port);
     if (port->attached && callbacks->detach != NULL) {
@@ -2794,7 +2860,7 @@ int tendril_serial_configure(
         // Leaving handshake mode, RTS goes back to what was asked for.
         cp_lines(port, op);
     }
-    int st = op_queue(port, op);
+    int st = op_queue_call(port, op);
     if (st != TENDRIL_OK) {
         port->config = old;
     }
@@ -2818,7 +2884,7 @@ int tendril_serial_set_lines(
     port->dtr = dtr;
     port->rts = rts;
     build_lines(port, op);
-    return op_queue(port, op);
+    return op_queue_call(port, op);
 }
 
 int tendril_serial_set_break(
@@ -2836,7 +2902,7 @@ int tendril_serial_set_break(
     }
     port->in_break = on;
     build_break(port, op);
-    return op_queue(port, op);
+    return op_queue_call(port, op);
 }
 
 int tendril_serial_write(
@@ -2862,7 +2928,9 @@ int tendril_serial_write(
     w->ctx = ctx;
     list_add_tail(&port->writes, &w->node);
     if (port->attached) {
+        port->in_call++;
         tx_kick(port);
+        port->in_call--;
     }
     return TENDRIL_OK;
 }

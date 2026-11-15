@@ -126,6 +126,13 @@ void tendril_queue_work(struct tendril_hc *hc, struct tendril_work *work) {
     }
 }
 
+void tendril_work_cancel(struct tendril_hc *hc, struct tendril_work *work) {
+    (void)hc;
+    if (list_linked(&work->node)) {
+        list_del(&work->node);
+    }
+}
+
 void tendril_async_complete(struct tendril_hc *hc, struct tendril_async *async, int status) {
     async->status = status;
     tendril_queue_work(hc, &async->work);
