@@ -342,6 +342,10 @@ Callbacks other than `busy` hooks, which must not call into the library, may
 call any function of it except `tendril_hc_remove()`, `tendril_hc_suspend()`,
 and `tendril_hc_resume()`.
 
+**Byte order.** The multi-byte fields of the descriptor structures of
+`tendril/spec.h` are little-endian, as on the wire: `tendril_le16()`,
+`tendril_le32()`, and `tendril_le64()` convert them to CPU byte order and back.
+
 **Synchronous helpers** (`tendril_hc_wait()`, `tendril_transfer_run()`,
 `tendril_control()`, the `_sync` functions, and `tendril_msc_read()`,
 `tendril_msc_write()`, and `tendril_msc_flush()`) call `tendril_hc_poll()`
@@ -915,8 +919,20 @@ functions, and their asynchronous calls follow the [conventions](#conventions).
 - `tendril_hid_interface()`, `tendril_hid_kinds()` (`TENDRIL_HID_KEYBOARD`,
   `_MOUSE`, `_ABSOLUTE`, `_GAMEPAD`, `_CONSUMER`),
   `tendril_hid_boot_protocol()`, and `tendril_hid_descriptor()` describe the
-  device. The report descriptor parser (`tendril_hid_parse()`,
-  `tendril_hid_free()`, and the field functions) also works on its own.
+  device.
+
+The report descriptor parser also works on its own:
+
+| Function | Does |
+| -------- | ---- |
+| `int tendril_hid_parse(const uint8_t *desc, size_t size, struct tendril_hid_report_desc **out)` | Parses a report descriptor into `*out`. **Returns** `TENDRIL_OK`; `TENDRIL_ERR_NO_MEMORY`, also past 1024 fields; or `TENDRIL_ERR_PROTOCOL` for a report over 64 KiB |
+| `void tendril_hid_free(struct tendril_hid_report_desc *rd)` | Frees what `tendril_hid_parse()` made |
+| `size_t tendril_hid_report_size(rd, int type, uint8_t id)` | The size in bytes of a report, without its report ID byte |
+| `uint32_t tendril_hid_extract(data, size, size_t bit_offset, size_t bit_size)`, `void tendril_hid_insert(data, size, bit_offset, bit_size, uint32_t value)` | Reads or writes a bit field of a report |
+| `int32_t tendril_hid_field_get(f, data, size, size_t index)`, `void tendril_hid_field_set(f, data, size, index, int32_t value)` | Reads element `index` of a field, sign-extended when its logical range is signed, or writes it |
+| `uint32_t tendril_hid_field_usage(f, size_t index)` | The usage of element `index` of a variable field |
+| `uint32_t tendril_hid_array_usage(f, int32_t value)` | The usage that an array field's element value stands for, or 0 |
+| `const struct tendril_hid_field *tendril_hid_find(rd, int type, uint32_t usage, size_t *index)` | The variable field holding `usage` in reports of `type`, with the element in `*index`, or NULL |
 
 ### Mass storage (`tendril/msc.h`)
 
@@ -950,9 +966,17 @@ command sets.
   reporting changes through `medium_changed`; **returns** `TENDRIL_ERR_BUSY`
   until the `done` of the check before has been called.
 - `tendril_msc_read()`, `tendril_msc_write()`, and `tendril_msc_flush()` are
-  the synchronous forms. `tendril_msc_blocks()`, `tendril_msc_block_size()`,
-  `tendril_msc_present()`, `tendril_msc_write_protected()`, and the other
-  accessors describe the unit.
+  the synchronous forms.
+
+| Function | Returns |
+| -------- | ------- |
+| `struct tendril_device *tendril_msc_device(lun)` | Its device |
+| `unsigned int tendril_msc_lun_number(lun)` | Its logical unit number |
+| `int tendril_msc_type(lun)` | Its SCSI peripheral device type: 0x00 direct access, 0x05 CD/DVD, and so on |
+| `bool tendril_msc_removable(lun)` | Whether its medium is removable |
+| `bool tendril_msc_present(lun)`, `bool tendril_msc_write_protected(lun)` | Whether a medium is present, and whether it is write-protected |
+| `uint64_t tendril_msc_blocks(lun)`, `size_t tendril_msc_block_size(lun)` | The medium's size in blocks, 0 without one, and the block size in bytes |
+| `const char *tendril_msc_vendor(lun)`, `tendril_msc_product(lun)`, `tendril_msc_revision(lun)` | Its INQUIRY identification |
 
 ### Serial ports (`tendril/serial.h`)
 
@@ -980,6 +1004,13 @@ management over it, are found the way it finds them.
 - `tendril_serial_configure_sync()` and `tendril_serial_write_sync()` are the
   synchronous forms.
 
+| Function | Returns |
+| -------- | ------- |
+| `struct tendril_device *tendril_serial_device(port)` | Its device |
+| `int tendril_serial_kind(port)` | `TENDRIL_SERIAL_ACM`, `_FTDI`, `_PL2303`, `_CH34X`, or `_CP210X` |
+| `uint8_t tendril_serial_interface(port)` | The number of the interface carrying its data |
+| `uint32_t tendril_serial_status(port)` | The `TENDRIL_SERIAL_*` line state last reported |
+
 ### Ethernet (`tendril/net.h`)
 
 - `void tendril_net_register(const struct tendril_net_callbacks *callbacks)`:
@@ -997,3 +1028,13 @@ management over it, are found the way it finds them.
 - `tendril_net_set_filter()` and `tendril_net_set_multicast()` **return**
   `TENDRIL_ERR_UNSUPPORTED` if the adapter cannot filter.
   `tendril_net_send_sync()` is the synchronous form of `tendril_net_send()`.
+
+| Function | Returns |
+| -------- | ------- |
+| `struct tendril_device *tendril_net_device(net)` | Its device |
+| `int tendril_net_kind(net)` | `TENDRIL_NET_ECM`, `_NCM`, or `_RNDIS` |
+| `uint8_t tendril_net_interface(net)` | The number of its communications interface |
+| `const uint8_t *tendril_net_mac(net)` | Its 6-byte station address |
+| `size_t tendril_net_max_frame(net)` | The longest frame it takes |
+| `size_t tendril_net_multicast_filters(net)` | How many addresses `tendril_net_set_multicast()` takes, 0 if it is unsupported |
+| `bool tendril_net_link_up(net)` | Whether its link is up |
