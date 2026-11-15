@@ -42,7 +42,6 @@
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define CONTAINER_OF(ptr, type, member) \
     ((type *)(void *)((char *)(ptr) - offsetof(type, member)))
-#define ALIGN_UP(x, a) (((x) + ((a) - 1)) & ~((a) - 1))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
@@ -806,6 +805,11 @@ static inline size_t ilog2(uint32_t v) {
         n++;
     }
     return n;
+}
+
+// A value rounded up to a multiple of align, a power of two.
+static inline size_t align_up(size_t value, size_t align) {
+    return (value + (align - 1)) & ~(align - 1);
 }
 
 // The index of the lowest set bit of a non-zero value.

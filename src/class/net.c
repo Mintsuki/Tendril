@@ -1797,7 +1797,7 @@ static size_t ntb_build(struct tendril_net *net, struct net_tx *tx) {
         size_t end = at + frame->len;
         // The NDP16 after this datagram, with one entry more and the null
         // entry.
-        size_t need = ALIGN_UP(end, align) + NDP16_HEADER_LEN
+        size_t need = align_up(end, align) + NDP16_HEADER_LEN
                     + NDP16_ENTRY_LEN * ((size_t)count + 2);
         if (need > net->ntb_out_size) {
             break;
@@ -1818,7 +1818,7 @@ static size_t ntb_build(struct tendril_net *net, struct net_tx *tx) {
         return 0;
     }
 
-    size_t ndp = ALIGN_UP(off, align);
+    size_t ndp = align_up(off, align);
     size_t ndp_len = NDP16_HEADER_LEN + NDP16_ENTRY_LEN * ((size_t)count + 1);
     size_t total = ndp + ndp_len;
     memset(b + off, 0, ndp - off);
@@ -1860,7 +1860,7 @@ static size_t rndis_build(struct tendril_net *net, struct net_tx *tx) {
         struct net_frame *frame = CONTAINER_OF(net->frames.next, struct net_frame, node);
         size_t start = 0;
         if (count != 0) {
-            start = prev + ALIGN_UP(off - prev, align);
+            start = prev + align_up(off - prev, align);
         }
         size_t end = start + RNDIS_PACKET_HEADER_LEN + frame->len;
         if (end > net->tx_buf_size) {

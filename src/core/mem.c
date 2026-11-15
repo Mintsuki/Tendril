@@ -123,7 +123,7 @@ void tendril_dma_pool_init(
 ) {
     pool->hc = hc;
     pool->align = align;
-    pool->size = ALIGN_UP(MAX(size, sizeof(struct tendril_dma_free)), MAX(align, (size_t)8));
+    pool->size = align_up(MAX(size, sizeof(struct tendril_dma_free)), MAX(align, (size_t)8));
     pool->chunks = NULL;
     pool->free = NULL;
 }
