@@ -269,12 +269,12 @@
 #define LARGE_RING_TRBS 1024
 #define STREAM_RING_TRBS 256
 #define CMD_TIMEOUT_MS 5000
-// How long a root port the reset left disconnected (xHCI 1.2, 4.19.1.1.2) may
-// take to see a device still on it. A USB2 hub sees one within TDCNN, 12 ms at
-// most (USB 2.0 Table 7-13), but a SuperSpeed port looks for its device's
-// receiver only once every tRxDetectQuietTimeoutDFP, up to 120 ms (USB 3.2
-// revision 1.1, Table 7-12), which a link timer may run half over (USB 3.2
-// revision 1.1, 7.5).
+// How long a root port the reset left disconnected (xHCI 1.2, 4.19.1.1.2 and
+// 4.19.1.2.3) may take to see a device still on it. A USB2 hub sees one within
+// TDCNN, 12 ms at most (USB 2.0 Table 7-13), but a SuperSpeed port looks for
+// its device's receiver only once every tRxDetectQuietTimeoutDFP, up to 120 ms
+// (USB 3.2 revision 1.1, Table 7-12), which a link timer may run half over
+// (USB 3.2 revision 1.1, 7.5).
 #define RECONNECT_MS 180
 #define MAX_TRB_LEN 65536
 // BEGIN FreeBSD sys/dev/usb/controller/xhci_pci.c
