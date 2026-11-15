@@ -48,8 +48,8 @@
 #define NS_PER_US ((uint64_t)1000)
 #define NS_PER_MS ((uint64_t)1000000)
 
-// The memory functions, handed to GCC's and Clang's builtins, which may still
-// call the functions they are named after, and to MSVC's intrinsics.
+// The memory functions, which GCC and Clang expand as builtins and MSVC, but
+// for memmove(), as intrinsics, though all three may still call them.
 void *memcpy(void *dest, const void *src, size_t size);
 void *memset(void *dest, int value, size_t size);
 void *memmove(void *dest, const void *src, size_t size);
