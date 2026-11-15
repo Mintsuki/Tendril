@@ -6,8 +6,8 @@ needs no C library and asks the embedder for a small set of glue functions.
 ## Features
 
 - Host controllers: UHCI, OHCI, EHCI (with companion controllers), and xHCI
-  (with streams), all with isochronous transfers, firmware handoff, and PCI
-  quirks.
+  (with streams), all with isochronous transfers and firmware handoff, and the
+  PCI quirks of EHCI and xHCI controllers.
 - Hubs: USB 2.0 hubs, transaction translators included, and SuperSpeed hubs.
 - Class drivers:
   - HID: keyboards, pointing devices, and raw reports (`tendril/hid.h`).
@@ -38,13 +38,14 @@ Defining `TENDRIL_NO_UHCI`, `TENDRIL_NO_OHCI`, `TENDRIL_NO_EHCI`, or
 ## Using it
 
 The embedder implements the glue functions of `tendril/glue.h`: memory, DMA
-memory, controller register and PCI configuration access, a clock, a lock, and
-logging. It then registers the class drivers it wants, adds each controller
-with `tendril_hc_add()`, and calls `tendril_hc_poll()` whenever the controller
-interrupts, the deadline the last call returned passes, or it has called into
-the library outside a callback. Devices are enumerated, and every callback
-runs, from within `tendril_hc_poll()`. Once `tendril_hc_ready()` is true for
-every controller, the devices present at boot are all up.
+memory and a DMA barrier, controller register and PCI configuration access, a
+clock, a lock, and logging. It then registers the class drivers it wants, adds
+each controller with `tendril_hc_add()`, and calls `tendril_hc_poll()` whenever
+the controller interrupts, the deadline the last call returned passes, or it
+has called into the library outside a callback. Devices are enumerated, and
+their transfers complete, from within `tendril_hc_poll()`. Once
+`tendril_hc_ready()` is true for every controller, the devices present at boot
+are all up.
 
 ## Documentation
 

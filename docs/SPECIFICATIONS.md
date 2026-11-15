@@ -39,6 +39,6 @@ and section.
 ## Devices and chipsets
 
 - Silicon Labs AN571, Revision 0.4 (CP210x).
-- FTDI AN232B-04, Version 1.1, AN232B-05, and AN_120, Version 1.2.
+- FTDI AN232B-04, Version 1.1, and AN_120, Version 1.2.
 - Intel 82371AB (PIIX4) datasheet 290562; Intel 9 Series Chipset Family PCH
   datasheet 330550-002.

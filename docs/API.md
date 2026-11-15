@@ -103,24 +103,26 @@ not:
 3. **Alignment.** The hardware requires it, for example 4 KiB for UHCI and EHCI
    frame lists, 256 bytes for the OHCI HCCA, and the ring's own size for xHCI
    rings.
-4. **An address limit.** UHCI and OHCI, and EHCI and xHCI controllers without
-   64-bit addressing, only reach the first 4 GiB; the library then sets
-   `dma32`.
+4. **An address limit.** UHCI and OHCI controllers, and xHCI controllers
+   without 64-bit addressing, only reach the first 4 GiB, and so do EHCI
+   controllers' structures, which share one 4 GiB segment, the low one; the
+   library then sets `dma32`.
 5. **Coherence.** What the CPU writes must reach the controller without cache
    maintenance, and the other way around. Ordinary memory is coherent on x86
    and on most server-class systems; elsewhere this can mean an uncached
    mapping.
 
-The library carves its small descriptors (32 to 160 bytes) out of 4 KiB blocks
-itself, so `dma_alloc` can be a page allocator.
+The library carves its small descriptors out of 4 KiB blocks itself, so
+`dma_alloc` can be a page allocator.
 
 **Mapping buffers.** Data buffers belong to the caller, such as the buffer a
 disk read goes to. The library does not copy them into DMA memory; it asks
 `tendril_glue_dma_map()` for the bus address of each contiguous run of the
 buffer, which is also where cache maintenance goes on systems that need it.
-When a buffer cannot be reached (it lies above 4 GiB for a 32-bit controller,
-or the embedder cannot map it), `dma_map` returns 0 and the library bounces the
-transfer through `dma_alloc` memory instead.
+When the embedder cannot map a buffer, `dma_map` returns 0, and the library
+bounces the transfer through `dma_alloc` memory instead, as it does when a run
+lies above 4 GiB for a controller that cannot reach it (see
+`tendril_glue_dma_map()`).
 
 A sketch of the memory glue for a kernel with a direct map of physical memory
 and no IOMMU, on a cache-coherent system:
@@ -215,9 +217,9 @@ time.
 - `dma`: receives the bus address of the run.
 - **Returns** how many bytes from `ptr` are contiguous at `*dma`, at most
   `size`. A run shorter than `size` must end on a 4 KiB boundary in bus address
-  space; otherwise, or when 0 is returned, or when a run lies above 4 GiB for a
-  32-bit controller, the library unmaps what it had mapped and bounces the
-  whole transfer.
+  space, and a run after the first must start on one; otherwise, or when 0 is
+  returned, or when a run lies above 4 GiB for a controller that cannot reach
+  it, the library unmaps what it had mapped and bounces the whole transfer.
 - On systems without coherent DMA, this cleans (`TO_DEVICE`) or invalidates
   (`FROM_DEVICE`) the cache over the run, and should return 0 for a
   `FROM_DEVICE` buffer that does not start and end on cache line boundaries, as
@@ -284,9 +286,9 @@ the first one with these vendor and device IDs.
 Monotonic time in nanoseconds.
 
 - It drives timers and transfer timeouts, the deadline `tendril_hc_poll()`
-  returns, and busy-waits: 100 microseconds to tens of milliseconds for port
-  and controller resets, up to a second while waiting on slow firmware or
-  hardware.
+  returns, and busy-waits: from 100 microseconds to 100 milliseconds for port
+  and controller resets, up to a second a step for slow controllers, and up to
+  5 seconds while firmware hands an EHCI or xHCI controller over.
 - It must keep advancing when interrupts are off, if polling can happen with
   them off, and resolve well under 100 microseconds, or short waits end early.
   A free-running counter (TSC, CNTVCT, `rdtime`) is ideal.
@@ -324,9 +326,21 @@ default, and never from `tendril_hc_irq()`. Levels: `TENDRIL_LOG_ERROR`,
   what its callbacks started.
 
 **Callbacks** (transfer callbacks, `done` functions, driver hooks, and class
-driver callbacks) only run from within `tendril_hc_poll()`, never from
-`tendril_hc_irq()`. They may call any function of the library except
-`tendril_hc_remove()`, `tendril_hc_suspend()`, and `tendril_hc_resume()`.
+driver callbacks) run from within `tendril_hc_poll()`, never from
+`tendril_hc_irq()`, but for these, which a call runs before it returns:
+
+- the drivers' `busy` hooks, during `tendril_hc_ready()`;
+- the drivers' `suspend` hooks, and their `resume` hooks when the suspend then
+  fails, during `tendril_device_suspend()` and `tendril_hc_suspend()`;
+- during `tendril_hc_remove()`, and during `tendril_hc_resume()` for a
+  controller that lost its state, the transfer callbacks and `done` functions
+  still due, those of what had not finished failing with
+  `TENDRIL_ERR_NO_DEVICE`, and the `disconnect`, `device_removed`, and class
+  drivers' `detach` callbacks.
+
+Callbacks other than `busy` hooks, which must not call into the library, may
+call any function of it except `tendril_hc_remove()`, `tendril_hc_suspend()`,
+and `tendril_hc_resume()`.
 
 **Synchronous helpers** (`tendril_hc_wait()`, `tendril_transfer_run()`,
 `tendril_control()`, the `_sync` functions, and `tendril_msc_read()`,
@@ -426,9 +440,10 @@ Takes a controller over from firmware, resets it, and starts it.
   `TENDRIL_NO_XHCI`, or an xHCI controller the library cannot drive;
   `TENDRIL_ERR_NO_MEMORY`; `TENDRIL_ERR_TIMEOUT` if the controller does not
   halt or reset; or `TENDRIL_ERR_NO_DEVICE` if it does not respond.
-- It runs synchronously and busy-waits: normally milliseconds, up to about a
-  second per step when firmware or the controller is slow. Devices are
-  enumerated afterwards, by `tendril_hc_poll()`.
+- It runs synchronously and busy-waits: normally tens of milliseconds, over
+  100 for UHCI and OHCI, but up to a second a step for a slow controller, and
+  up to 5 seconds while firmware hands an EHCI or xHCI controller over.
+  Devices are enumerated afterwards, by `tendril_hc_poll()`.
 
 #### `void tendril_hc_remove(struct tendril_hc *hc)`
 
@@ -539,7 +554,7 @@ enumerated again: drivers see `disconnect`, then new `probe` calls.
 | `int tendril_hc_type(hc)` | The type, a `TENDRIL_HC_*` value |
 | `uint32_t tendril_hc_quirks(hc)` | The quirks in effect, built-in and given |
 | `size_t tendril_hc_num_ports(hc)` | The number of root ports |
-| `struct tendril_device *tendril_hc_port_device(hc, size_t port)` | The device on root port `port` (from 1), or NULL |
+| `struct tendril_device *tendril_hc_port_device(hc, uint8_t port)` | The device on root port `port` (from 1), or NULL |
 | `uint32_t tendril_hc_frame_number(hc)` | The current frame (see [frame numbers](#isochronous-scheduling-and-frame-numbers)), or 0 if the controller died |
 
 Also: `tendril_status_str()`, `tendril_speed_str()`, and
@@ -559,7 +574,7 @@ is held.
 | -------- | ------- |
 | `struct tendril_hc *tendril_device_hc(dev)` | Its controller |
 | `struct tendril_device *tendril_device_parent(dev)` | The hub it is on, or NULL on a root port |
-| `size_t tendril_device_port(dev)` | Its port on that hub, or on the root hub, from 1 |
+| `uint8_t tendril_device_port(dev)` | Its port on that hub, or on the root hub, from 1 |
 | `size_t tendril_device_depth(dev)` | The number of hubs between it and the root hub |
 | `int tendril_device_speed(dev)` | Its speed, a `TENDRIL_SPEED_*` value |
 | `uint8_t tendril_device_address(dev)` | Its USB address |
@@ -570,7 +585,7 @@ is held.
 | `const struct tendril_config_descriptor *tendril_device_active_config(dev)` | The active configuration, or NULL if unconfigured |
 | `const struct tendril_bos_descriptor *tendril_device_bos(dev)` | Its BOS descriptor and capabilities, or NULL |
 | `const char *tendril_device_manufacturer(dev)`, `tendril_device_product(dev)`, `tendril_device_serial(dev)` | Its strings as UTF-8, read at enumeration, or NULL |
-| `struct tendril_device *tendril_device_child(hub, size_t port)` | The device on a hub's port (from 1), or NULL |
+| `struct tendril_device *tendril_device_child(hub, uint8_t port)` | The device on a hub's port (from 1), or NULL |
 | `size_t tendril_device_num_ports(hub)` | A hub's port count, 0 for other devices |
 | `struct tendril_endpoint *tendril_device_ep0(dev)` | Its default control endpoint |
 | `size_t tendril_device_num_interfaces(dev)`, `struct tendril_interface *tendril_device_interface(dev, size_t index)` | The interfaces of the active configuration; NULL past the end |
@@ -679,8 +694,10 @@ controller's endpoints, then sends SET_INTERFACE. A stall from an interface
 with a single setting counts as success (USB 2.0, section 9.4.10).
 
 - **Returns** `TENDRIL_OK`; `TENDRIL_ERR_INVALID` if there is no such setting;
-  `TENDRIL_ERR_NO_DEVICE`; `TENDRIL_ERR_NO_MEMORY`; `TENDRIL_ERR_BUSY` if
-  transfers are pending on the interface; or an error from the controller.
+  `TENDRIL_ERR_NO_DEVICE`; `TENDRIL_ERR_SUSPENDED`; `TENDRIL_ERR_NO_MEMORY`;
+  `TENDRIL_ERR_BUSY` if transfers are pending on the interface, or a
+  configuration change or power operation is under way; or an error from the
+  controller.
 - `done` receives the outcome, including errors from the controller such as
   `TENDRIL_ERR_BANDWIDTH`.
 - The interface's endpoint structures are replaced: look endpoints up again
@@ -695,7 +712,7 @@ with a single setting counts as success (USB 2.0, section 9.4.10).
 | `const struct tendril_ss_ep_companion_descriptor *tendril_endpoint_companion(ep)` | Its SuperSpeed companion descriptor, or NULL |
 | `uint8_t tendril_endpoint_address(ep)` | `bEndpointAddress`; bit 7 set for IN |
 | `int tendril_endpoint_type(ep)` | `TENDRIL_ENDPOINT_XFER_CONTROL`, `_ISOC`, `_BULK`, or `_INT` |
-| `uint16_t tendril_endpoint_max_packet(ep)` | The maximum packet size, without the high-bandwidth multiplier bits |
+| `size_t tendril_endpoint_max_packet(ep)` | The maximum packet size, without the high-bandwidth multiplier bits |
 | `size_t tendril_endpoint_max_streams(ep)` | The stream count from the companion descriptor (2 to the power MaxStreams), or 0; stream IDs run from 1 to one less |
 
 #### `int tendril_endpoint_clear_halt(struct tendril_endpoint *ep, done, ctx)`
@@ -712,10 +729,12 @@ Gives `count` bulk endpoints of one device `*streams` streams each, with IDs 1
 to `*streams`. Only xHCI does streams.
 
 - **Returns** `TENDRIL_OK`, having lowered `*streams` to what the endpoints and
-  controller allow; `TENDRIL_ERR_INVALID` if `count` or `*streams` is 0;
-  `TENDRIL_ERR_UNSUPPORTED` if the controller has no streams, or the endpoints
-  are not all bulk endpoints of one device with streams;
-  `TENDRIL_ERR_NO_DEVICE`; or `TENDRIL_ERR_NO_MEMORY`.
+  controller allow; `TENDRIL_ERR_INVALID` if `count` or `*streams` is 0, or an
+  endpoint is not open; `TENDRIL_ERR_UNSUPPORTED` if the controller has no
+  streams, or the endpoints are not all bulk endpoints of one device with
+  streams; `TENDRIL_ERR_NO_DEVICE`; `TENDRIL_ERR_SUSPENDED`;
+  `TENDRIL_ERR_BUSY` if a configuration change or power operation is under
+  way; `TENDRIL_ERR_NO_MEMORY`; or an error from the controller.
 
 ## Transfers
 
@@ -861,7 +880,7 @@ functions, and their asynchronous calls follow the [conventions](#conventions).
 
 ### HID (`tendril/hid.h`)
 
-- `void tendril_hid_register(const struct tendril_hid_callbacks *cb,
+- `void tendril_hid_register(const struct tendril_hid_callbacks *callbacks,
   uint32_t flags)`:
   `TENDRIL_HID_BOOT_PROTOCOL` in `flags` uses the boot protocol on keyboards
   and mice that support it. Callbacks: `attach`, `detach`,
@@ -904,7 +923,7 @@ functions, and their asynchronous calls follow the [conventions](#conventions).
 Bulk-Only, CBI, and UAS transports, carrying the SCSI, UFI, ATAPI, and RBC
 command sets.
 
-- `void tendril_msc_register(const struct tendril_msc_callbacks *cb)`:
+- `void tendril_msc_register(const struct tendril_msc_callbacks *callbacks)`:
   callbacks `attach` and `detach` for each logical unit, and `medium_changed`.
 - The devices FreeBSD's quirk tables list get the same treatment as in its
   `sys/dev/usb/storage/umass.c` (BSD-2-Clause): forced transports and command
@@ -929,7 +948,7 @@ command sets.
   `umass.c` takes it.
 - `tendril_msc_check_medium(lun, done, ctx)` probes a removable medium again,
   reporting changes through `medium_changed`; **returns** `TENDRIL_ERR_BUSY`
-  while a probe is under way.
+  until the `done` of the check before has been called.
 - `tendril_msc_read()`, `tendril_msc_write()`, and `tendril_msc_flush()` are
   the synchronous forms. `tendril_msc_blocks()`, `tendril_msc_block_size()`,
   `tendril_msc_present()`, `tendril_msc_write_protected()`, and the other
@@ -943,7 +962,8 @@ CP210x chips. CDC ACM interfaces are taken as FreeBSD's
 or AT commands, and the modems its table lists; their data interface, and call
 management over it, are found the way it finds them.
 
-- `void tendril_serial_register(const struct tendril_serial_callbacks *cb)`:
+- `void tendril_serial_register(const struct
+  tendril_serial_callbacks *callbacks)`:
   callbacks `attach` (ports start at 115200 baud, 8 data bits, no parity, 1
   stop bit, with DTR and RTS on), `detach`, `receive(port, data, len)` (the
   data is valid during the call only), and `status(port, bits)` with the
@@ -962,7 +982,7 @@ management over it, are found the way it finds them.
 
 ### Ethernet (`tendril/net.h`)
 
-- `void tendril_net_register(const struct tendril_net_callbacks *cb)`:
+- `void tendril_net_register(const struct tendril_net_callbacks *callbacks)`:
   callbacks `attach`, `detach`, `link(net, up, rx_bps, tx_bps)`, and
   `receive(net, frame, len)` (valid during the call only). Frames run from the
   destination address to the end of the payload, without the frame check
