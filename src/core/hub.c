@@ -535,9 +535,12 @@ static void hub_init_step(struct tendril_hub *hub) {
                 tendril_port_init(&hub->ports[i], hub, i + 1);
             }
             hub_name(hub, name, sizeof(name));
-            const char *kind = hub->superspeed
-                             ? ", SuperSpeed"
-                             : multi_tt_alt(hub) >= 0 ? ", multiple TTs" : "";
+            const char *kind = "";
+            if (hub->superspeed) {
+                kind = ", SuperSpeed";
+            } else if (multi_tt_alt(hub) >= 0) {
+                kind = ", multiple TTs";
+            }
             LOG_INFO("%s: %zu ports%s", name, hub->num_ports, kind);
             if (hub->superspeed) {
                 hub->init_step = HUB_SET_DEPTH;

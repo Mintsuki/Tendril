@@ -2741,7 +2741,10 @@ static int submit_control(
     }
 
     struct td_builder tb = { ring, 0, 0, 0 };
-    uint32_t trt = len == 0 ? 0 : in ? (uint32_t)3 << 16 : (uint32_t)2 << 16;
+    uint32_t trt = 0;
+    if (len != 0) {
+        trt = in ? (uint32_t)3 << 16 : (uint32_t)2 << 16;
+    }
     tb_push(&tb, setup_param(&xfer->setup), 8, TRB_TYPE(TRB_SETUP) | TRB_IDT | trt);
     if (len != 0) {
         cursor_init(&c, xfer);
@@ -2821,9 +2824,12 @@ static int submit_isoc(struct tendril_hc *hc, struct xhci_ep *xep, struct tendri
     struct tendril_endpoint *ep = xep->ep;
     bool in = (ep->address & TENDRIL_ENDPOINT_DIR_MASK) != 0;
     bool ss = tendril_device_is_ss(ep->dev);
-    unsigned int burst = ss
-                       ? (unsigned int)ep->max_burst + 1
-                       : ep->dev->speed == TENDRIL_SPEED_HIGH ? (unsigned int)ep->mult : 1;
+    unsigned int burst = 1;
+    if (ss) {
+        burst = (unsigned int)ep->max_burst + 1;
+    } else if (ep->dev->speed == TENDRIL_SPEED_HIGH) {
+        burst = (unsigned int)ep->mult;
+    }
     struct cursor c;
 
     cursor_init(&c, xfer);

@@ -1931,7 +1931,13 @@ static void cp_line(struct tendril_serial *port, struct serial_op *op) {
     // AN571 revision 0.4, table 9: the handshake word and the flow replacement
     // word, then thresholds left at zero.
     put_le32(flow, (port->dtr ? CP_DTR_ACTIVE : 0) | (c->rtscts ? CP_CTS_HANDSHAKE : 0));
-    put_le32(flow + 4, c->rtscts ? CP_RTS_HANDSHAKE : (port->rts ? CP_RTS_ACTIVE : 0));
+    uint32_t flow_replace = 0;
+    if (c->rtscts) {
+        flow_replace = CP_RTS_HANDSHAKE;
+    } else if (port->rts) {
+        flow_replace = CP_RTS_ACTIVE;
+    }
+    put_le32(flow + 4, flow_replace);
     tendril_serial_op_add(op, REQ_VENDOR_IFACE_OUT, CP_SET_FLOW, 0, iface, flow, sizeof(flow));
 }
 

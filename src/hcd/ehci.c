@@ -1680,11 +1680,15 @@ static bool iso_collect(struct tendril_hc *hc, struct ehci_iso_xfer *ix, bool fo
                     continue;
                 }
                 pkt->actual = in ? (tr >> 16) & 0xfff : pkt->length;
-                pkt->status = (tr & ITD_BABBLE) != 0
-                            ? TENDRIL_ERR_BABBLE
-                            : (tr & ITD_DBE) != 0
-                                ? TENDRIL_ERR_OVERRUN
-                                : (tr & ITD_XACT) != 0 ? TENDRIL_ERR_IO : TENDRIL_OK;
+                if ((tr & ITD_BABBLE) != 0) {
+                    pkt->status = TENDRIL_ERR_BABBLE;
+                } else if ((tr & ITD_DBE) != 0) {
+                    pkt->status = TENDRIL_ERR_OVERRUN;
+                } else if ((tr & ITD_XACT) != 0) {
+                    pkt->status = TENDRIL_ERR_IO;
+                } else {
+                    pkt->status = TENDRIL_OK;
+                }
             }
         } else {
             struct ehci_sitd *sitd = ix->descs[i];
@@ -1705,13 +1709,17 @@ static bool iso_collect(struct tendril_hc *hc, struct ehci_iso_xfer *ix, bool fo
             pkt->actual = in
                         ? sitd->length - MIN(left, sitd->length)
                         : sitd->length;
-            pkt->status = (state & SITD_BABBLE) != 0
-                        ? TENDRIL_ERR_BABBLE
-                        : (state & SITD_DBE) != 0
-                            ? TENDRIL_ERR_OVERRUN
-                            : (state & (SITD_XACT | SITD_ERR)) != 0
-                                ? TENDRIL_ERR_IO
-                                : (state & SITD_MMF) != 0 ? TENDRIL_ERR_MISSED : TENDRIL_OK;
+            if ((state & SITD_BABBLE) != 0) {
+                pkt->status = TENDRIL_ERR_BABBLE;
+            } else if ((state & SITD_DBE) != 0) {
+                pkt->status = TENDRIL_ERR_OVERRUN;
+            } else if ((state & (SITD_XACT | SITD_ERR)) != 0) {
+                pkt->status = TENDRIL_ERR_IO;
+            } else if ((state & SITD_MMF) != 0) {
+                pkt->status = TENDRIL_ERR_MISSED;
+            } else {
+                pkt->status = TENDRIL_OK;
+            }
         }
     }
     return all || force;

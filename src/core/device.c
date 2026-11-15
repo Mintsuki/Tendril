@@ -323,12 +323,28 @@ static size_t std_packet_size(int type, int speed, size_t mps) {
                 if (mps == 0 || mps >= 64) {
                     return 64;
                 }
-                return mps >= 32 ? 32 : mps >= 16 ? 16 : 8;
+                if (mps >= 32) {
+                    return 32;
+                }
+                return mps >= 16 ? 16 : 8;
             }
             if (type == TENDRIL_ENDPOINT_XFER_BULK) {
-                return speed == TENDRIL_SPEED_LOW ? 8 : speed == TENDRIL_SPEED_HIGH ? 512 : 1024;
+                switch (speed) {
+                    case TENDRIL_SPEED_LOW: {
+                        return 8;
+                    }
+                    case TENDRIL_SPEED_HIGH: {
+                        return 512;
+                    }
+                    default: {
+                        return 1024;
+                    }
+                }
             }
-            return speed == TENDRIL_SPEED_LOW ? 8 : ss ? 512 : 64;
+            if (speed == TENDRIL_SPEED_LOW) {
+                return 8;
+            }
+            return ss ? 512 : 64;
         }
     }
 }

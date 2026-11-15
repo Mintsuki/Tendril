@@ -590,9 +590,12 @@ int tendril_hc_suspend(struct tendril_hc *hc, bool wake) {
     }
 
     hc_lock(hc);
-    int st = hc->dead
-           ? TENDRIL_ERR_NO_DEVICE
-           : hc->ops->suspend != NULL ? hc->ops->suspend(hc) : TENDRIL_OK;
+    int st = TENDRIL_OK;
+    if (hc->dead) {
+        st = TENDRIL_ERR_NO_DEVICE;
+    } else if (hc->ops->suspend != NULL) {
+        st = hc->ops->suspend(hc);
+    }
     if (st == TENDRIL_OK) {
         hc->suspended = true;
     }
@@ -641,9 +644,12 @@ int tendril_hc_resume(struct tendril_hc *hc) {
     }
     hc_lock(hc);
     hc->suspended = false;
-    int st = hc->dead
-           ? TENDRIL_ERR_NO_DEVICE
-           : hc->ops->resume != NULL ? hc->ops->resume(hc) : TENDRIL_OK;
+    int st = TENDRIL_OK;
+    if (hc->dead) {
+        st = TENDRIL_ERR_NO_DEVICE;
+    } else if (hc->ops->resume != NULL) {
+        st = hc->ops->resume(hc);
+    }
     if (st == TENDRIL_OK) {
         // Ports may have seen wakeups, connects, or disconnects while asleep.
         tendril_roothub_changed(hc, 0);
