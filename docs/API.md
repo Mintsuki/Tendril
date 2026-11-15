@@ -318,6 +318,10 @@ default, and never from `tendril_hc_irq()`. Levels: `TENDRIL_LOG_ERROR`,
   final status.
 - Any other return means nothing started, and `done` is never called.
 - `done` may be NULL. Buffers passed in must stay valid until `done`.
+- A call from outside a callback can leave work for `tendril_hc_poll()`, or
+  arm a timer, such as a transfer's timeout, that the deadline it last returned
+  does not cover: call it after such calls. The deadline it returns covers
+  what its callbacks started.
 
 **Callbacks** (transfer callbacks, `done` functions, driver hooks, and class
 driver callbacks) only run from within `tendril_hc_poll()`, never from
@@ -450,7 +454,8 @@ Processes controller events, port changes, expired timers, and completions, and
 runs callbacks, one at a time.
 
 - **Returns** the time, as `tendril_glue_time_ns()` counts, by which it must be
-  called again, or `UINT64_MAX` if nothing is timed.
+  called again, or `UINT64_MAX` if nothing is timed. A call made outside a
+  callback afterwards can need it sooner (see [conventions](#conventions)).
 - Calls for one controller must not overlap, except when nested from within its
   callbacks.
 - It can busy-wait briefly, for port resets.

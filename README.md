@@ -41,10 +41,10 @@ The embedder implements the glue functions of `tendril/glue.h`: memory, DMA
 memory, controller register and PCI configuration access, a clock, a lock, and
 logging. It then registers the class drivers it wants, adds each controller
 with `tendril_hc_add()`, and calls `tendril_hc_poll()` whenever the controller
-interrupts or the deadline the last call returned passes. Devices are
-enumerated, and every callback runs, from within `tendril_hc_poll()`. Once
-`tendril_hc_ready()` is true for every controller, the devices present at boot
-are all up.
+interrupts, the deadline the last call returned passes, or it has called into
+the library outside a callback. Devices are enumerated, and every callback
+runs, from within `tendril_hc_poll()`. Once `tendril_hc_ready()` is true for
+every controller, the devices present at boot are all up.
 
 ## Documentation
 
