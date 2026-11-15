@@ -1712,6 +1712,10 @@ static void op_kick(struct tendril_serial *port) {
     port->in_kick = true;
     for (;;) {
         struct serial_op *op = port->op;
+        if (op != NULL && !tendril_transfer_done(&port->ctrl)) {
+            // A request of it is in flight, and ctrl_done() carries on.
+            break;
+        }
         if (op == NULL) {
             if (list_empty(&port->ops)) {
                 break;
