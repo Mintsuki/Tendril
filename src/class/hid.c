@@ -893,7 +893,8 @@ static void init_step(struct tendril_work *work) {
              && !has_keys(hid->rd)) {
                 LOG_INFO(
                     "HID: interface %u calls itself a boot keyboard, but its report descriptor "
-                    "has no keys", hid->intf->number
+                    "has no keys",
+                    hid->intf->number
                 );
             }
             if (hid->subclass == 1) {
