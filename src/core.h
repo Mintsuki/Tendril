@@ -48,23 +48,26 @@
 #define NS_PER_US ((uint64_t)1000)
 #define NS_PER_MS ((uint64_t)1000000)
 
-// GCC's and Clang's builtins, which may still call the functions they are
-// named after, else those functions, which MSVC has intrinsics for.
-#if defined(__GNUC__)
-#define memcpy __builtin_memcpy
-#define memset __builtin_memset
-#define memmove __builtin_memmove
-#define memcmp __builtin_memcmp
-#define PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
-#else
+// The memory functions, handed to GCC's and Clang's builtins, which may still
+// call the functions they are named after, and to MSVC's intrinsics.
 void *memcpy(void *dest, const void *src, size_t size);
 void *memset(void *dest, int value, size_t size);
 void *memmove(void *dest, const void *src, size_t size);
 int memcmp(const void *a, const void *b, size_t size);
-#if defined(_MSC_VER)
+
+#if defined(__GNUC__)
+#   define memcpy __builtin_memcpy
+#   define memset __builtin_memset
+#   define memmove __builtin_memmove
+#   define memcmp __builtin_memcmp
+#elif defined(_MSC_VER)
 #   pragma intrinsic(memcpy, memset, memcmp)
 #endif
-#define PRINTF_FORMAT(fmt, first)
+
+#if defined(__GNUC__)
+#   define PRINTF_FORMAT(fmt, first) __attribute__((__format__(__printf__, fmt, first)))
+#else
+#   define PRINTF_FORMAT(fmt, first)
 #endif
 
 // Lists
