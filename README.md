@@ -1,7 +1,7 @@
 # Tendril
 
-A USB host stack in C99 for kernels, bootloaders, and embedded systems. It
-needs no C library and asks the embedder for a small set of glue functions.
+A freestanding USB host stack, which asks the embedder for a small set of glue
+functions.
 
 ## Features
 
@@ -23,14 +23,8 @@ needs no C library and asks the embedder for a small set of glue functions.
 ## Building
 
 Compile every `.c` file under `src/` with `include/` on the include path,
-which code using Tendril needs too. The sources are C99 and build as C99
-through C23 with GCC and Clang, freestanding. They use the compiler's
-freestanding headers and `__builtin_memcpy` and friends, which may still call
-`memcpy`, `memset`, `memmove`, and `memcmp`. With MSVC, which has no such
-builtins, the intrinsics of those names stand in for them. Every compiler packs
-the wire structures by `#pragma pack`. On 32-bit targets, link the compiler's
-runtime library (libgcc or the compiler-rt builtins, for example) for 64-bit
-division.
+which code using Tendril needs too. The environment provides `memcpy`,
+`memset`, `memmove`, and `memcmp`.
 
 Defining `TENDRIL_NO_UHCI`, `TENDRIL_NO_OHCI`, `TENDRIL_NO_EHCI`, or
 `TENDRIL_NO_XHCI` leaves the corresponding controller driver out.
