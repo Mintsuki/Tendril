@@ -28,8 +28,6 @@
 // sys/dev/usb/controller/xhci_pci.c (commit
 // dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 2010-2022 Hans Petter Selasky
 //
 // Redistribution and use in source and binary forms, with or without
@@ -54,8 +52,6 @@
 // Parts of this file are derived from FreeBSD's
 // sys/dev/usb/controller/ehci_pci.c (commit
 // dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
-//
-// SPDX-License-Identifier: BSD-2-Clause
 //
 // Copyright (c) 1998 The NetBSD Foundation, Inc.
 // All rights reserved.
@@ -86,8 +82,6 @@
 
 // Parts of this file are derived from FreeBSD's sys/dev/usb/quirk/usb_quirk.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
-//
-// SPDX-License-Identifier: BSD-2-Clause
 //
 // Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 // Copyright (c) 1998 Lennart Augustsson. All rights reserved.

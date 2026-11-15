@@ -30,8 +30,6 @@
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb.h (commit
 // dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
 // Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 // Copyright (c) 1998 Lennart Augustsson. All rights reserved.
@@ -58,8 +56,6 @@
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb_freebsd.h
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -83,8 +79,6 @@
 
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb_transfer.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
-//
-// SPDX-License-Identifier: BSD-2-Clause
 //
 // Copyright (c) 2008-2021 Hans Petter Selasky. All rights reserved.
 //
@@ -110,8 +104,6 @@
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb_device.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 2008-2023 Hans Petter Selasky
 //
 // Redistribution and use in source and binary forms, with or without
@@ -135,8 +127,6 @@
 
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb_msctest.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
-//
-// SPDX-License-Identifier: BSD-2-Clause
 //
 // Copyright (c) 2008-2022 Hans Petter Selasky.
 // Copyright (c) 2021-2022 Idwer Vollering.
@@ -163,8 +153,6 @@
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb_hub.c (commit
 // dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 // Copyright (c) 1998 Lennart Augustsson. All rights reserved.
 // Copyright (c) 2008-2022 Hans Petter Selasky
@@ -190,8 +178,6 @@
 
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb_request.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
-//
-// SPDX-License-Identifier: BSD-2-Clause
 //
 // Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 // Copyright (c) 1998 Lennart Augustsson. All rights reserved.

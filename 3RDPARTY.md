@@ -24,8 +24,6 @@ and CDC ACM quirk tables (`src/core/quirks.c`, `src/class/hid.c`,
 `src/class/msc.c`, `src/class/serial.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 Copyright (c) 1998 Lennart Augustsson. All rights reserved.
 Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
@@ -59,8 +57,6 @@ in those tables (`include/tendril/tendril.h`, `src/class/hid.c`,
 `src/class/msc.c`, `src/class/serial.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -129,8 +125,6 @@ and the Dymo eject (`src/core/device.c`), and moving past an auto-install
 CD-ROM (`src/class/msc.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2008-2023 Hans Petter Selasky
 
 Redistribution and use in source and binary forms, with or without
@@ -162,8 +156,6 @@ and Intel port switching (`src/core/quirks.c`, `src/hcd/xhci.c`), and the quirk
 flags they use (`include/tendril/tendril.h`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2010-2022 Hans Petter Selasky
 
 Redistribution and use in source and binary forms, with or without
@@ -195,8 +187,6 @@ status stage stepping, and the port disable quirk (`src/hcd/xhci.c`,
 `include/tendril/tendril.h`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2010-2022 Hans Petter Selasky
 
 Redistribution and use in source and binary forms, with or without
@@ -229,8 +219,6 @@ handling, and the AMD-756 port count; also root port reset timing and TD size
 (`src/hcd/ohci.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
 Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 Copyright (c) 1998 Lennart Augustsson. All rights reserved.
@@ -263,8 +251,6 @@ Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. UHCI root port reset
 sequence (`src/hcd/uhci.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
 Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 Copyright (c) 1998 Lennart Augustsson. All rights reserved.
@@ -297,8 +283,6 @@ Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. UHCI legacy support register
 handling (`src/hcd/uhci.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 1998 The NetBSD Foundation, Inc.
 All rights reserved.
 
@@ -337,8 +321,6 @@ initialisation request, which it marks as taken from Linux, is not drawn from
 it: `src/class/msc_shuttle.c` was written clean-room.
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 1999 MAEKAWA Masahide <bishop@rr.iij4u.or.jp>,
 	      Nick Hibma <n_hibma@FreeBSD.org>
 All rights reserved.
@@ -371,8 +353,6 @@ Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. The Apple ISO keyboards
 whose keys it swaps (`src/class/hid.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 1998 The NetBSD Foundation, Inc.
 All rights reserved.
 
@@ -409,8 +389,6 @@ interface skipping, chip identification, and baud rate rounding
 (`src/class/serial.c`, `src/class/serial_ftdi.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2000 The NetBSD Foundation, Inc.
 All rights reserved.
 
@@ -446,8 +424,6 @@ interface, and the rates each chip takes (`src/class/serial.c`,
 `src/class/serial_pl2303.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2001-2003, 2005 Shunsuke Akiyama <akiyama@jp.FreeBSD.org>.
 All rights reserved.
 
@@ -506,8 +482,6 @@ Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. CH34x ID table and protocol
 (`src/class/serial.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2007, Takanori Watanabe
 All rights reserved.
 
@@ -676,8 +650,6 @@ settling times, and the full-speed bytes a microframe holds
 `src/hcd/ohci.c`, `src/hcd/uhci.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
 Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 Copyright (c) 1998 Lennart Augustsson. All rights reserved.
@@ -710,8 +682,6 @@ Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. The number of times a port
 is reconnected (`src/core/port.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -743,8 +713,6 @@ Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. The hub depth limit
 (`src/hcd/ehci.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -778,8 +746,6 @@ over microframes (`src/core/hub.c`, `src/core/port.c`, `src/core/device.c`,
 `src/hcd/ehci.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 Copyright (c) 1998 Lennart Augustsson. All rights reserved.
 Copyright (c) 2008-2022 Hans Petter Selasky
@@ -814,8 +780,6 @@ SET_ADDRESS timeout and settling time (`src/core/device.c`), and the port reset
 timeout (`src/core/port.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 Copyright (c) 1998 Lennart Augustsson. All rights reserved.
 Copyright (c) 2008-2020 Hans Petter Selasky. All rights reserved.
@@ -849,8 +813,6 @@ which failed transfers clear a transaction translator buffer
 (`src/core/device.c`, `src/core/transfer.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2008-2021 Hans Petter Selasky. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -882,8 +844,6 @@ check, the SCSI and Dymo ejects, and their timeouts (`src/class/msc.c`,
 `src/core/device.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2008-2022 Hans Petter Selasky.
 Copyright (c) 2021-2022 Idwer Vollering.
 
@@ -915,8 +875,6 @@ Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. Finding the HID descriptor
 among an interface's descriptors (`src/class/hid.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 1998 The NetBSD Foundation, Inc.
 All rights reserved.
 
@@ -953,8 +911,6 @@ boot protocol: when a quirk asks for it, or when its report descriptor cannot
 be read or parsed (`src/class/hid.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 1998 The NetBSD Foundation, Inc.
 All rights reserved.
 
@@ -990,8 +946,6 @@ Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. When a mouse uses the boot
 protocol, and the buttons of the Kensington SlimBlade (`src/class/hid.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2020 Vladimir Kondratyev <wulf@FreeBSD.org>
 
 Redistribution and use in source and binary forms, with or without
@@ -1024,8 +978,6 @@ what happens to those that find the schedule full (`src/hcd/ehci.c`,
 `include/tendril/tendril.h`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
 Copyright (c) 2004 The NetBSD Foundation, Inc. All rights reserved.
 Copyright (c) 2004 Lennart Augustsson. All rights reserved.
@@ -1062,8 +1014,6 @@ fixes, which it marks as taken from Linux, are not drawn from it:
 `src/hcd/ehci_chipset.c` was written clean-room.
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 1998 The NetBSD Foundation, Inc.
 All rights reserved.
 
@@ -1099,8 +1049,6 @@ Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. Interrupt moderation
 intervals (`src/hcd/xhci.c`).
 
 ```text
-SPDX-License-Identifier: BSD-2-Clause
-
 Copyright (c) 2010 Hans Petter Selasky. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -1301,6 +1249,4 @@ and pipe usage IDs (`src/class/msc.c`).
 
 ```text
 Copyright (c) 2024, Leon Albrecht <leon.a@serenityos.org>
-
-SPDX-License-Identifier: BSD-2-Clause
 ```

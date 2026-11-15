@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSD-2-Clause
+// SPDX-License-Identifier: BSD-2-Clause AND ISC
 //
 // Copyright (C) 2026 Mintsuki and contributors.
 //

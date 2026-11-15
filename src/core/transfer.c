@@ -27,8 +27,6 @@
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb_transfer.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 2008-2021 Hans Petter Selasky. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without

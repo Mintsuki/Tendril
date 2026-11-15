@@ -30,8 +30,6 @@
 // Parts of this file are derived from FreeBSD's sys/dev/usb/controller/ohci.c
 // and sys/dev/usb/usb.h (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
 // Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 // Copyright (c) 1998 Lennart Augustsson. All rights reserved.

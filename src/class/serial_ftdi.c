@@ -31,8 +31,6 @@
 // Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uftdi.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 2000 The NetBSD Foundation, Inc.
 // All rights reserved.
 //

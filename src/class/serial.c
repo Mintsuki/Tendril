@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSD-2-Clause
+// SPDX-License-Identifier: BSD-2-Clause AND ISC
 //
 // Copyright (C) 2026 Mintsuki and contributors.
 //
@@ -51,8 +51,6 @@
 // Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uftdi.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 2000 The NetBSD Foundation, Inc.
 // All rights reserved.
 //
@@ -81,8 +79,6 @@
 
 // Parts of this file are derived from FreeBSD's sys/dev/usb/quirk/usb_quirk.h
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
-//
-// SPDX-License-Identifier: BSD-2-Clause
 //
 // Copyright (c) 2008 Hans Petter Selasky. All rights reserved.
 //
@@ -159,8 +155,6 @@
 // Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uchcom.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 2007, Takanori Watanabe
 // All rights reserved.
 //
@@ -211,8 +205,6 @@
 
 // Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uplcom.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
-//
-// SPDX-License-Identifier: BSD-2-Clause
 //
 // Copyright (c) 2001-2003, 2005 Shunsuke Akiyama <akiyama@jp.FreeBSD.org>.
 // All rights reserved.
@@ -294,8 +286,6 @@
 
 // Parts of this file are derived from FreeBSD's sys/dev/usb/quirk/usb_quirk.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
-//
-// SPDX-License-Identifier: BSD-2-Clause
 //
 // Copyright (c) 1998 The NetBSD Foundation, Inc. All rights reserved.
 // Copyright (c) 1998 Lennart Augustsson. All rights reserved.

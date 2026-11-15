@@ -32,8 +32,6 @@
 // Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uplcom.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 2001-2003, 2005 Shunsuke Akiyama <akiyama@jp.FreeBSD.org>.
 // All rights reserved.
 //

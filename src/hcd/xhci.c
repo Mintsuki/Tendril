@@ -30,8 +30,6 @@
 // sys/dev/usb/controller/xhci_pci.c and sys/dev/usb/controller/xhci.c (commit
 // dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
-// SPDX-License-Identifier: BSD-2-Clause
-//
 // Copyright (c) 2010-2022 Hans Petter Selasky
 //
 // Redistribution and use in source and binary forms, with or without
@@ -56,8 +54,6 @@
 // Parts of this file are derived from FreeBSD's
 // sys/dev/usb/controller/xhcireg.h (commit
 // dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
-//
-// SPDX-License-Identifier: BSD-2-Clause
 //
 // Copyright (c) 2010 Hans Petter Selasky. All rights reserved.
 //
