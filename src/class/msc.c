@@ -395,54 +395,60 @@
 static const struct tendril_id_quirk msc_quirks[] = {
     // ADDON ATTACHE
     {
-        0x0d7d, 0x1300, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
+        0x0d7d, 0x1300, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
     },
     // ADDON A256MB
     {
-        0x0d7d, 0x1400, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
+        0x0d7d, 0x1400, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
     },
     // ADDON DISKPRO512
     {
-        0x0d7d, 0x1420, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
+        0x0d7d, 0x1420, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
     },
     // ADDONICS2 CABLE_205
-    { 0x0bf6, 0xa001, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x0bf6, 0xa001, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // AIPTEK POCKETCAM3M
-    { 0x08ca, 0x2011, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x08ca, 0x2011, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // ALCOR UMCR_9361
     {
-        0x058f, 0x9361, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN
+        0x058f, 0x9361, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN
     },
     // APACER HT202
     {
-        0x1005, 0xb113, 0x0000, 0xffff,
-        MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE
+        0x1005, 0xb113, 0x0000, 0xffff, MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE
     },
     // ASAHIOPTICAL OPTIO230
     {
-        0x0a17, 0x0004, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x0a17, 0x0004, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
     // ASAHIOPTICAL OPTIO330
     {
-        0x0a17, 0x0006, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x0a17, 0x0006, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
-    { 0x0a17, 0xffff, 0x0000, 0xffff, MQ_NO_RS_CLEAR_UA }, // ASAHIOPTICAL
-    { 0x14af, 0xaf01, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, // ATP EUSB
+    // ASAHIOPTICAL
+    {
+        0x0a17, 0xffff, 0x0000, 0xffff, MQ_NO_RS_CLEAR_UA
+    },
+    // ATP EUSB
+    {
+        0x14af, 0xaf01, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // BELKIN USB2SCSI
-    { 0x050d, 0x0115, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x050d, 0x0115, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // CASIO QV_DIGICAM
     {
-        0x07cf, 0x1001, 0x0000, 0xffff,
-        MQ_WIRE_CB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x07cf, 0x1001, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
     // CCYU ED1064
-    { 0x1065, 0x2136, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x1065, 0x2136, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // CENTURY EX35QUAT
     {
         0x07f7, 0x011e, 0x0000, 0xffff,
@@ -450,52 +456,81 @@ static const struct tendril_id_quirk msc_quirks[] = {
     },
     // CREATIVE NOMAD
     {
-        0x041e, 0x4106, 0x0001, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE
+        0x041e, 0x4106, 0x0001, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE
     },
     // CREATIVE STAGE_SE_MINI
-    { 0x041e, 0x3295, 0x0000, 0xffff, MQ_NO_INQUIRY },
+    {
+        0x041e, 0x3295, 0x0000, 0xffff, MQ_NO_INQUIRY
+    },
     // CYPRESS XX6830XX
-    { 0x04b4, 0x6830, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_SYNC_CACHE },
+    {
+        0x04b4, 0x6830, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_SYNC_CACHE
+    },
     // EMTEC DANEELEC4GB
-    { 0x13fe, 0x1e20, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x13fe, 0x1e20, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // DESKNOTE UCR_61S2B
-    { 0x1019, 0x0c55, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x1019, 0x0c55, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // DMI CFSM_RW
-    { 0x0c0b, 0xa109, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_NO_GETMAXLUN },
-    { 0x13fe, 0x2240, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, // EMTEC RUF2PS
+    {
+        0x0c0b, 0xa109, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_NO_GETMAXLUN
+    },
+    // EMTEC RUF2PS
+    {
+        0x13fe, 0x2240, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // EPSON STYLUS_875DC
     {
-        0x04b8, 0x0601, 0x0000, 0xffff,
-        MQ_WIRE_CB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x04b8, 0x0601, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
     // EPSON STYLUS_895
     {
-        0x04b8, 0x0602, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN
+        0x04b8, 0x0602, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN
     },
     // FEIYA 5IN1
-    { 0x090c, 0x1132, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
-    { 0x090c, 0x6200, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, // FEIYA ELANGO
-    { 0x07ab, 0xfc01, 0x0000, 0xffff, MQ_CMD_SCSI }, // FREECOM DVD
+    {
+        0x090c, 0x1132, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
+    // FEIYA ELANGO
+    {
+        0x090c, 0x6200, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
+    // FREECOM DVD
+    {
+        0x07ab, 0xfc01, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
     // FUJIPHOTO MASS0100
     {
         0x04cb, 0x0100, 0x0000, 0xffff,
         MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_RS_CLEAR_UA | MQ_NO_SYNC_CACHE
     },
-    { 0x091e, 0x23c0, 0x0000, 0xffff, MQ_NO_INQUIRY }, // GARMIN DAKOTA20
+    // GARMIN DAKOTA20
+    {
+        0x091e, 0x23c0, 0x0000, 0xffff, MQ_NO_INQUIRY
+    },
     // GARMIN FORERUNNER230
-    { 0x091e, 0x086d, 0x0000, 0xffff, MQ_NO_INQUIRY },
-    { 0x091e, 0x2459, 0x0000, 0xffff, MQ_NO_INQUIRY }, // GARMIN GPSMAP62S
+    {
+        0x091e, 0x086d, 0x0000, 0xffff, MQ_NO_INQUIRY
+    },
+    // GARMIN GPSMAP62S
+    {
+        0x091e, 0x2459, 0x0000, 0xffff, MQ_NO_INQUIRY
+    },
     // GARMIN EDGETOURINGPLUS
-    { 0x091e, 0x26c8, 0x0000, 0xffff, MQ_NO_INQUIRY },
+    {
+        0x091e, 0x26c8, 0x0000, 0xffff, MQ_NO_INQUIRY
+    },
     // GARMIN INSTINCTSOLAR
-    { 0x091e, 0x0d8a, 0x0000, 0xffff, MQ_NO_INQUIRY },
+    {
+        0x091e, 0x0d8a, 0x0000, 0xffff, MQ_NO_INQUIRY
+    },
     // GENESYS GL641USB2IDE
     {
         0x05e3, 0x0702, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE
-      | MQ_NO_SYNC_CACHE
+        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE | MQ_NO_SYNC_CACHE
     },
     // GENESYS GL641USB2IDE_2
     {
@@ -509,95 +544,130 @@ static const struct tendril_id_quirk msc_quirks[] = {
     },
     // GENESYS GL641USB_2
     {
-        0x05e3, 0x0760, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_WRONG_CSW_SIGNATURE
+        0x05e3, 0x0760, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_WRONG_CSW_SIGNATURE
     },
     // GENESYS GL3220
-    { 0x05e3, 0x0732, 0x0000, 0xffff, MQ_NO_INQUIRY | MQ_NO_RS_CLEAR_UA },
+    {
+        0x05e3, 0x0732, 0x0000, 0xffff, MQ_NO_INQUIRY | MQ_NO_RS_CLEAR_UA
+    },
     // HAGIWARA FG
-    { 0x0693, 0x0005, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x0693, 0x0005, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // HAGIWARA FGSM
-    { 0x0693, 0x0002, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x0693, 0x0002, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // HITACHI DVDCAM_DZ_MV100A
-    { 0x04a4, 0x0004, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI },
+    {
+        0x04a4, 0x0004, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI
+    },
     // HITACHI DVDCAM_USB
     {
-        0x04a4, 0x001e, 0x0000, 0xffff,
-        MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_INQUIRY
+        0x04a4, 0x001e, 0x0000, 0xffff, MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_INQUIRY
     },
-    { 0x03f0, 0x0307, 0x0000, 0xffff, MQ_CMD_ATAPI }, // HP CDW4E
+    // HP CDW4E
+    {
+        0x03f0, 0x0307, 0x0000, 0xffff, MQ_CMD_ATAPI
+    },
     // HP CDW8200
     {
         0x03f0, 0x0207, 0x0000, 0xffff,
         MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP
     },
     // HUAWEI E3372_INIT
-    { 0x12d1, 0x1f01, 0x0000, 0xffff, MQ_NO_INQUIRY | MQ_NO_GETMAXLUN },
+    {
+        0x12d1, 0x1f01, 0x0000, 0xffff, MQ_NO_INQUIRY | MQ_NO_GETMAXLUN
+    },
     // IMAGINATION DBX1
     {
-        0x149a, 0x2107, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_WRONG_CSW_SIGNATURE
+        0x149a, 0x2107, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_WRONG_CSW_SIGNATURE
     },
     // INSYSTEM USBCABLE
     {
         0x05ab, 0x081a, 0x0000, 0xffff,
-        MQ_WIRE_CB | MQ_CMD_ATAPI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP
-      | MQ_ALT_IFACE_1
+        MQ_WIRE_CB | MQ_CMD_ATAPI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP | MQ_ALT_IFACE_1
     },
     // INSYSTEM ATAPI
-    { 0x05ab, 0x0031, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC },
+    {
+        0x05ab, 0x0031, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC
+    },
     // INSYSTEM STORAGE_V2
-    { 0x05ab, 0x5701, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC },
+    {
+        0x05ab, 0x5701, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC
+    },
     // IODATA IU_CD2
-    { 0x04bb, 0x0204, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x04bb, 0x0204, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // IODATA DVR_UEH8
-    { 0x04bb, 0x0206, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x04bb, 0x0206, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // IOMEGA ZIP100
     {
-        0x059b, 0x0001, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_TEST_UNIT_READY
+        0x059b, 0x0001, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_TEST_UNIT_READY
     },
-    { 0x152d, 0x3569, 0x0000, 0xffff, MQ_NO_GETMAXLUN }, // JMICRON JMS566
-    { 0x152d, 0x0567, 0x0000, 0xffff, MQ_NO_GETMAXLUN }, // JMICRON JMS567
+    // JMICRON JMS566
+    {
+        0x152d, 0x3569, 0x0000, 0xffff, MQ_NO_GETMAXLUN
+    },
+    // JMICRON JMS567
+    {
+        0x152d, 0x0567, 0x0000, 0xffff, MQ_NO_GETMAXLUN
+    },
     // JMICRON JM20337
     {
-        0x152d, 0x2338, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_SYNC_CACHE
+        0x152d, 0x2338, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_SYNC_CACHE
     },
-    { 0x0951, 0x162b, 0x0000, 0xffff, MQ_NO_INQUIRY }, // KINGSTON HYPERX3_0
+    // KINGSTON HYPERX3_0
+    {
+        0x0951, 0x162b, 0x0000, 0xffff, MQ_NO_INQUIRY
+    },
     // KINGSTON DATATRAVELER3_0
-    { 0x0951, 0x1666, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x0951, 0x1666, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // KYOCERA FINECAM_L3
     {
-        0x0482, 0x0105, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x0482, 0x0105, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
     // KYOCERA FINECAM_S3X
     {
-        0x0482, 0x0100, 0x0000, 0xffff,
-        MQ_WIRE_CB | MQ_CMD_ATAPI | MQ_NO_INQUIRY
+        0x0482, 0x0100, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI | MQ_NO_INQUIRY
     },
     // KYOCERA FINECAM_S4
     {
-        0x0482, 0x0101, 0x0000, 0xffff,
-        MQ_WIRE_CB | MQ_CMD_ATAPI | MQ_NO_INQUIRY
+        0x0482, 0x0101, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI | MQ_NO_INQUIRY
     },
     // KYOCERA FINECAM_S5
     {
-        0x0482, 0x0103, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x0482, 0x0103, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
-    { 0x059f, 0xa601, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC }, // LACIE HD
+    // LACIE HD
+    {
+        0x059f, 0xa601, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC
+    },
     // LEXAR CF_READER
     {
-        0x05dc, 0xb002, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x05dc, 0xb002, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
-    { 0x05dc, 0x0001, 0x0000, 0xffff, MQ_CMD_SCSI }, // LEXAR JUMPSHOT
-    { 0x05dc, 0xa833, 0x0000, 0xffff, MQ_NO_INQUIRY }, // LEXAR JUMPDRIVE
-    { 0x0789, 0x0033, 0x0000, 0xffff, MQ_CMD_SCSI }, // LOGITEC LDR_H443SU2
+    // LEXAR JUMPSHOT
+    {
+        0x05dc, 0x0001, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
+    // LEXAR JUMPDRIVE
+    {
+        0x05dc, 0xa833, 0x0000, 0xffff, MQ_NO_INQUIRY
+    },
+    // LOGITEC LDR_H443SU2
+    {
+        0x0789, 0x0033, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
     // LOGITEC LDR_H443U2
-    { 0x0789, 0x00b3, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x0789, 0x00b3, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // MEIZU M6_SL
     {
         0x0492, 0x0140, 0x0000, 0xffff,
@@ -613,147 +683,204 @@ static const struct tendril_id_quirk msc_quirks[] = {
         0x07af, 0x0006, 0x0000, 0xffff,
         MQ_WIRE_CB | MQ_CMD_SCSI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP
     },
-    { 0x0634, 0x0655, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, // MICRON REALSSD
+    // MICRON REALSSD
+    {
+        0x0634, 0x0655, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // MICROTECH SCSIDB25
-    { 0x07af, 0x0004, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x07af, 0x0004, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // MICROTECH SCSIHD50
-    { 0x07af, 0x0005, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
-    { 0x0686, 0x4017, 0x0000, 0xffff, MQ_CMD_SCSI }, // MINOLTA E223
+    {
+        0x07af, 0x0005, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
+    // MINOLTA E223
+    {
+        0x0686, 0x4017, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
     // MINOLTA F300
-    { 0x0686, 0x4011, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x0686, 0x4011, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // MITSUMI CDRRW
-    { 0x03ee, 0x0000, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI },
+    {
+        0x03ee, 0x0000, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI
+    },
     // MOTOROLA2 E398
     {
-        0x22b8, 0x4810, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN
+        0x22b8, 0x4810, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN
     },
-    { 0x1cae, 0xffff, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, // MPMAN
+    // MPMAN
+    {
+        0x1cae, 0xffff, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // MSYSTEMS DISKONKEY
     {
         0x08ec, 0x0010, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE | MQ_NO_GETMAXLUN
-      | MQ_NO_RS_CLEAR_UA
+        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE | MQ_NO_GETMAXLUN | MQ_NO_RS_CLEAR_UA
     },
     // MSYSTEMS DISKONKEY2
-    { 0x08ec, 0x0011, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI },
+    {
+        0x08ec, 0x0011, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI
+    },
     // MYSON HEDEN
-    { 0x04cf, 0x8818, 0x0000, 0xffff, MQ_IGNORE_RESIDUE | MQ_NO_SYNC_CACHE },
+    {
+        0x04cf, 0x8818, 0x0000, 0xffff, MQ_IGNORE_RESIDUE | MQ_NO_SYNC_CACHE
+    },
     // NEODIO ND3260
-    { 0x0aec, 0x3260, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x0aec, 0x3260, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // NETAC CF_CARD
     {
-        0x0dd8, 0x1060, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x0dd8, 0x1060, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
     // NETAC ONLYDISK
     {
-        0x0dd8, 0x0003, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
+        0x0dd8, 0x0003, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
     },
     // NETCHIP CLIK_40
-    { 0x0525, 0xa140, 0x0000, 0xffff, MQ_CMD_ATAPI | MQ_NO_INQUIRY },
+    {
+        0x0525, 0xa140, 0x0000, 0xffff, MQ_CMD_ATAPI | MQ_NO_INQUIRY
+    },
     // NETCHIP POCKETBOOK
-    { 0x0525, 0xa4a5, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x0525, 0xa4a5, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // NIKON D300
-    { 0x04b0, 0x041a, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x04b0, 0x041a, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // NORELSYS NS1081
-    { 0x2537, 0x1081, 0x0000, 0xffff, MQ_NO_RS_CLEAR_UA | MQ_NO_INQUIRY },
+    {
+        0x2537, 0x1081, 0x0000, 0xffff, MQ_NO_RS_CLEAR_UA | MQ_NO_INQUIRY
+    },
     // OLYMPUS C1
     {
-        0x07b4, 0x0102, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_WRONG_CSW_SIGNATURE
+        0x07b4, 0x0102, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_WRONG_CSW_SIGNATURE
     },
-    { 0x07b4, 0x0105, 0x0000, 0xffff, MQ_NO_GETMAXLUN }, // OLYMPUS C700
+    // OLYMPUS C700
+    {
+        0x07b4, 0x0105, 0x0000, 0xffff, MQ_NO_GETMAXLUN
+    },
     // OLYMPUS E_1
     {
-        0x07b4, 0x0102, 0x0000, 0xffff,
-        MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE
+        0x07b4, 0x0102, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE
     },
     // OLYMPUS E_330
     {
         0x07b4, 0x0118, 0x0000, 0xffff,
-        MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE
-      | MQ_NO_START_STOP
+        MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE | MQ_NO_START_STOP
     },
     // OLYMPUS E_PM1
     {
         0x07b4, 0x012c, 0x0000, 0xffff,
-        MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE
-      | MQ_NO_START_STOP
+        MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE | MQ_NO_START_STOP
     },
     // OLYMPUS E_M1
     {
         0x07b4, 0x012e, 0x0000, 0xffff,
-        MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE
-      | MQ_NO_START_STOP
+        MQ_NO_GETMAXLUN | MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE | MQ_NO_START_STOP
     },
     // ONSPEC SDS_HOTFIND_D
     {
         0x07c4, 0x0400, 0x0000, 0xffff,
         MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN | MQ_NO_SYNC_CACHE
     },
-    { 0x07c4, 0xa001, 0x0000, 0xffff, MQ_CMD_SCSI }, // ONSPEC CFMS_RW
-    { 0x07c4, 0xa109, 0x0000, 0xffff, MQ_CMD_SCSI }, // ONSPEC CFSM_COMBO
-    { 0x07c4, 0xa005, 0x0000, 0xffff, MQ_CMD_SCSI }, // ONSPEC CFSM_READER
-    { 0x07c4, 0xa006, 0x0000, 0xffff, MQ_CMD_SCSI }, // ONSPEC CFSM_READER2
+    // ONSPEC CFMS_RW
+    {
+        0x07c4, 0xa001, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
+    // ONSPEC CFSM_COMBO
+    {
+        0x07c4, 0xa109, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
+    // ONSPEC CFSM_READER
+    {
+        0x07c4, 0xa005, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
+    // ONSPEC CFSM_READER2
+    {
+        0x07c4, 0xa006, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
     // ONSPEC MDCFE_B_CF_READER
-    { 0x07c4, 0xa000, 0x0000, 0xffff, MQ_CMD_SCSI },
+    {
+        0x07c4, 0xa000, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
     // ONSPEC MDSM_B_READER
-    { 0x07c4, 0xa103, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_NO_INQUIRY },
-    { 0x07c4, 0xa003, 0x0000, 0xffff, MQ_CMD_SCSI }, // ONSPEC READER
+    {
+        0x07c4, 0xa103, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_NO_INQUIRY
+    },
+    // ONSPEC READER
+    {
+        0x07c4, 0xa003, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
     // ONSPEC UCF100
     {
         0x07c4, 0xa400, 0x0000, 0xffff,
         MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_NO_INQUIRY | MQ_NO_GETMAXLUN
     },
     // ONSPEC2 IMAGEMATE_SDDR55
-    { 0x55aa, 0xa103, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_NO_GETMAXLUN },
+    {
+        0x55aa, 0xa103, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_NO_GETMAXLUN
+    },
     // PANASONIC KXL840AN
     {
-        0x04da, 0x0d01, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_NO_GETMAXLUN
+        0x04da, 0x0d01, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_NO_GETMAXLUN
     },
     // PANASONIC KXLCB20AN
-    { 0x04da, 0x0d0a, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x04da, 0x0d0a, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // PANASONIC KXLCB35AN
-    { 0x04da, 0x0d0e, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
-    { 0x04da, 0x0901, 0x0000, 0xffff, MQ_CMD_UFI }, // PANASONIC LS120CAM
+    {
+        0x04da, 0x0d0e, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
+    // PANASONIC LS120CAM
+    {
+        0x04da, 0x0901, 0x0000, 0xffff, MQ_CMD_UFI
+    },
     // PLEXTOR 40_12_40U
     {
-        0x093b, 0x0011, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_TEST_UNIT_READY
+        0x093b, 0x0011, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_TEST_UNIT_READY
     },
     // PNY ATTACHE2
     {
         0x154b, 0x0010, 0x0000, 0xffff,
         MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE | MQ_NO_START_STOP
     },
-    { 0x067b, 0x2506, 0x0000, 0xffff, MQ_NO_SYNC_CACHE }, // PROLIFIC PL2506
+    // PROLIFIC PL2506
+    {
+        0x067b, 0x2506, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // QUALCOMMINC ZTE_MF730M
-    { 0x19d2, 0x1420, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_INQUIRY },
-    { 0x148f, 0x2878, 0x0001, 0x0001, MQ_IGNORE }, // RALINK RT_STOR
+    {
+        0x19d2, 0x1420, 0x0000, 0xffff, MQ_NO_GETMAXLUN | MQ_NO_INQUIRY
+    },
+    // RALINK RT_STOR
+    {
+        0x148f, 0x2878, 0x0001, 0x0001, MQ_IGNORE
+    },
     // REALTEK RTW8821CU_CD
-    { 0x0bda, 0x1a2b, 0x0000, 0xffff, MQ_SCSI_EJECT },
+    {
+        0x0bda, 0x1a2b, 0x0000, 0xffff, MQ_SCSI_EJECT
+    },
     // SAMSUNG_TECHWIN DIGIMAX_410
     {
-        0x0839, 0x000a, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x0839, 0x000a, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
     // SANDISK SDDR05A
     {
-        0x0781, 0x0001, 0x0000, 0xffff,
-        MQ_WIRE_CB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE
+        0x0781, 0x0001, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE
     },
     // SANDISK SDDR09
     {
-        0x0781, 0x0200, 0x0000, 0xffff,
-        MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE | MQ_NO_GETMAXLUN
+        0x0781, 0x0200, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE | MQ_NO_GETMAXLUN
     },
     // SANDISK SDDR12
     {
-        0x0781, 0x0100, 0x0000, 0xffff,
-        MQ_WIRE_CB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE
+        0x0781, 0x0100, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE
     },
     // SANDISK SDCZ2_128
     {
@@ -762,159 +889,204 @@ static const struct tendril_id_quirk msc_quirks[] = {
     },
     // SANDISK SDCZ2_256
     {
-        0x0781, 0x7104, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
+        0x0781, 0x7104, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
     },
     // SANDISK SDCZ4_128
     {
-        0x0781, 0x7112, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
+        0x0781, 0x7112, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
     },
     // SANDISK SDCZ4_256
     {
-        0x0781, 0x7113, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
+        0x0781, 0x7113, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
     },
     // SANDISK SDCZ48_32
     {
-        0x0781, 0x5581, 0x0000, 0xffff,
-        MQ_NO_SYNC_CACHE | MQ_NO_TEST_UNIT_READY
+        0x0781, 0x5581, 0x0000, 0xffff, MQ_NO_SYNC_CACHE | MQ_NO_TEST_UNIT_READY
     },
     // SANDISK SDDR31
     {
-        0x0781, 0x0002, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE
+        0x0781, 0x0002, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_READ_CAP_OFF_BY_ONE
     },
     // SANDISK IMAGEMATE_SDDR289
-    { 0x0781, 0xb6ba, 0x0000, 0xffff, MQ_NO_SYNC_CACHE | MQ_NO_GETMAXLUN },
+    {
+        0x0781, 0xb6ba, 0x0000, 0xffff, MQ_NO_SYNC_CACHE | MQ_NO_GETMAXLUN
+    },
     // SCANLOGIC SL11R
     {
-        0x04ce, 0x0002, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_NO_INQUIRY
+        0x04ce, 0x0002, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_NO_INQUIRY
     },
     // SHUTTLE EUSB
     {
         0x04e6, 0x0001, 0x0000, 0xffff,
-        MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP
-      | MQ_SHUTTLE_INIT
+        MQ_WIRE_CBI | MQ_CMD_ATAPI | MQ_NO_TEST_UNIT_READY | MQ_NO_START_STOP | MQ_SHUTTLE_INIT
     },
     // SHUTTLE CDRW
-    { 0x04e6, 0x0101, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI },
+    {
+        0x04e6, 0x0101, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI
+    },
     // SHUTTLE CF
-    { 0x04e6, 0x000a, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI },
+    {
+        0x04e6, 0x000a, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI
+    },
     // SHUTTLE EUSBATAPI
-    { 0x04e6, 0x0009, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI },
-    { 0x04e6, 0x0005, 0x0000, 0xffff, MQ_CMD_SCSI }, // SHUTTLE EUSBCFSM
+    {
+        0x04e6, 0x0009, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI
+    },
+    // SHUTTLE EUSBCFSM
+    {
+        0x04e6, 0x0005, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
     // SHUTTLE EUSCSI
-    { 0x04e6, 0x0002, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x04e6, 0x0002, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // SHUTTLE HIFD
-    { 0x04e6, 0x0007, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI },
+    {
+        0x04e6, 0x0007, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI
+    },
     // SHUTTLE SDDR09
-    { 0x04e6, 0x0003, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_NO_GETMAXLUN },
+    {
+        0x04e6, 0x0003, 0x0000, 0xffff, MQ_CMD_SCSI | MQ_NO_GETMAXLUN
+    },
     // SHUTTLE ZIOMMC
-    { 0x04e6, 0x0006, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI },
+    {
+        0x04e6, 0x0006, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_SCSI
+    },
     // SIGMATEL I_BEAD100
     {
-        0x066f, 0x8008, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_SHUTTLE_INIT
+        0x066f, 0x8008, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_SHUTTLE_INIT
     },
     // SIIG WINTERREADER
     {
-        0x07cc, 0x0330, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
+        0x07cc, 0x0330, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_IGNORE_RESIDUE
     },
     // SKANHEX MD_7425
     {
-        0x0d96, 0x410a, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x0d96, 0x410a, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
     // SKANHEX SX_520Z
     {
-        0x0d96, 0x5200, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x0d96, 0x5200, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
-    { 0x0e39, 0x1700, 0x0000, 0xffff, MQ_NO_INQUIRY }, // SMART2 G2MEMKEY
+    // SMART2 G2MEMKEY
+    {
+        0x0e39, 0x1700, 0x0000, 0xffff, MQ_NO_INQUIRY
+    },
     // SONY HANDYCAM
-    { 0x054c, 0x002e, 0x0500, 0x0500, MQ_WIRE_CB | MQ_CMD_RBC | MQ_PAD_TO_12 },
+    {
+        0x054c, 0x002e, 0x0500, 0x0500, MQ_WIRE_CB | MQ_CMD_RBC | MQ_PAD_TO_12
+    },
     // SONY CLIE_40_MS
     {
-        0x054c, 0x006d, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x054c, 0x006d, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
     // SONY DSC
-    { 0x054c, 0x0010, 0x0500, 0x0500, MQ_WIRE_CB | MQ_CMD_RBC | MQ_PAD_TO_12 },
+    {
+        0x054c, 0x0010, 0x0500, 0x0500, MQ_WIRE_CB | MQ_CMD_RBC | MQ_PAD_TO_12
+    },
     // SONY DSC
-    { 0x054c, 0x0010, 0x0600, 0x0600, MQ_WIRE_CB | MQ_CMD_RBC | MQ_PAD_TO_12 },
-    { 0x054c, 0x0010, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC }, // SONY DSC
+    {
+        0x054c, 0x0010, 0x0600, 0x0600, MQ_WIRE_CB | MQ_CMD_RBC | MQ_PAD_TO_12
+    },
+    // SONY DSC
+    {
+        0x054c, 0x0010, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC
+    },
     // SONY HANDYCAM
-    { 0x054c, 0x002e, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC },
-    { 0x054c, 0x0032, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC }, // SONY MSC
+    {
+        0x054c, 0x002e, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC
+    },
+    // SONY MSC
+    {
+        0x054c, 0x0032, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_RBC
+    },
     // SONY MS_MSC_U03
-    { 0x054c, 0x0069, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_UFI },
+    {
+        0x054c, 0x0069, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_UFI
+    },
     // SONY MS_NW_MS7
     {
-        0x054c, 0x0025, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN
+        0x054c, 0x0025, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN
     },
     // SONY MS_PEG_N760C
     {
-        0x054c, 0x0058, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x054c, 0x0058, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
     // SONY MSACUS1
     {
-        0x054c, 0x002d, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN
+        0x054c, 0x002d, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_GETMAXLUN
     },
     // SONY PORTABLE_HDD_V2
-    { 0x054c, 0x002b, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x054c, 0x002b, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // SUPERTOP IDE
-    { 0x14cd, 0x6600, 0x0000, 0xffff, MQ_IGNORE_RESIDUE | MQ_NO_SYNC_CACHE },
+    {
+        0x14cd, 0x6600, 0x0000, 0xffff, MQ_IGNORE_RESIDUE | MQ_NO_SYNC_CACHE
+    },
     // SUPERTOP FLASHDRIVE
     {
-        0x14cd, 0x121c, 0x0000, 0xffff,
-        MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE
+        0x14cd, 0x121c, 0x0000, 0xffff, MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE
     },
-    { 0x0436, 0x0005, 0x0000, 0xffff, MQ_CMD_SCSI }, // TAUGA CAMERAMATE
+    // TAUGA CAMERAMATE
+    {
+        0x0436, 0x0005, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
     // TEAC FD05PUB
-    { 0x0644, 0x0000, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_UFI },
+    {
+        0x0644, 0x0000, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_UFI
+    },
     // TECLAST TLC300
     {
-        0x071b, 0x3203, 0x0000, 0xffff,
-        MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE
+        0x071b, 0x3203, 0x0000, 0xffff, MQ_NO_TEST_UNIT_READY | MQ_NO_SYNC_CACHE
     },
     // TOSHIBA TRANSMEMORY
-    { 0x0930, 0x6545, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x0930, 0x6545, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // TREK MEMKEY
     {
-        0x0a16, 0x8888, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x0a16, 0x8888, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
     // TREK THUMBDRIVE_8MB
     {
-        0x0a16, 0x9988, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_IGNORE_RESIDUE
+        0x0a16, 0x9988, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_ATAPI | MQ_IGNORE_RESIDUE
     },
     // TRUMPION C3310
-    { 0x090a, 0x1100, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_UFI },
-    { 0x090a, 0x1200, 0x0000, 0xffff, MQ_CMD_RBC }, // TRUMPION MP3
-    { 0x090a, 0x1001, 0x0000, 0xffff, MQ_CMD_SCSI }, // TRUMPION T33520
+    {
+        0x090a, 0x1100, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_UFI
+    },
+    // TRUMPION MP3
+    {
+        0x090a, 0x1200, 0x0000, 0xffff, MQ_CMD_RBC
+    },
+    // TRUMPION T33520
+    {
+        0x090a, 0x1001, 0x0000, 0xffff, MQ_CMD_SCSI
+    },
     // TWINMOS MDIV
-    { 0x126f, 0x1325, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI },
+    {
+        0x126f, 0x1325, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI
+    },
     // VERBATIM STORENGO
-    { 0x18a5, 0x0243, 0x0000, 0xffff, MQ_IGNORE_RESIDUE },
+    {
+        0x18a5, 0x0243, 0x0000, 0xffff, MQ_IGNORE_RESIDUE
+    },
     // VIA USB2IDEBRIDGE
     {
-        0x040d, 0x6204, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_SYNC_CACHE
+        0x040d, 0x6204, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_SYNC_CACHE
     },
     // VIALABS USB30SATABRIDGE
-    { 0x2109, 0x0700, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
-    { 0x2109, 0x0701, 0x0000, 0xffff, MQ_NO_INQUIRY }, // VIALABS VL701
+    {
+        0x2109, 0x0700, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
+    // VIALABS VL701
+    {
+        0x2109, 0x0701, 0x0000, 0xffff, MQ_NO_INQUIRY
+    },
     // VIVITAR 35XX
     {
-        0x0636, 0x0003, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
+        0x0636, 0x0003, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_INQUIRY
     },
     // WESTERN COMBO
     {
@@ -928,57 +1100,99 @@ static const struct tendril_id_quirk msc_quirks[] = {
     },
     // WESTERN MYBOOK
     {
-        0x1058, 0x0901, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_SYNC_CACHE
+        0x1058, 0x0901, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_SYNC_CACHE
     },
     // WESTERN MYPASSPORT_01
-    { 0x1058, 0x0746, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x0746, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORT_02
-    { 0x1058, 0x0748, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x0748, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORT_03
-    { 0x1058, 0x074a, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x074a, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORT_04
-    { 0x1058, 0x074c, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x074c, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORT_05
-    { 0x1058, 0x074e, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x074e, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORT_06
-    { 0x1058, 0x07a6, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x07a6, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORT_07
-    { 0x1058, 0x07a8, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x07a8, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORT_08
-    { 0x1058, 0x07aa, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x07aa, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORT_09
-    { 0x1058, 0x07ac, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x07ac, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORT_10
-    { 0x1058, 0x07ae, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x07ae, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORT_11
-    { 0x1058, 0x0741, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x0741, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORTES_00
-    { 0x1058, 0x070a, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x070a, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORTES_01
-    { 0x1058, 0x071a, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x071a, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORTES_02
-    { 0x1058, 0x0730, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x0730, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORTES_03
-    { 0x1058, 0x0732, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x0732, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORTES_04
-    { 0x1058, 0x0740, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x0740, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORTES_05
-    { 0x1058, 0x0742, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x0742, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORTES_06
-    { 0x1058, 0x0750, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x0750, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORTES_07
-    { 0x1058, 0x0752, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x0752, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORTES_08
-    { 0x1058, 0x07a0, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x07a0, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORTES_09
-    { 0x1058, 0x07a2, 0x0000, 0xffff, MQ_NO_SYNC_CACHE },
+    {
+        0x1058, 0x07a2, 0x0000, 0xffff, MQ_NO_SYNC_CACHE
+    },
     // WESTERN MYPASSPORTUL_00
-    { 0x1058, 0x0743, 0x0000, 0xffff, MQ_NO_TEST_UNIT_READY },
+    {
+        0x1058, 0x0743, 0x0000, 0xffff, MQ_NO_TEST_UNIT_READY
+    },
     // WINMAXGROUP FLASH64MC
     {
-        0x0ed1, 0x6660, 0x0000, 0xffff,
-        MQ_WIRE_BBB | MQ_NO_INQUIRY | MQ_CMD_SCSI
+        0x0ed1, 0x6660, 0x0000, 0xffff, MQ_WIRE_BBB | MQ_NO_INQUIRY | MQ_CMD_SCSI
     },
     // YANO FW800HD
     {
@@ -986,7 +1200,9 @@ static const struct tendril_id_quirk msc_quirks[] = {
         MQ_WIRE_BBB | MQ_CMD_SCSI | MQ_NO_START_STOP | MQ_IGNORE_RESIDUE
     },
     // YANO U640MO
-    { 0x094f, 0x0101, 0x0000, 0xffff, MQ_WIRE_CBI | MQ_CMD_ATAPI },
+    {
+        0x094f, 0x0101, 0x0000, 0xffff, MQ_WIRE_CBI | MQ_CMD_ATAPI
+    },
     // YEDATA FLASHBUSTERU
     {
         0x057b, 0x0000, 0x0000, 0x007f,
@@ -999,11 +1215,12 @@ static const struct tendril_id_quirk msc_quirks[] = {
     },
     // YEDATA FLASHBUSTERU
     {
-        0x057b, 0x0000, 0x0081, 0xffff,
-        MQ_WIRE_CBI | MQ_CMD_UFI | MQ_NO_RS_CLEAR_UA
+        0x057b, 0x0000, 0x0081, 0xffff, MQ_WIRE_CBI | MQ_CMD_UFI | MQ_NO_RS_CLEAR_UA
     },
     // ZORAN EX20DSC
-    { 0x0595, 0x4343, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI }
+    {
+        0x0595, 0x4343, 0x0000, 0xffff, MQ_WIRE_CB | MQ_CMD_ATAPI
+    }
 };
 // END FreeBSD sys/dev/usb/quirk/usb_quirk.c, sys/dev/usb/usbdevs
 
