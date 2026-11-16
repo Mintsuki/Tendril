@@ -843,18 +843,19 @@ static void next_string(struct tendril_device *dev) {
     );
 }
 
-// Decodes a UTF-16LE string descriptor (USB 2.0 9.6.7) into newly allocated
-// UTF-8, with control characters, which could drive a terminal the string is
-// logged to, replaced by '?'.
-static char *decode_string(const uint8_t *buf, size_t actual, bool swap) {
+// The UTF-8 of the longest string descriptor, and its NUL: at most 126 units
+// of up to 3 bytes each, a surrogate pair taking two for 4.
+#define STRING_SIZE (3 * 126 + 1)
+
+// Decodes a UTF-16LE string descriptor (USB 2.0 9.6.7) into UTF-8 in `tmp`,
+// STRING_SIZE bytes, with control characters, which could drive a terminal the
+// string is logged to, replaced by '?'. False for a malformed descriptor.
+static bool decode_string(const uint8_t *buf, size_t actual, bool swap, char *tmp) {
     if (actual < 2 || buf[0] < 2 || buf[1] != TENDRIL_DT_STRING) {
-        return NULL;
+        return false;
     }
     size_t len = MIN((size_t)buf[0], actual);
     size_t units = (len - 2) / 2;
-    // At most 126 units of up to 3 bytes each, a surrogate pair taking two for
-    // 4.
-    char tmp[3 * 126 + 1];
     size_t o = 0;
 
     for (size_t i = 0; i < units; i++) {
@@ -900,7 +901,7 @@ static char *decode_string(const uint8_t *buf, size_t actual, bool swap) {
         o--;
     }
     tmp[o] = '\0';
-    return tendril_strdup(tmp);
+    return true;
 }
 
 // Configuration selection and setup
@@ -1671,10 +1672,10 @@ static void dev_step(struct tendril_device *dev) {
             break;
         }
         case STEP_STRING: {
-            if (descriptor_ok(st)) {
-                char *s = decode_string(
-                    dev->buf, actual, (dev->quirks & TENDRIL_DEV_QUIRK_SWAP_UNICODE) != 0
-                );
+            char text[STRING_SIZE];
+            bool swap = (dev->quirks & TENDRIL_DEV_QUIRK_SWAP_UNICODE) != 0;
+            if (descriptor_ok(st) && decode_string(dev->buf, actual, swap, text)) {
+                char *s = tendril_strdup(text);
                 if (s != NULL) {
                     char **slot = &dev->serial;
                     switch (dev->index) {
@@ -2497,20 +2498,17 @@ static void string_work(struct tendril_work *work) {
         op_finish(op, st);
         return;
     }
-    char *s = decode_string(
-        op->buf, op->xfer.actual, (dev->quirks & TENDRIL_DEV_QUIRK_SWAP_UNICODE) != 0
-    );
-    if (s == NULL) {
+    char text[STRING_SIZE];
+    bool swap = (dev->quirks & TENDRIL_DEV_QUIRK_SWAP_UNICODE) != 0;
+    if (!decode_string(op->buf, op->xfer.actual, swap, text)) {
         op_finish(op, TENDRIL_ERR_PROTOCOL);
         return;
     }
-    size_t n = tendril_strlen(s);
     if (op->out_size != 0) {
-        size_t copy = MIN(n, op->out_size - 1);
-        memcpy(op->out, s, copy);
+        size_t copy = MIN(tendril_strlen(text), op->out_size - 1);
+        memcpy(op->out, text, copy);
         op->out[copy] = '\0';
     }
-    tendril_strfree(s);
     op_finish(op, TENDRIL_OK);
 }
 
