@@ -154,9 +154,10 @@ SUCH DAMAGE.
 
 ## FreeBSD: `sys/dev/usb/controller/xhci_pci.c`
 
-Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. xHCI controller quirk table
-and Intel port switching (`src/core/quirks.c`, `src/hcd/xhci.c`), and the quirk
-flags they use (`include/tendril/tendril.h`).
+Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. The firmware handoff
+timeout, the xHCI controller quirk table, and Intel port switching
+(`src/core/quirks.c`, `src/hcd/xhci.c`), and the quirk flags they use
+(`include/tendril/tendril.h`).
 
 ```text
 Copyright (c) 2010-2022 Hans Petter Selasky
@@ -562,7 +563,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. RNDIS interface matches,
 finding the data interface through the Call Management descriptor or the next
-interface, and the frame sizes received (`src/class/net.c`).
+interface, the response buffer, reading the response straight after the
+command, and the frame sizes received (`src/class/net.c`).
 
 ```text
 Copyright (c) 2010 Jonathan Armani <armani@openbsd.org>
@@ -910,8 +912,9 @@ POSSIBILITY OF SUCH DAMAGE.
 ## FreeBSD: `sys/dev/hid/hkbd.c`
 
 Commit `dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32`. When a keyboard uses the
-boot protocol: when a quirk asks for it, or when its report descriptor cannot
-be read or parsed (`src/class/hid.c`).
+boot protocol (when a quirk asks for it, or when its report descriptor cannot
+be read or parsed), and ignoring a failure to switch to it
+(`src/class/hid.c`).
 
 ```text
 Copyright (c) 1998 The NetBSD Foundation, Inc.
@@ -1199,8 +1202,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 Commit `fba0a8da167d48e1d94a300389b91b0a48708155`. RNDIS interface matches and
 a device left out, the 1024-byte response buffer, reading the response straight
-after the command, tolerating padding after the last packet, and the
-zero-length packet after a full one (`src/class/net.c`).
+after the command, taking only 802.3 adapters, tolerating padding after the
+last packet, and the zero-length packet after a full one (`src/class/net.c`).
 
 ```text
 Copyright (c) 2010 Jonathan Armani <armani@openbsd.org>
