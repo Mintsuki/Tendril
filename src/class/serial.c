@@ -1639,13 +1639,13 @@ void tendril_serial_status_update(struct tendril_serial *port, uint32_t status) 
     }
 }
 
-// Control requests, run one at a time in the order queued
-
 void tendril_serial_deliver(struct tendril_serial *port, const uint8_t *data, size_t len) {
     if (callbacks->receive != NULL) {
         callbacks->receive(port, data, len);
     }
 }
+
+// Control requests, run one at a time in the order queued
 
 static struct serial_op *op_new(void (*done)(void *, int), void *ctx) {
     struct serial_op *op = tendril_zalloc(sizeof(struct serial_op));
