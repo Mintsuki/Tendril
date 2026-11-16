@@ -482,7 +482,8 @@ static void evaluate(struct tendril_port *port) {
             port->state = PORT_DISABLED;
         } else {
             LOG_INFO(
-                "%s: port error, attaching the device again", port_name(port, name, sizeof(name))
+                "%s: port error, attaching the device again",
+                port_name(port, name, sizeof(name))
             );
             port->state = PORT_IDLE;
         }
@@ -498,7 +499,8 @@ static void evaluate(struct tendril_port *port) {
     } else if (port->state == PORT_SUSPENDED && port->device != NULL && !enabled(port)
             && !link_suspended(port)) {
         LOG_INFO(
-            "%s: suspended device lost, enumerating it again", port_name(port, name, sizeof(name))
+            "%s: suspended device lost, enumerating it again",
+            port_name(port, name, sizeof(name))
         );
         disconnect_device(port);
         port->state = PORT_IDLE;
@@ -581,8 +583,8 @@ static void status_done(struct tendril_port *port) {
         if (port->async.status != TENDRIL_ERR_NO_DEVICE) {
             char name[32];
             LOG_WARN(
-                "%s: status read failed: %s", port_name(port, name, sizeof(name)),
-                tendril_status_str(port->async.status)
+                "%s: status read failed: %s",
+                port_name(port, name, sizeof(name)), tendril_status_str(port->async.status)
             );
         }
         port_idle(port);
@@ -731,8 +733,8 @@ void tendril_enum_done(struct tendril_port *port, struct tendril_device *dev, in
     }
 
     LOG_WARN(
-        "%s: enumeration failed: %s", port_name(port, name, sizeof(name)),
-        tendril_status_str(status)
+        "%s: enumeration failed: %s",
+        port_name(port, name, sizeof(name)), tendril_status_str(status)
     );
     if (status != TENDRIL_ERR_NO_DEVICE) {
         tendril_hub_reset_tt(dev);

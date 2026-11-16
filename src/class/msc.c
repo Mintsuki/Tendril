@@ -2625,8 +2625,8 @@ static void probe_done(struct tendril_msc_lun *lun, bool present) {
 
     if (present && (changed || !lun->attached)) {
         LOG_INFO(
-            "MSC: LUN %u: %llu blocks of %zu bytes%s", lun->number,
-            (unsigned long long)lun->blocks, lun->block_size,
+            "MSC: LUN %u: %llu blocks of %zu bytes%s",
+            lun->number, (unsigned long long)lun->blocks, lun->block_size,
             lun->write_protected ? ", write protected" : ""
         );
     } else if (!present && (changed || !lun->attached) && block_device(lun)) {
@@ -2665,8 +2665,9 @@ static void probe_result(struct tendril_msc_lun *lun, int v, int st) {
                     copy_string(lun->revision, b + 32, 4);
                 }
                 LOG_INFO(
-                    "MSC: LUN %u: \"%s\" \"%s\" \"%s\", type %02x%s", lun->number, lun->vendor,
-                    lun->product, lun->revision, lun->type, lun->removable ? ", removable" : ""
+                    "MSC: LUN %u: \"%s\" \"%s\" \"%s\", type %02x%s",
+                    lun->number, lun->vendor, lun->product, lun->revision, lun->type,
+                    lun->removable ? ", removable" : ""
                 );
                 lun->tries = 0;
                 if (block_device(lun)) {
@@ -3189,8 +3190,8 @@ static void create_luns(struct tendril_msc *msc, size_t count) {
         }
     }
     LOG_INFO(
-        "MSC: interface %u: %s, %zu LUN%s", msc->intf->number, transport, count,
-        count == 1 ? "" : "s"
+        "MSC: interface %u: %s, %zu LUN%s",
+        msc->intf->number, transport, count, count == 1 ? "" : "s"
     );
     for (size_t i = 0; i < count; i++) {
         struct tendril_msc_lun *lun = tendril_zalloc(sizeof(struct tendril_msc_lun));
@@ -3346,7 +3347,8 @@ static bool skip_cdrom(struct tendril_msc *msc) {
     int st = tendril_device_set_configuration(dev, cd->configuration_value, NULL, NULL);
     if (st != TENDRIL_OK) {
         LOG_WARN(
-            "MSC: leaving the auto-install CD-ROM configuration failed: %s", tendril_status_str(st)
+            "MSC: leaving the auto-install CD-ROM configuration failed: %s",
+            tendril_status_str(st)
         );
         return false;
     }
@@ -3402,7 +3404,8 @@ static void pre_done(struct msc_cmd *cmd) {
             int st = tendril_device_set_configuration(dev, 0, NULL, NULL);
             if (st != TENDRIL_OK) {
                 LOG_WARN(
-                    "MSC: unconfiguring the ejected device failed: %s", tendril_status_str(st)
+                    "MSC: unconfiguring the ejected device failed: %s",
+                    tendril_status_str(st)
                 );
             }
             return;

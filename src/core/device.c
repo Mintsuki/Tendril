@@ -649,8 +649,8 @@ static bool ensure_buf(struct tendril_device *dev, size_t size) {
 
 static void dev_name(struct tendril_device *dev, char *buf, size_t size) {
     tendril_snprintf(
-        buf, size, "device %u (%04x:%04x)", dev->address, tendril_le16(dev->desc.vendor_id),
-        tendril_le16(dev->desc.product_id)
+        buf, size, "device %u (%04x:%04x)",
+        dev->address, tendril_le16(dev->desc.vendor_id), tendril_le16(dev->desc.product_id)
     );
 }
 
@@ -739,8 +739,8 @@ void tendril_device_enumerate(struct tendril_device *dev) {
     char name[48];
     dev_name(dev, name, sizeof(name));
     LOG_DEBUG(
-        "new %s device on root port %u, depth %zu", tendril_speed_str(dev->speed), dev->root_port,
-        dev->depth
+        "new %s device on root port %u, depth %zu",
+        tendril_speed_str(dev->speed), dev->root_port, dev->depth
     );
     hc_op(dev, STEP_INIT, dev->hc->ops->device_init, "device setup");
 }
@@ -1250,8 +1250,11 @@ static void choose_and_configure(struct tendril_device *dev) {
 
     dev_name(dev, name, sizeof(name));
     LOG_INFO(
-        "%s: %s %s%s%s%s", name, tendril_speed_str(dev->speed),
-        dev->manufacturer != NULL ? dev->manufacturer : "", dev->manufacturer != NULL ? " " : "",
+        "%s: %s %s%s%s%s",
+        name,
+        tendril_speed_str(dev->speed),
+        dev->manufacturer != NULL ? dev->manufacturer : "",
+        dev->manufacturer != NULL ? " " : "",
         dev->product != NULL ? dev->product : "",
         dev->product == NULL && dev->manufacturer == NULL ? "(no strings)" : ""
     );
@@ -1273,8 +1276,8 @@ static void choose_and_configure(struct tendril_device *dev) {
     if (!power_ok(dev, index)) {
         // FreeBSD keeps such a device too, unconfigured.
         LOG_WARN(
-            "%s: configuration %u needs more power than the port has; left unconfigured", name,
-            cd->configuration_value
+            "%s: configuration %u needs more power than the port has; left unconfigured",
+            name, cd->configuration_value
         );
         enum_finish(dev);
         return;
@@ -1734,8 +1737,8 @@ static void dev_step(struct tendril_device *dev) {
                 char name[48];
                 dev_name(dev, name, sizeof(name));
                 LOG_WARN(
-                    "%s: SET_CONFIGURATION failed again (%s); left unconfigured", name,
-                    tendril_status_str(st)
+                    "%s: SET_CONFIGURATION failed again (%s); left unconfigured",
+                    name, tendril_status_str(st)
                 );
                 control_step(
                     dev,
@@ -2959,8 +2962,8 @@ static void pm_step(struct dev_op *op) {
             if (busy || !hub_ready) {
                 dev_name(dev, name, sizeof(name));
                 LOG_WARN(
-                    "%s: suspend abandoned: %s", name,
-                    busy ? "transfers did not finish" : "hub busy"
+                    "%s: suspend abandoned: %s",
+                    name, busy ? "transfers did not finish" : "hub busy"
                 );
                 pm_abort(op, TENDRIL_ERR_BUSY);
                 return;

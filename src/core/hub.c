@@ -622,8 +622,8 @@ static void hub_init_step(struct tendril_hub *hub) {
             if (st != TENDRIL_OK) {
                 hub_name(hub, name, sizeof(name));
                 LOG_WARN(
-                    "%s: powering port %zu failed: %s", name, hub->init_port,
-                    tendril_status_str(st)
+                    "%s: powering port %zu failed: %s",
+                    name, hub->init_port, tendril_status_str(st)
                 );
             }
             if (hub->init_port < hub->num_ports) {

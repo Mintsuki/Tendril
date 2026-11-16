@@ -353,8 +353,9 @@ int tendril_hc_add(const struct tendril_hc_config *config, struct tendril_hc **o
     hc->quirks = config->quirks | tendril_hc_quirk_lookup(hc);
 
     LOG_INFO(
-        "%s controller%s%04x:%04x, quirks 0x%x", ops->name, config->pci ? " " : "",
-        config->pci ? hc->pci_vendor : 0, config->pci ? hc->pci_device : 0, hc->quirks
+        "%s controller%s%04x:%04x, quirks 0x%x",
+        ops->name, config->pci ? " " : "", config->pci ? hc->pci_vendor : 0,
+        config->pci ? hc->pci_device : 0, hc->quirks
     );
 
     int st = ops->start(hc);

@@ -2357,8 +2357,8 @@ static void port_ready(void *ctx, int st) {
     }
     if (st != TENDRIL_OK) {
         LOG_WARN(
-            "serial: setting up interface %u failed: %s", port->intf->number,
-            tendril_status_str(st)
+            "serial: setting up interface %u failed: %s",
+            port->intf->number, tendril_status_str(st)
         );
     }
     port->attached = true;

@@ -2451,8 +2451,8 @@ static int ehci_start(struct tendril_hc *hc) {
     hc->dma32 = true;
     hc->data32 = !e->ac64;
     LOG_INFO(
-        "EHCI %x.%02x: %zu ports, %zu companions%s", cap >> 24, (cap >> 16) & 0xff, e->num_ports,
-        e->num_cc, e->ac64 ? ", 64-bit" : ""
+        "EHCI %x.%02x: %zu ports, %zu companions%s",
+        cap >> 24, (cap >> 16) & 0xff, e->num_ports, e->num_cc, e->ac64 ? ", 64-bit" : ""
     );
 
     if (hc->config.pci && (hc->quirks & TENDRIL_HC_QUIRK_NO_HANDOFF) == 0) {

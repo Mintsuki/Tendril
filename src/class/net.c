@@ -970,8 +970,8 @@ static void setup_fail(struct tendril_net *net, const char *what, int status) {
     net->stopped = true;
     if (status != TENDRIL_ERR_NO_DEVICE) {
         LOG_WARN(
-            "net: interface %u: %s failed (%s)", (unsigned int)net->ctrl_intf->number, what,
-            tendril_status_str(status)
+            "net: interface %u: %s failed (%s)",
+            (unsigned int)net->ctrl_intf->number, what, tendril_status_str(status)
         );
     }
 }
@@ -1114,7 +1114,8 @@ static void setup_finish(struct tendril_net *net) {
 
     if (!alloc_buffers(net)) {
         LOG_WARN(
-            "net: interface %u: out of memory for buffers", (unsigned int)net->ctrl_intf->number
+            "net: interface %u: out of memory for buffers",
+            (unsigned int)net->ctrl_intf->number
         );
         net->stopped = true;
         return;
@@ -2525,8 +2526,8 @@ static void rndis_indicate(struct tendril_net *net, const uint8_t *msg) {
         link_set(net, false, net->rx_bps, net->tx_bps);
     } else {
         LOG_DEBUG(
-            "net: interface %u: RNDIS status %08x", (unsigned int)net->ctrl_intf->number,
-            (unsigned int)status
+            "net: interface %u: RNDIS status %08x",
+            (unsigned int)net->ctrl_intf->number, (unsigned int)status
         );
     }
 }
@@ -3000,8 +3001,8 @@ static void rndis_reset_answer(
     }
     if (status != TENDRIL_OK) {
         LOG_WARN(
-            "net: interface %u: RNDIS reset failed (%s)", (unsigned int)net->ctrl_intf->number,
-            tendril_status_str(status)
+            "net: interface %u: RNDIS reset failed (%s)",
+            (unsigned int)net->ctrl_intf->number, tendril_status_str(status)
         );
         return;
     }

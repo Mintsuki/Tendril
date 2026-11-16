@@ -1612,8 +1612,9 @@ static int xhci_start(struct tendril_hc *hc) {
     hc->dma32 = !x->ac64;
     hc->data32 = !x->ac64;
     LOG_INFO(
-        "xHCI %x.%02x: %zu slots, %zu ports, %zu-byte contexts%s", cap0 >> 24, (cap0 >> 16) & 0xff,
-        x->max_slots, x->max_ports, x->ctx_size, x->ac64 ? ", 64-bit" : ""
+        "xHCI %x.%02x: %zu slots, %zu ports, %zu-byte contexts%s",
+        cap0 >> 24, (cap0 >> 16) & 0xff, x->max_slots, x->max_ports, x->ctx_size,
+        x->ac64 ? ", 64-bit" : ""
     );
 
     x->devs = tendril_zalloc((x->max_slots + 1) * sizeof(struct xhci_dev *));

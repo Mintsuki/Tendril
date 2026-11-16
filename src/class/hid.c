@@ -648,7 +648,8 @@ static void in_done(struct tendril_transfer *xfer) {
         default: {
             if (++hid->errors > HID_MAX_ERRORS) {
                 LOG_WARN(
-                    "HID: input keeps failing (%s), giving up", tendril_status_str(xfer->status)
+                    "HID: input keeps failing (%s), giving up",
+                    tendril_status_str(xfer->status)
                 );
                 return;
             }
@@ -757,7 +758,8 @@ static void hid_ready(struct tendril_hid *hid) {
     }
     hid->step = STEP_RUNNING;
     LOG_INFO(
-        "HID: interface %u ready:%s%s%s%s%s%s", hid->intf->number,
+        "HID: interface %u ready:%s%s%s%s%s%s",
+        hid->intf->number,
         (hid->kinds & TENDRIL_HID_KEYBOARD) != 0 ? " keyboard" : "",
         (hid->kinds & TENDRIL_HID_MOUSE) != 0 ? " mouse" : "",
         (hid->kinds & TENDRIL_HID_ABSOLUTE) != 0 ? " absolute pointer" : "",
