@@ -5,12 +5,13 @@ at least as permissively as BSD-2-Clause. Parts of it are derived from the
 files below; their notices follow, as those licenses require, and each entry
 names the commit the file was read at and what Tendril takes from it. Each
 Tendril file drawing on one of them repeats its notice after its own license
-header, and brackets every part derived from it between
-`// BEGIN <project> <path>` and `// END <project> <path>` comments; comments in
-the code say what each part takes. The notices leave out their sources' SPDX
-identifiers, as tools expect one to a file: the one that opens a Tendril file
-names the licenses of the parts it draws on beside BSD-2-Clause (e.g.
-`BSD-2-Clause AND ISC`).
+header, and brackets the code derived from it between
+`// BEGIN <project> <path>` and `// END <project> <path>` comments. Comments in
+the code say what each part takes, and credit what Tendril takes that has no
+code of its own, such as tolerating padding. The notices leave out their
+sources' SPDX identifiers, as tools expect one to a file: the one that opens a
+Tendril file names the licenses of the parts it draws on beside BSD-2-Clause
+(e.g. `BSD-2-Clause AND ISC`).
 
 Some facts Tendril needs about devices are documented only by sources whose
 code it may not use. The files relying on them, `src/class/net.c`,
