@@ -1392,11 +1392,9 @@ static void bios_handoff(struct tendril_hc *hc) {
                 );
                 if (!released) {
                     LOG_WARN("xHCI: firmware did not release the controller, forcing it");
-                    hc_write32(
-                        hc, off,
-                        (hc_read32(hc, off) & ~((uint32_t)1 << 16))
-                      | ((uint32_t)1 << 24)
-                    );
+                    uint32_t forced = (hc_read32(hc, off) & ~((uint32_t)1 << 16))
+                                    | ((uint32_t)1 << 24);
+                    hc_write32(hc, off, forced);
                 }
             }
             // Disable SMIs and clear their status.
@@ -2414,11 +2412,9 @@ static int xhci_configure(
     ctx_set(in_ctrl(hc, xd), 1, add_flags);
     copy_out_slot(hc, xd);
     uint32_t *s = in_slot(hc, xd);
-    ctx_set(
-        s, 0,
-        (ctx_get(s, 0) & ~((uint32_t)0x1f << 27))
-      | ((uint32_t)context_entries(xd) << 27)
-    );
+    uint32_t dword0 = (ctx_get(s, 0) & ~((uint32_t)0x1f << 27))
+                    | ((uint32_t)context_entries(xd) << 27);
+    ctx_set(s, 0, dword0);
 
     int st = cmd_submit(
         hc, xd->in_ctx_dma, 0, TRB_TYPE(TRB_CONFIGURE_ENDPOINT) | TRB_SLOT(xd->slot),
@@ -2978,9 +2974,8 @@ static void suspend_next(
             continue;
         }
         int st = cmd_submit(
-            hc, 0, 0,
-            TRB_TYPE(TRB_STOP_ENDPOINT) | TRB_SLOT(xd->slot) | TRB_EP(dci)
-          | TRB_SP, suspend_stop_done, async, dev, xep, (uint32_t)dci
+            hc, 0, 0, TRB_TYPE(TRB_STOP_ENDPOINT) | TRB_SLOT(xd->slot) | TRB_EP(dci) | TRB_SP,
+            suspend_stop_done, async, dev, xep, (uint32_t)dci
         );
         if (st != TENDRIL_OK) {
             tendril_async_complete(hc, async, st);

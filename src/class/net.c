@@ -1226,11 +1226,9 @@ static void setup_run(struct tendril_net *net) {
             // CDC ECM 1.2, 6.2.4, Table 8
             if (net->kind == TENDRIL_NET_ECM
              || (net->ncm_caps & NCM_CAP_PACKET_FILTER) != 0) {
-                setup_request(
-                    net, REQ_OUT, SET_ETHERNET_PACKET_FILTER,
-                    TENDRIL_NET_FILTER_DIRECTED | TENDRIL_NET_FILTER_BROADCAST
-                  | TENDRIL_NET_FILTER_ALL_MULTICAST, 0
-                );
+                uint16_t filter = TENDRIL_NET_FILTER_DIRECTED | TENDRIL_NET_FILTER_BROADCAST
+                                | TENDRIL_NET_FILTER_ALL_MULTICAST;
+                setup_request(net, REQ_OUT, SET_ETHERNET_PACKET_FILTER, filter, 0);
             } else {
                 setup_goto(net, STEP_DONE);
             }

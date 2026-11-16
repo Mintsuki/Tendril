@@ -998,10 +998,9 @@ static int submit_qh(struct tendril_hc *hc, struct ehci_qh *qh, struct tendril_t
             status->buf[i] = 0;
             status->buf_hi[i] = 0;
         }
-        status->token = le(
-            ((len == 0 || !in) ? TOK_PID_IN : TOK_PID_OUT) | cerr | TOK_DT
-          | TOK_ACTIVE
-        );
+        uint32_t token = ((len == 0 || !in) ? TOK_PID_IN : TOK_PID_OUT) | cerr | TOK_DT
+                       | TOK_ACTIVE;
+        status->token = le(token);
     }
 
     // Links: a short read skips to the status stage, or past the transfer.
