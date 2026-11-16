@@ -328,6 +328,9 @@ struct net_op {
     uint32_t rndis_type;
     uint32_t rndis_id;
     bool no_reply;
+    // RNDIS: a packet filter or multicast list from the embedder, kept once
+    // the device accepts it, to set again after a reset.
+    bool keep;
     // Reads the completion, valid only during the call, before `done` runs.
     void (*answer)(struct tendril_net *net, int status, const uint8_t *msg, size_t len);
     // What `answer` and `done` report, once the operation is finished.
@@ -2100,6 +2103,24 @@ int tendril_net_send(
 
 static void op_done(struct tendril_transfer *xfer);
 
+// Keeps the packet filter or multicast list the device accepted from the
+// embedder, which rndis_readdress() sets again after a reset.
+static void rndis_keep(struct tendril_net *net, const struct net_op *op) {
+    uint32_t oid = get_le32(op->data + 12);
+    size_t len = get_le32(op->data + 16);
+
+    if (oid == OID_GEN_CURRENT_PACKET_FILTER) {
+        net->rndis_filter = get_le32(op->data + RNDIS_SET_LEN);
+        return;
+    }
+    // OID_802_3_MULTICAST_LIST
+    if (len != 0) {
+        memcpy(net->rndis_mc, op->data + RNDIS_SET_LEN, len);
+    }
+    net->rndis_mc_count = len / MAC_LEN;
+    net->rndis_mc_set = true;
+}
+
 static void op_report(
     struct tendril_net *net,
     struct net_op *op,
@@ -2132,6 +2153,9 @@ static void op_finish(
     const uint8_t *msg,
     size_t len
 ) {
+    if (op->keep && status == TENDRIL_OK) {
+        rndis_keep(net, op);
+    }
     if (net->in_call == 0) {
         op_report(net, op, status, msg, len);
         return;
@@ -2934,9 +2958,11 @@ static void rndis_readdress_answer(
 }
 
 // The reset lost the packet filter and multicast list: set them again
-// ([MS-RNDIS] v20130118, 3.1.5.5).
+// ([MS-RNDIS] v20130118, 3.1.5.5), ahead of the requests queued meanwhile, so
+// that a filter or list the embedder asked for since comes after them.
 static void rndis_readdress(struct tendril_net *net) {
     uint8_t value[4];
+    struct tendril_list *at = &net->ops;
     struct net_op *op;
 
     put_le32(value, net->rndis_filter);
@@ -2946,20 +2972,21 @@ static void rndis_readdress(struct tendril_net *net) {
     if (op == NULL) {
         rndis_readdress_answer(net, TENDRIL_ERR_NO_MEMORY, NULL, 0);
     } else {
-        rndis_queue(net, op);
+        list_insert(at, &op->node);
+        at = &op->node;
     }
-    if (!net->rndis_mc_set) {
-        return;
+    if (net->rndis_mc_set) {
+        op = rndis_set_request(
+            net, OID_802_3_MULTICAST_LIST, net->rndis_mc, net->rndis_mc_count * MAC_LEN,
+            rndis_readdress_answer
+        );
+        if (op == NULL) {
+            rndis_readdress_answer(net, TENDRIL_ERR_NO_MEMORY, NULL, 0);
+        } else {
+            list_insert(at, &op->node);
+        }
     }
-    op = rndis_set_request(
-        net, OID_802_3_MULTICAST_LIST, net->rndis_mc, net->rndis_mc_count * MAC_LEN,
-        rndis_readdress_answer
-    );
-    if (op == NULL) {
-        rndis_readdress_answer(net, TENDRIL_ERR_NO_MEMORY, NULL, 0);
-    } else {
-        rndis_queue(net, op);
-    }
+    op_kick(net);
 }
 
 // REMOTE_NDIS_RESET_CMPLT ([MS-RNDIS] v20130118, 2.2.12 and 3.1.5.5)
@@ -3089,7 +3116,8 @@ static uint32_t rndis_filter_bits(uint16_t filter) {
     return bits;
 }
 
-// Queues an OID to set for a call from the embedder.
+// Queues an OID to set for a call from the embedder, keeping its value once
+// the device accepts it.
 static int rndis_set_oid(
     struct tendril_net *net,
     uint32_t oid,
@@ -3105,6 +3133,7 @@ static int rndis_set_oid(
     }
     op->done = done;
     op->ctx = ctx;
+    op->keep = true;
     net->in_call++;
     rndis_queue(net, op);
     net->in_call--;
@@ -3125,8 +3154,7 @@ int tendril_net_set_filter(
     if (net->kind == TENDRIL_NET_RNDIS) {
         uint8_t value[4];
 
-        net->rndis_filter = rndis_filter_bits(filter);
-        put_le32(value, net->rndis_filter);
+        put_le32(value, rndis_filter_bits(filter));
         return rndis_set_oid(net, OID_GEN_CURRENT_PACKET_FILTER, value, sizeof(value), done, ctx);
     }
     if (net->kind == TENDRIL_NET_NCM
@@ -3155,12 +3183,7 @@ int tendril_net_set_multicast(
         return TENDRIL_ERR_INVALID;
     }
     if (net->kind == TENDRIL_NET_RNDIS) {
-        // OID_802_3_MULTICAST_LIST, kept to set again after a reset.
-        if (count != 0) {
-            memcpy(net->rndis_mc, addrs, count * MAC_LEN);
-        }
-        net->rndis_mc_count = count;
-        net->rndis_mc_set = true;
+        // OID_802_3_MULTICAST_LIST
         return rndis_set_oid(net, OID_802_3_MULTICAST_LIST, addrs, count * MAC_LEN, done, ctx);
     }
     return op_queue(

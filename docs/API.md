@@ -1026,7 +1026,8 @@ management over it, are found the way it finds them.
   of at most 2046 bytes, the limit of FreeBSD's `sys/dev/usb/net/if_urndis.c`
   (ISC license).
 - `tendril_net_set_filter()` and `tendril_net_set_multicast()` **return**
-  `TENDRIL_ERR_UNSUPPORTED` if the adapter cannot filter.
+  `TENDRIL_ERR_UNSUPPORTED` if the adapter cannot filter. When an RNDIS adapter
+  resets, the filter and list it last accepted are set again.
   `tendril_net_send_sync()` is the synchronous form of `tendril_net_send()`.
 
 | Function | Returns |
