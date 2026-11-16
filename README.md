@@ -32,14 +32,14 @@ Defining `TENDRIL_NO_UHCI`, `TENDRIL_NO_OHCI`, `TENDRIL_NO_EHCI`, or
 ## Using it
 
 The embedder implements the glue functions of `tendril/glue.h`: memory, DMA
-memory and a DMA barrier, controller register and PCI configuration access, a
-clock, a lock, and logging. It then registers the class drivers it wants, adds
-each controller with `tendril_hc_add()`, and calls `tendril_hc_poll()` whenever
-the controller interrupts, the deadline the last call returned passes, or it
-has called into the library outside a callback. Devices are enumerated, and
-their transfers complete, from within `tendril_hc_poll()`. Once
-`tendril_hc_ready()` is true for every controller, the devices present at boot
-are all up.
+memory, mapping buffers for DMA, a DMA barrier, controller register and PCI
+configuration access, a clock, a lock, and logging. It then registers the class
+drivers it wants, adds each controller with `tendril_hc_add()`, and calls
+`tendril_hc_poll()` whenever the controller interrupts, the deadline the last
+call returned passes, or it has called into the library outside a callback.
+Devices are enumerated, and their transfers complete, from within
+`tendril_hc_poll()`. Once `tendril_hc_ready()` is true for every controller,
+the devices present at boot are all up.
 
 ## Documentation
 
