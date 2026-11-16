@@ -2903,10 +2903,10 @@ static bool pm_next_wake_request(struct dev_op *op, bool arm) {
         if (!function_head(intf)) {
             continue;
         }
-        unsigned int options = arm
-                             ? TENDRIL_FUNCTION_SUSPEND_LOW_POWER
-                                 | TENDRIL_FUNCTION_SUSPEND_REMOTE_WAKE
-                             : 0;
+        unsigned int options = 0;
+        if (arm) {
+            options = TENDRIL_FUNCTION_SUSPEND_LOW_POWER | TENDRIL_FUNCTION_SUSPEND_REMOTE_WAKE;
+        }
         pm_request(
             op, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_INTERFACE,
             TENDRIL_REQ_SET_FEATURE, TENDRIL_FEATURE_FUNCTION_SUSPEND,

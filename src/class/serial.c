@@ -2599,11 +2599,15 @@ static bool serial_probe(struct tendril_interface *intf) {
         kind = e->kind;
         // BEGIN FreeBSD sys/dev/usb/serial/uftdi.c
         if (kind == TENDRIL_SERIAL_FTDI && intf->number < 8) {
-            bool skip = e->skip != SKIP_BY_NAME
-                      ? (e->skip & ((uint32_t)1 << intf->number)) != 0
-                      : intf->number == 0 && dev->product != NULL
-                         && tendril_strlen(dev->product) >= 7
-                         && memcmp(dev->product, "XDS100V", 7) == 0;
+            bool skip;
+            if (e->skip != SKIP_BY_NAME) {
+                skip = (e->skip & ((uint32_t)1 << intf->number)) != 0;
+            } else {
+                skip = intf->number == 0
+                    && dev->product != NULL
+                    && tendril_strlen(dev->product) >= 7
+                    && memcmp(dev->product, "XDS100V", 7) == 0;
+            }
             if (skip) {
                 // A JTAG interface, left for whoever drives JTAG.
                 return false;
