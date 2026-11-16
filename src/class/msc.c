@@ -3163,8 +3163,9 @@ static size_t max_transfer(struct tendril_msc *msc) {
         return ss ? 512 * 1024 : 256 * 1024;
     }
     // BEGIN FreeBSD sys/dev/usb/storage/umass.c, OpenBSD sys/dev/usb/umass.c
-    // What FreeBSD's umass.c allows: maxphys (1 MiB) at SuperSpeed, else CAM's
-    // 64 KiB default.
+    // What FreeBSD's umass.c allows: maxphys (by default 1 MiB on 64-bit
+    // systems) at SuperSpeed, else CAM's 64 KiB default, which is also the
+    // size of the data buffer of OpenBSD's sys/dev/usb/umass.c (BSD-2-Clause).
     return ss ? 1024 * 1024 : 64 * 1024;
     // END FreeBSD sys/dev/usb/storage/umass.c, OpenBSD sys/dev/usb/umass.c
 }
