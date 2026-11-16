@@ -267,13 +267,14 @@ uint32_t tendril_pci_hc_quirks(int type, uint16_t vendor, uint16_t device);
 // then proceeds as tendril_hc_poll() is called.
 int tendril_hc_add(const struct tendril_hc_config *config, struct tendril_hc **hc);
 
-// Halts and resets the controller, then detaches every device, whose transfers
-// fail with TENDRIL_ERR_NO_DEVICE, and frees the controller.
+// Halts the controller, and resets it unless it is a UHCI controller, then
+// detaches every device, whose transfers fail with TENDRIL_ERR_NO_DEVICE, and
+// frees the controller. It must not be called from a callback.
 void tendril_hc_remove(struct tendril_hc *hc);
 
 // Interrupt handler entry point. Safe in any context, as it only acknowledges
-// and masks the interrupt; tendril_hc_poll() must be called afterwards.
-// Returns whether the controller was interrupting.
+// the interrupt and holds off further ones; tendril_hc_poll() must be called
+// afterwards. Returns whether the controller was interrupting.
 bool tendril_hc_irq(struct tendril_hc *hc);
 
 // Processes completions, port changes and timers, and invokes callbacks.
@@ -309,7 +310,8 @@ int tendril_hc_suspend(struct tendril_hc *hc, bool wake);
 
 // Restarts the controller after system sleep and resumes its devices. A
 // controller that lost its state is reset instead, and its devices enumerated
-// again. Calls tendril_hc_poll() until done.
+// again. Calls tendril_hc_poll() until done, so it must not be called from a
+// callback.
 int tendril_hc_resume(struct tendril_hc *hc);
 
 int tendril_hc_type(struct tendril_hc *hc);
@@ -319,8 +321,8 @@ struct tendril_device *tendril_hc_port_device(struct tendril_hc *hc, uint8_t por
 
 // The current frame, counting 1 ms frames in 32 bits; isochronous start frames
 // count the same way. The count follows the controller's own counter, which
-// wraps every 2048 frames, so it falls behind by whole wraps if
-// tendril_hc_poll() goes uncalled for that long.
+// wraps every 2048 frames (65536 on OHCI), so it falls behind by whole wraps
+// if tendril_hc_poll() goes uncalled for that long.
 uint32_t tendril_hc_frame_number(struct tendril_hc *hc);
 
 // Devices
@@ -428,7 +430,8 @@ const struct tendril_interface_descriptor *tendril_interface_descriptor(
     struct tendril_interface *intf
 );
 // The descriptors of the current alternate setting: its interface descriptor
-// and everything following up to the next interface descriptor.
+// and everything following up to the next interface or interface association
+// descriptor.
 const uint8_t *tendril_interface_descriptors(struct tendril_interface *intf, size_t *size);
 // The interface association covering this interface, or NULL.
 const struct tendril_interface_assoc_descriptor *tendril_interface_association(

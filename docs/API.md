@@ -173,9 +173,12 @@ controller's lock held, so none of them may take that lock.
 General purpose memory, aligned for any object.
 
 - **Returns** the memory, or NULL, in which case the operation that needed it
-  fails with `TENDRIL_ERR_NO_MEMORY`. It need not be zeroed.
-- Sizes range from a few bytes to 64 KiB (a configuration descriptor can be
-  that long).
+  fails with `TENDRIL_ERR_NO_MEMORY`, unless it can do without: enumeration
+  leaves a device's strings out, and a transfer is bounced instead of mapped in
+  many runs. It need not be zeroed.
+- Sizes range from a few bytes to 88 KiB, for the fields the HID parser finds
+  in the longest report descriptors it takes, and go beyond that only for a
+  transfer whose buffer maps in thousands of runs, which needs a list of them.
 
 #### `void tendril_glue_free(void *ptr, size_t size)`
 
@@ -238,7 +241,8 @@ transfer.
 
 Orders all earlier memory accesses before all later ones, as the controller
 sees them. The library calls it between filling in a descriptor and handing it
-to the controller. Examples: `mfence` on x86, `dsb sy` on arm64,
+to the controller, and between seeing that the controller wrote one and reading
+what it wrote. Examples: `mfence` on x86, `dsb sy` on arm64,
 `fence iorw, iorw` on riscv64, `dbar 0` on loongarch64.
 
 #### `uint16_t tendril_glue_read16(void *ctx, uint32_t offset)`, `uint32_t tendril_glue_read32(void *ctx, uint32_t offset)`
@@ -265,10 +269,10 @@ PCI configuration space of the controller, at a byte offset.
   `tendril_hc_add()`, `tendril_hc_resume()`, and restarts after a power loss.
 - Used for: the IDs (offsets 0x00, 0x02, and 0x08), which select quirks; the
   command register (0x04), to enable decoding and bus mastering; handing the
-  controller over from firmware: UHCI LEGSUP (0xc0), EHCI USBLEGSUP and
-  USBLEGCTLSTS (at the extended capability offset), and Intel xHCI port routing
-  (0xd0 to 0xdc); and the chipset fixes of some EHCI controllers (AMD SB600 and
-  SB700 at 0x53, VIA at 0x4b).
+  controller over from firmware: UHCI LEGSUP (0xc0), and EHCI USBLEGSUP and
+  USBLEGCTLSTS (at the extended capability offset); switching the ports of
+  Intel chipsets over to their xHCI controller (0xd0 to 0xdc); and the chipset
+  fixes of some EHCI controllers (AMD SB600 and SB700 at 0x53, VIA at 0x4b).
 
 #### `bool tendril_glue_pci_find_read8(void *ctx, uint16_t vendor, uint16_t device, uint16_t offset, uint8_t *value)`
 
@@ -296,9 +300,9 @@ Monotonic time in nanoseconds.
 #### `void tendril_glue_lock(void *ctx)`, `void tendril_glue_unlock(void *ctx)`
 
 Mutual exclusion around the library's state for one controller. Never taken
-recursively, never held while a callback runs, and never taken by
-`tendril_hc_irq()`. With every call for a controller serialised, as required
-above, they may do nothing.
+recursively, never held while a callback runs but for the drivers' `busy`
+hooks, and never taken by `tendril_hc_irq()`. With every call for a controller
+serialised, as required above, they may do nothing.
 
 #### `void tendril_glue_log(int level, const char *message)`
 
@@ -312,7 +316,7 @@ default, and never from `tendril_hc_irq()`. Levels: `TENDRIL_LOG_ERROR`,
 
 ## Conventions
 
-**Asynchronous operations** take a completion function and its context,
+**Asynchronous operations** take a completion function and its context, mostly
 `void (*done)(void *ctx, int status)` and `void *ctx`.
 
 - A return of `TENDRIL_OK` means the operation started; `done(ctx, status)` is
@@ -355,8 +359,8 @@ wait, such as bootloaders.
 ## Threading
 
 - `tendril_hc_irq()` may be called from an interrupt handler, in any context.
-  It only acknowledges and masks the controller's interrupt; call
-  `tendril_hc_poll()` afterwards.
+  It only acknowledges the controller's interrupt and holds off further ones;
+  call `tendril_hc_poll()` afterwards.
 - Every other call concerning a controller, or a device or driver object behind
   it, must be serialised with that controller's `tendril_hc_poll()`. Calls made
   from within callbacks are fine.
@@ -367,9 +371,9 @@ wait, such as bootloaders.
 
 Functions return, and completion functions receive, an `int` status:
 `TENDRIL_OK` (0) or one of the `TENDRIL_ERR_*` codes, all macros in
-`tendril/tendril.h`. `tendril_status_str()` gives each one's name. The other
-sets of constants (speeds, controller types, log levels, DMA directions) are
-macros used with `int` too.
+`tendril/tendril.h`. `tendril_status_str()` describes each in a few words. The
+other sets of constants (speeds, controller types, log levels, DMA directions)
+are macros used with `int` too.
 
 | Code | Meaning |
 | ---- | ------- |
@@ -377,8 +381,8 @@ macros used with `int` too.
 | `TENDRIL_ERR_NO_MEMORY` | An allocation failed (normal, DMA, or bounce buffer) |
 | `TENDRIL_ERR_INVALID` | A bad argument, or the wrong state (such as resuming a device that is not suspended) |
 | `TENDRIL_ERR_UNSUPPORTED` | Compiled out, or not possible with this controller, device, or driver |
-| `TENDRIL_ERR_BUSY` | Something conflicting is under way: the transfer is in flight, a configuration change or power operation is running, or a driver refused |
-| `TENDRIL_ERR_TIMEOUT` | A timeout ran out: a transfer's `timeout_ms`, or a controller reset |
+| `TENDRIL_ERR_BUSY` | Something conflicting is under way (the transfer itself, a configuration change, a power operation, enumeration, or an earlier request), a driver refused, an xHCI ring is full, or a disk reported itself busy or not ready yet |
+| `TENDRIL_ERR_TIMEOUT` | A timeout ran out: a transfer's `timeout_ms`, or a wait on the controller, a port, or a device |
 | `TENDRIL_ERR_CANCELLED` | Cancelled, by the caller or by the library (for a configuration change or a suspend) |
 | `TENDRIL_ERR_NO_DEVICE` | The device was unplugged, or the controller died or is being removed |
 | `TENDRIL_ERR_STALL` | The device stalled the endpoint |
@@ -432,15 +436,16 @@ Takes a controller over from firmware, resets it, and starts it.
 - `config->ctx`: handed to the glue functions for this controller.
 - `config->pci`: the PCI configuration space functions work for this
   controller. The library then enables decoding and bus mastering, reads the
-  IDs to look up quirks, and hands the controller over from firmware.
+  IDs to look up quirks, and hands the controller over from firmware (an OHCI
+  controller is taken over through its registers either way).
 - `config->irq`: the embedder routes the controller's interrupt to
   `tendril_hc_irq()`, so the controller's interrupts are enabled; otherwise
   they stay off and the embedder only polls.
 - `config->quirks`: `TENDRIL_HC_QUIRK_*` to apply on top of the built-in
   tables.
 - `hc`: receives the controller, only on success.
-- **Returns** `TENDRIL_OK`; `TENDRIL_ERR_UNSUPPORTED` for a type compiled out
-  with `TENDRIL_NO_UHCI`, `TENDRIL_NO_OHCI`, `TENDRIL_NO_EHCI`, or
+- **Returns** `TENDRIL_OK`; `TENDRIL_ERR_UNSUPPORTED` for an unknown type, one
+  compiled out with `TENDRIL_NO_UHCI`, `TENDRIL_NO_OHCI`, `TENDRIL_NO_EHCI`, or
   `TENDRIL_NO_XHCI`, or an xHCI controller the library cannot drive;
   `TENDRIL_ERR_NO_MEMORY`; `TENDRIL_ERR_TIMEOUT` if the controller does not
   halt or reset; or `TENDRIL_ERR_NO_DEVICE` if it does not respond.
@@ -451,19 +456,19 @@ Takes a controller over from firmware, resets it, and starts it.
 
 #### `void tendril_hc_remove(struct tendril_hc *hc)`
 
-Halts and resets the controller, disconnects every device, and frees
-everything. Drivers' `disconnect` and class drivers' `detach` callbacks run
-during the call, once their transfers have failed with `TENDRIL_ERR_NO_DEVICE`.
-`hc` is invalid afterwards. Not to be called from one of the controller's own
-callbacks.
+Halts the controller, and resets it unless it is a UHCI controller, disconnects
+every device, and frees everything. Drivers' `disconnect` and class drivers'
+`detach` callbacks run during the call, once their transfers have failed with
+`TENDRIL_ERR_NO_DEVICE`. `hc` is invalid afterwards. Not to be called from one
+of the controller's own callbacks.
 
 #### `bool tendril_hc_irq(struct tendril_hc *hc)`
 
 Interrupt handler entry point, safe in any context.
 
 - **Returns** whether this controller was interrupting, for shared interrupt
-  lines. If so, it acknowledged and masked the interrupt, and
-  `tendril_hc_poll()` must be called, which unmasks it.
+  lines. If so, it acknowledged the interrupt and held off further ones, and
+  `tendril_hc_poll()` must be called, which lets them through again.
 - It takes no lock and only uses the register functions. It returns false for a
   controller that died.
 
@@ -533,9 +538,10 @@ PME are left to the embedder.
 
 - **Returns** `TENDRIL_OK`; `TENDRIL_ERR_NO_DEVICE` if the controller died;
   `TENDRIL_ERR_INVALID` if it is suspended already; `TENDRIL_ERR_BUSY` if it
-  did not settle, a device kept signalling wakeup, or a driver refused;
-  `TENDRIL_ERR_UNSUPPORTED` if a device's driver cannot suspend; or the error a
-  device's suspend failed with.
+  did not settle, a device kept signalling wakeup, a driver refused, or an xHCI
+  controller still had a command under way; `TENDRIL_ERR_UNSUPPORTED` if a
+  device's driver cannot suspend; `TENDRIL_ERR_TIMEOUT` if the controller did
+  not halt; or the error a device's suspend failed with.
 - On failure, the devices suspended so far are resumed.
 - It calls `tendril_hc_poll()` until done, so it must not be called from a
   callback.
@@ -562,9 +568,9 @@ enumerated again: drivers see `disconnect`, then new `probe` calls.
 | `uint32_t tendril_hc_frame_number(hc)` | The current frame (see [frame numbers](#isochronous-scheduling-and-frame-numbers)), or 0 if the controller died |
 
 Also: `tendril_status_str()`, `tendril_speed_str()`, and
-`tendril_hc_type_str()` return constant names, and
-`void tendril_set_log_level(int level)` sets which log messages reach
-`tendril_glue_log()`.
+`tendril_hc_type_str()` return constant strings for a status, a speed, and a
+controller type, and `void tendril_set_log_level(int level)` sets which log
+messages reach `tendril_glue_log()`.
 
 ## Devices
 
@@ -684,7 +690,7 @@ drivers' `resume` hooks run before `done`.
 | -------- | ------- |
 | `struct tendril_device *tendril_interface_device(intf)` | Its device |
 | `const struct tendril_interface_descriptor *tendril_interface_descriptor(intf)` | The descriptor of its current alternate setting |
-| `const uint8_t *tendril_interface_descriptors(intf, size_t *size)` | The current setting's descriptors: its interface descriptor and everything after it up to the next interface descriptor (class-specific and endpoint descriptors); `*size` receives their length |
+| `const uint8_t *tendril_interface_descriptors(intf, size_t *size)` | The current setting's descriptors: its interface descriptor and everything after it up to the next interface or interface association descriptor (class-specific and endpoint descriptors); `*size` receives their length |
 | `const struct tendril_interface_assoc_descriptor *tendril_interface_association(intf)` | The interface association covering it, or NULL |
 | `size_t tendril_interface_num_alts(intf)`, `const struct tendril_interface_descriptor *tendril_interface_alt_descriptor(intf, size_t index)` | Its alternate settings; NULL past the end |
 | `size_t tendril_interface_num_endpoints(intf)`, `struct tendril_endpoint *tendril_interface_endpoint(intf, size_t index)` | The endpoints of the current setting; NULL past the end |
@@ -716,7 +722,7 @@ with a single setting counts as success (USB 2.0, section 9.4.10).
 | `const struct tendril_ss_ep_companion_descriptor *tendril_endpoint_companion(ep)` | Its SuperSpeed companion descriptor, or NULL |
 | `uint8_t tendril_endpoint_address(ep)` | `bEndpointAddress`; bit 7 set for IN |
 | `int tendril_endpoint_type(ep)` | `TENDRIL_ENDPOINT_XFER_CONTROL`, `_ISOC`, `_BULK`, or `_INT` |
-| `size_t tendril_endpoint_max_packet(ep)` | The maximum packet size, without the high-bandwidth multiplier bits |
+| `size_t tendril_endpoint_max_packet(ep)` | The maximum packet size in use, settled on as FreeBSD's `sys/dev/usb/usb_transfer.c` (BSD-2-Clause) does: for control and bulk endpoints, the size the speed allows, which at full speed is `wMaxPacketSize` rounded down to 8, 16, 32, or 64 (0 read as 64); for interrupt and isochronous ones, `wMaxPacketSize` without its multiplier bits, capped at the speed's largest, and 0 read as the largest but on isochronous endpoints |
 | `size_t tendril_endpoint_max_streams(ep)` | The stream count from the companion descriptor (2 to the power MaxStreams), or 0; stream IDs run from 1 to one less |
 
 #### `int tendril_endpoint_clear_halt(struct tendril_endpoint *ep, done, ctx)`
@@ -766,7 +772,8 @@ The results are `status` and `actual`, the number of bytes transferred.
   missing isochronous packets or more of them than `length` holds, an
   isochronous packet longer than the endpoint's payload per service interval, a
   stream on a non-bulk endpoint or one not allocated, a NULL buffer with data,
-  or an endpoint not open (not in the current alternate setting);
+  a `dma` address the controller cannot reach, or an endpoint not open (not in
+  the current alternate setting);
   `TENDRIL_ERR_BUSY` if this transfer is in flight already, or the device's
   configuration is changing; `TENDRIL_ERR_NO_DEVICE`; `TENDRIL_ERR_SUSPENDED`;
   `TENDRIL_ERR_NO_MEMORY` if a bounce buffer could not be had; or an error from
@@ -850,8 +857,8 @@ controller is added. Registering the same structure again does nothing.
 #### `bool tendril_interface_claim(struct tendril_interface *intf, struct tendril_driver *driver)`
 
 Claims another interface of the device for the driver being probed, such as a
-CDC data interface. Called from `probe`. **Returns** false if another driver
-has it.
+CDC data interface. Called from `probe`. **Returns** false if another driver,
+or the same driver along with another interface, has it.
 
 ## Power management
 
@@ -860,9 +867,10 @@ has it.
   all its children are, and resuming a device resumes its hubs first. Transfers
   to a suspended device fail with `TENDRIL_ERR_SUSPENDED`.
 - Drivers take part through the `suspend` and `resume` hooks of
-  `struct tendril_driver`: a device whose driver lacks them is not suspended.
-  The built-in class drivers all have them; they refuse while work is in
-  progress (an unfinished disk request, a serial write, a frame being sent).
+  `struct tendril_driver`: a device whose driver lacks a `suspend` hook is not
+  suspended. The built-in class drivers all have both; they refuse while work
+  is in progress (an unfinished disk request, a serial write, a frame being
+  sent).
 - A device that signals remote wakeup is resumed by the library, after which
   every driver's `device_woke` hook is called.
 - `tendril_hc_suspend()` suspends every device of a controller, then stops it,
@@ -905,8 +913,9 @@ functions, and their asynchronous calls follow the [conventions](#conventions).
 - `int tendril_hid_set_leds(hid, uint8_t leds)` sets keyboard LEDs
   (`TENDRIL_HID_LED_*`) without a completion function. **Returns** `TENDRIL_OK`
   (sent, or kept for when the previous update is done or the device resumes);
-  `TENDRIL_ERR_NO_DEVICE`; or `TENDRIL_ERR_UNSUPPORTED` if the device has no
-  LED output report the driver can build.
+  `TENDRIL_ERR_NO_DEVICE`; `TENDRIL_ERR_UNSUPPORTED` if the device has no LED
+  output report the driver can build; or an error from sending it, as
+  `tendril_hid_set_report()` returns them.
 - `tendril_hid_get_report(hid, type, id, buf, size, done, ctx)` and
   `tendril_hid_set_report(hid, type, id, buf, size, done, ctx)`: GET_REPORT,
   and SET_REPORT, or the interrupt OUT endpoint for output reports if the
@@ -959,12 +968,16 @@ command sets.
   `TENDRIL_ERR_WRITE_PROTECTED`.
 - `tendril_msc_command(lun, cdb, cdb_len, data, len, in, sense, done, ctx)`
   runs one SCSI command; `done` receives the status, the SCSI status byte, and
-  the length transferred, and `sense` up to 32 bytes of sense data. A CHECK
-  CONDITION whose sense key is NO SENSE comes back as GOOD, as FreeBSD's
-  `umass.c` takes it.
+  the length transferred. `sense`, if not NULL, is a 32-byte buffer that
+  receives the sense data of a CHECK CONDITION, zero-filled past its end. A
+  CHECK CONDITION whose sense key is NO SENSE comes back as GOOD, as FreeBSD's
+  `umass.c` takes it. **Returns** `TENDRIL_OK`; `TENDRIL_ERR_INVALID` for a
+  CDB of 0 or over 16 bytes, or data without a buffer; `TENDRIL_ERR_NO_DEVICE`;
+  `TENDRIL_ERR_SUSPENDED`; or `TENDRIL_ERR_NO_MEMORY`.
 - `tendril_msc_check_medium(lun, done, ctx)` probes a removable medium again,
-  reporting changes through `medium_changed`; **returns** `TENDRIL_ERR_BUSY`
-  until the `done` of the check before has been called.
+  reporting changes through `medium_changed`. **Returns** `TENDRIL_OK`;
+  `TENDRIL_ERR_NO_DEVICE`; `TENDRIL_ERR_SUSPENDED`; or `TENDRIL_ERR_BUSY` until
+  the `done` of the check before has been called.
 - `tendril_msc_read()`, `tendril_msc_write()`, and `tendril_msc_flush()` are
   the synchronous forms.
 
@@ -991,16 +1004,17 @@ management over it, are found the way it finds them.
   callbacks `attach` (ports start at 115200 baud, 8 data bits, no parity, 1
   stop bit, with DTR and RTS on), `detach`, `receive(port, data, len)` (the
   data is valid during the call only), and `status(port, bits)` with the
-  `TENDRIL_SERIAL_*` line state.
+  `TENDRIL_SERIAL_*` line states and any events (a break, or a framing,
+  parity, or overrun error), which `tendril_serial_status()` does not keep.
 - `tendril_serial_configure(port, config, done, ctx)`,
   `tendril_serial_set_lines(port, dtr, rts, done, ctx)`,
   `tendril_serial_set_break(port, on, done, ctx)`, and
   `tendril_serial_write(port, data, len, done, ctx)`. **Return** `TENDRIL_OK`,
   `TENDRIL_ERR_NO_DEVICE`, `TENDRIL_ERR_INVALID` (a configuration the driver
-  rejects, or an empty write), `TENDRIL_ERR_UNSUPPORTED` (a setting the chip
-  cannot make, or a break on a CDC ACM device that does not support SendBreak),
-  or `TENDRIL_ERR_NO_MEMORY`. Writes go out in order, and their data must stay
-  valid until `done`.
+  rejects, or a write without data), `TENDRIL_ERR_UNSUPPORTED` (a setting the
+  chip cannot make, or a break on a CDC ACM device that does not support
+  SendBreak), or `TENDRIL_ERR_NO_MEMORY`. Writes go out in order, and their
+  data must stay valid until `done`.
 - `tendril_serial_configure_sync()` and `tendril_serial_write_sync()` are the
   synchronous forms.
 
@@ -1017,7 +1031,9 @@ management over it, are found the way it finds them.
   callbacks `attach`, `detach`, `link(net, up, rx_bps, tx_bps)`, and
   `receive(net, frame, len)` (valid during the call only). Frames run from the
   destination address to the end of the payload, without the frame check
-  sequence.
+  sequence. By `attach`, an adapter with a packet filter has been asked to pass
+  on directed, broadcast, and all multicast frames; its link counts as down
+  until `link` reports it up.
 - `int tendril_net_send(net, frame, len, done, ctx)` queues a frame.
   **Returns** `TENDRIL_OK`, `TENDRIL_ERR_NO_DEVICE`, `TENDRIL_ERR_INVALID`
   (shorter than 14 bytes or longer than `tendril_net_max_frame()`), or
@@ -1026,8 +1042,10 @@ management over it, are found the way it finds them.
   of at most 2046 bytes, the limit of FreeBSD's `sys/dev/usb/net/if_urndis.c`
   (ISC license).
 - `tendril_net_set_filter()` and `tendril_net_set_multicast()` **return**
-  `TENDRIL_ERR_UNSUPPORTED` if the adapter cannot filter. When an RNDIS adapter
-  resets, the filter and list it last accepted are set again.
+  `TENDRIL_OK`, `TENDRIL_ERR_NO_DEVICE`, `TENDRIL_ERR_UNSUPPORTED` if the
+  adapter cannot filter, `TENDRIL_ERR_INVALID` for more addresses than
+  `tendril_net_multicast_filters()` allows, or `TENDRIL_ERR_NO_MEMORY`. When an
+  RNDIS adapter resets, the filter and list it last accepted are set again.
   `tendril_net_send_sync()` is the synchronous form of `tendril_net_send()`.
 
 | Function | Returns |

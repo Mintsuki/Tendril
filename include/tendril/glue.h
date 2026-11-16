@@ -57,16 +57,19 @@ extern "C" {
 void *tendril_glue_alloc(size_t size);
 void tendril_glue_free(void *ptr, size_t size);
 
-// Memory coherent with the controller, aligned to `align` (a power of two),
-// below 4 GiB in bus address space if `dma32` is set.
+// Memory the controller reaches at bus address `*dma`: contiguous in bus
+// address space, coherent with the controller, aligned to `align` (a power of
+// two), and below 4 GiB if `dma32` is set.
 void *tendril_glue_dma_alloc(void *ctx, size_t size, size_t align, bool dma32, uint64_t *dma);
 void tendril_glue_dma_free(void *ctx, void *ptr, size_t size);
 
-// Makes `size` bytes at `ptr` accessible to the controller and returns how
-// many of them, from the start, are contiguous in bus address space at `*dma`.
-// A short return must end on a 4 KiB boundary of bus address space. Returning
-// 0 makes the library bounce the transfer through tendril_glue_dma_alloc()
-// memory instead.
+// Makes a run at the start of the `size` bytes at `ptr`, contiguous in bus
+// address space, accessible to the controller, and returns its length, with
+// its bus address in `*dma`; the library asks again for the rest. A run
+// shorter than `size` must end on a 4 KiB boundary of bus address space, and a
+// run after the first must start on one; otherwise, or when 0 is returned, the
+// library bounces the transfer through tendril_glue_dma_alloc() memory
+// instead.
 size_t tendril_glue_dma_map(void *ctx, void *ptr, size_t size, int dir, uint64_t *dma);
 void tendril_glue_dma_unmap(void *ctx, void *ptr, size_t size, int dir, uint64_t dma);
 

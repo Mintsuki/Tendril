@@ -51,8 +51,9 @@ struct tendril_net;
 #define TENDRIL_NET_RNDIS 2
 
 struct tendril_net_callbacks {
-    // An adapter is ready, passing on directed, broadcast, and all multicast
-    // frames. `link` follows once the adapter reports its link.
+    // An adapter is ready. One with a packet filter has been asked to pass on
+    // directed, broadcast, and all multicast frames. Its link counts as down
+    // until `link` reports it up.
     void (*attach)(struct tendril_net *net);
     // The adapter is gone; its sends and operations have all completed.
     void (*detach)(struct tendril_net *net);

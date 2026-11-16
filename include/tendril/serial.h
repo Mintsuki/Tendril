@@ -51,8 +51,9 @@ struct tendril_serial;
 #define TENDRIL_SERIAL_CH34X 3
 #define TENDRIL_SERIAL_CP210X 4
 
-// Status bits. DCD, DSR, RI, and CTS are line states; the rest are events,
-// reported once each. Not every adapter reports every bit.
+// Status bits. DCD, DSR, RI, and CTS are line states, which
+// tendril_serial_status() returns; the rest are events, which only the
+// `status` call reporting them carries. Not every adapter reports every bit.
 #define TENDRIL_SERIAL_DCD ((uint32_t)1 << 0)
 #define TENDRIL_SERIAL_DSR ((uint32_t)1 << 1)
 #define TENDRIL_SERIAL_BREAK ((uint32_t)1 << 2)

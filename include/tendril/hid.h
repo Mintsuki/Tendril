@@ -109,9 +109,11 @@ struct tendril_hid_field {
     uint32_t unit;
     // Usage of the enclosing application collection.
     uint32_t application;
-    // A variable field's element i has usages[i] (the last usage repeats). An
-    // array field's value v selects usage_min + v - logical_min, or, where
-    // usages were listed one by one, usages[v - logical_min].
+    // The field's usages: usages[0] to usages[num_usages - 1] if num_usages is
+    // not 0, else usage_min to usage_max. A variable field's element i has the
+    // i-th, the last repeating, and an array field's value v selects the one
+    // at index v - logical_min. tendril_hid_field_usage() and
+    // tendril_hid_array_usage() look them up.
     uint32_t usage_min;
     uint32_t usage_max;
     uint32_t *usages;

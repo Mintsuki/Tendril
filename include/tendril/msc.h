@@ -105,7 +105,8 @@ int tendril_msc_write(struct tendril_msc_lun *lun, uint64_t lba, size_t count, c
 int tendril_msc_flush(struct tendril_msc_lun *lun);
 
 // Runs one command, padded as the device's command set wants. `sense`, if not
-// NULL, receives up to 32 bytes of sense data after a CHECK CONDITION.
+// NULL, is a 32-byte buffer that receives the sense data of a CHECK CONDITION,
+// zero-filled past its end.
 int tendril_msc_command(
     struct tendril_msc_lun *lun,
     const uint8_t *cdb,
