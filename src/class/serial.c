@@ -1856,7 +1856,8 @@ static void acm_line(struct tendril_serial *port, struct serial_op *op) {
 static void acm_lines(struct tendril_serial *port, struct serial_op *op) {
     tendril_serial_op_add(
         op, REQ_CLASS_OUT, ACM_SET_CONTROL_LINE_STATE,
-        (uint16_t)((port->dtr ? 1 : 0) | (port->rts ? 2 : 0)), port->ctrl_intf->number, NULL, 0
+        (uint16_t)((port->dtr ? 1 : 0) | (port->rts ? 2 : 0)), port->ctrl_intf->number, NULL,
+        0
     );
 }
 
@@ -1888,7 +1889,8 @@ static void ch_write_reg(
 ) {
     tendril_serial_op_add(
         op, REQ_VENDOR_OUT, port->chip == CH_343 ? CH343_WRITE_REG : CH_WRITE_REG,
-        (uint16_t)(reg1 | reg2 << 8), (uint16_t)(val1 | val2 << 8), NULL, 0
+        (uint16_t)(reg1 | reg2 << 8), (uint16_t)(val1 | val2 << 8), NULL,
+        0
     );
 }
 
@@ -2000,7 +2002,8 @@ static void cp_line(struct tendril_serial *port, struct serial_op *op) {
     tendril_serial_op_add(op, REQ_VENDOR_IFACE_OUT, CP_SET_BAUDRATE, 0, iface, rate, sizeof(rate));
     tendril_serial_op_add(
         op, REQ_VENDOR_IFACE_OUT, CP_SET_LINE_CTL,
-        (uint16_t)(c->stop_bits | c->parity << 4 | c->data_bits << 8), iface, NULL, 0
+        (uint16_t)(c->stop_bits | c->parity << 4 | c->data_bits << 8), iface, NULL,
+        0
     );
     // AN571 revision 0.4, table 9: the handshake word and the flow replacement
     // word, then thresholds left at zero.

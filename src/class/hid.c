@@ -804,7 +804,8 @@ static void set_idle(struct tendril_hid *hid) {
     // HID 1.11 7.2.4: duration 0, report only on change.
     ctrl(
         hid, STEP_SET_IDLE, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
-        TENDRIL_HID_REQ_SET_IDLE, 0, NULL, 0
+        TENDRIL_HID_REQ_SET_IDLE, 0, NULL,
+        0
     );
 }
 
@@ -817,7 +818,8 @@ static void start_boot(struct tendril_hid *hid) {
     hid->boot = true;
     ctrl(
         hid, STEP_SET_BOOT, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
-        TENDRIL_HID_REQ_SET_PROTOCOL, 0, NULL, 0
+        TENDRIL_HID_REQ_SET_PROTOCOL, 0, NULL,
+        0
     );
 }
 
@@ -899,9 +901,13 @@ static void init_step(struct tendril_work *work) {
             }
             if (hid->subclass == 1) {
                 ctrl(
-                    hid, STEP_SET_REPORT_PROTOCOL,
-                    TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS
-                  | TENDRIL_RECIP_INTERFACE, TENDRIL_HID_REQ_SET_PROTOCOL, 1, NULL, 0
+                    hid,
+                    STEP_SET_REPORT_PROTOCOL,
+                    TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
+                    TENDRIL_HID_REQ_SET_PROTOCOL,
+                    1,
+                    NULL,
+                    0
                 );
                 return;
             }
@@ -1014,9 +1020,12 @@ static bool hid_probe(struct tendril_interface *intf) {
     }
     // END FreeBSD sys/dev/hid/hkbd.c
     ctrl(
-        hid, STEP_GET_REPORT_DESC,
+        hid,
+        STEP_GET_REPORT_DESC,
         TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_INTERFACE,
-        TENDRIL_REQ_GET_DESCRIPTOR, TENDRIL_DT_HID_REPORT << 8, hid->desc_buf,
+        TENDRIL_REQ_GET_DESCRIPTOR,
+        TENDRIL_DT_HID_REPORT << 8,
+        hid->desc_buf,
         (uint16_t)hid->desc_len
     );
     return true;

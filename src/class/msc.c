@@ -2616,8 +2616,8 @@ static void probe_done(struct tendril_msc_lun *lun, bool present) {
         lun->write_protected = false;
     }
     lun->present = present;
-    bool changed = lun->changed || present != lun->old_present || lun->blocks != lun->old_blocks
-                || lun->block_size != lun->old_block_size
+    bool changed = lun->changed || present != lun->old_present
+                || lun->blocks != lun->old_blocks || lun->block_size != lun->old_block_size
                 || lun->write_protected != lun->old_write_protected;
     lun->changed = false;
     lun->busy = false;
@@ -3446,7 +3446,8 @@ static void get_max_lun(struct tendril_msc *msc) {
     msc->ctrl_buf[0] = 0;
     int st = tendril_control_async(
         msc->dev, &msc->ctrl, TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_INTERFACE,
-        REQ_GET_MAX_LUN, 0, msc->intf->number, msc->ctrl_buf, 1, &msc->async
+        REQ_GET_MAX_LUN, 0, msc->intf->number,
+        msc->ctrl_buf, 1, &msc->async
     );
     if (st != TENDRIL_OK) {
         setup_step(msc, st);
@@ -3614,7 +3615,8 @@ static bool msc_probe(struct tendril_interface *intf) {
     for (size_t a = 0; a < intf->num_alts && uas_ok && uas < 0; a++) {
         const struct tendril_interface_descriptor *d = intf->alts[a];
         if (d->interface_class == TENDRIL_CLASS_MASS_STORAGE
-         && d->interface_subclass == SUBCLASS_SCSI && d->interface_protocol == PROTO_UAS
+         && d->interface_subclass == SUBCLASS_SCSI
+         && d->interface_protocol == PROTO_UAS
          && alt_pipes(intf, a) == UAS_PIPES) {
             uas = (int)a;
         }
@@ -3743,7 +3745,10 @@ static bool msc_idle(struct tendril_msc *msc) {
     for (size_t i = 0; i < msc->num_luns; i++) {
         struct tendril_msc_lun *lun = msc->luns[i];
         if (lun != NULL
-         && (lun->busy || lun->probe_pending || lun->current != NULL || !list_empty(&lun->requests)
+         && (lun->busy
+          || lun->probe_pending
+          || lun->current != NULL
+          || !list_empty(&lun->requests)
           || (lun->check_done != NULL && !lun->check_waiting)
           || tendril_timer_armed(&lun->timer))) {
             return false;

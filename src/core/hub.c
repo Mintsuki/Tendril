@@ -211,21 +211,24 @@ static void port_request(
 static void ext_get_status(struct tendril_port *port) {
     port_request(
         port, TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_OTHER,
-        TENDRIL_HUB_REQ_GET_STATUS, 0, 4
+        TENDRIL_HUB_REQ_GET_STATUS, 0,
+        4
     );
 }
 
 static void ext_set_feature(struct tendril_port *port, int feature) {
     port_request(
         port, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_OTHER,
-        TENDRIL_HUB_REQ_SET_FEATURE, feature, 0
+        TENDRIL_HUB_REQ_SET_FEATURE, feature,
+        0
     );
 }
 
 static void ext_clear_feature(struct tendril_port *port, int feature) {
     port_request(
         port, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_OTHER,
-        TENDRIL_HUB_REQ_CLEAR_FEATURE, feature, 0
+        TENDRIL_HUB_REQ_CLEAR_FEATURE, feature,
+        0
     );
 }
 
@@ -546,7 +549,9 @@ static void hub_init_step(struct tendril_hub *hub) {
                 hub->init_step = HUB_SET_DEPTH;
                 hub_ctrl(
                     hub, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_DEVICE,
-                    TENDRIL_HUB_REQ_SET_HUB_DEPTH, (uint16_t)dev->depth, 0, 0, "SET_HUB_DEPTH"
+                    TENDRIL_HUB_REQ_SET_HUB_DEPTH, (uint16_t)dev->depth,
+                    0, 0,
+                    "SET_HUB_DEPTH"
                 );
                 return;
             }
@@ -625,8 +630,9 @@ static void hub_init_step(struct tendril_hub *hub) {
                 hub->init_port++;
                 hub_ctrl(
                     hub, TENDRIL_DIR_OUT | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_OTHER,
-                    TENDRIL_HUB_REQ_SET_FEATURE, TENDRIL_PORT_FEAT_POWER, (uint16_t)hub->init_port,
-                    0, "port power"
+                    TENDRIL_HUB_REQ_SET_FEATURE, TENDRIL_PORT_FEAT_POWER,
+                    (uint16_t)hub->init_port, 0,
+                    "port power"
                 );
                 return;
             }
@@ -692,7 +698,9 @@ void tendril_hub_start(struct tendril_device *dev) {
     size_t len = hub->superspeed ? 12 : 71;
     hub_ctrl(
         hub, TENDRIL_DIR_IN | TENDRIL_TYPE_CLASS | TENDRIL_RECIP_DEVICE,
-        TENDRIL_HUB_REQ_GET_DESCRIPTOR, (uint16_t)(type << 8), 0, len, "reading the hub descriptor"
+        TENDRIL_HUB_REQ_GET_DESCRIPTOR, (uint16_t)(type << 8),
+        0, len,
+        "reading the hub descriptor"
     );
 }
 
@@ -792,7 +800,8 @@ static void queue_tt(struct tendril_device *dev, uint8_t request, uint16_t value
 void tendril_hub_clear_tt(struct tendril_device *dev, struct tendril_endpoint *ep) {
     // USB 2.0 Table 11-18.
     uint32_t value = (uint32_t)(ep->address & TENDRIL_ENDPOINT_NUMBER_MASK)
-                   | (uint32_t)(dev->address & 0x7f) << 4 | (uint32_t)(ep->type & 3) << 11
+                   | (uint32_t)(dev->address & 0x7f) << 4
+                   | (uint32_t)(ep->type & 3) << 11
                    | ((ep->address & TENDRIL_ENDPOINT_DIR_MASK) != 0 ? (uint32_t)1 << 15 : 0);
     queue_tt(dev, TENDRIL_HUB_REQ_CLEAR_TT_BUFFER, (uint16_t)value);
 }

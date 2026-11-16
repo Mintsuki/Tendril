@@ -482,9 +482,11 @@ static void free_xfer_tds(struct tendril_hc *hc, struct tendril_transfer *xfer) 
 }
 
 static uint32_t td_token(struct tendril_endpoint *ep, uint32_t pid, size_t len, uint32_t toggle) {
-    return TOKEN_MAXLEN(len) | (toggle != 0 ? TOKEN_D : 0)
+    return TOKEN_MAXLEN(len)
+         | (toggle != 0 ? TOKEN_D : 0)
          | TOKEN_ENDPT(ep->address & TENDRIL_ENDPOINT_NUMBER_MASK)
-         | TOKEN_ADDR(ep->dev->address & 0x7f) | pid;
+         | TOKEN_ADDR(ep->dev->address & 0x7f)
+         | pid;
 }
 
 // An inactive TD ending a queue; it holds a valid token in case the controller

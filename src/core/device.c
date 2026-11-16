@@ -683,8 +683,8 @@ static void get_descriptor(
     }
     int st = tendril_control_async(
         dev, &dev->xfer, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-        TENDRIL_REQ_GET_DESCRIPTOR, (uint16_t)(type << 8 | index), langid, dev->buf, length,
-        &dev->async
+        TENDRIL_REQ_GET_DESCRIPTOR, (uint16_t)(type << 8 | index), langid,
+        dev->buf, length, &dev->async
     );
     if (st != TENDRIL_OK) {
         dev->op_busy = false;
@@ -1310,7 +1310,8 @@ static void choose_and_configure(struct tendril_device *dev) {
         dev->op_busy = true;
         st = tendril_control_async(
             dev, &dev->xfer, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-            TENDRIL_REQ_GET_STATUS, 0, 0, dev->buf, 2, &dev->async
+            TENDRIL_REQ_GET_STATUS, 0, 0,
+            dev->buf, 2, &dev->async
         );
         if (st != TENDRIL_OK) {
             dev->op_busy = false;
@@ -1330,7 +1331,8 @@ static void set_configuration(struct tendril_device *dev) {
     dev->op_busy = true;
     int st = tendril_control_async(
         dev, &dev->xfer, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-        TENDRIL_REQ_SET_CONFIGURATION, cd->configuration_value, 0, NULL, 0, &dev->async
+        TENDRIL_REQ_SET_CONFIGURATION, cd->configuration_value, 0,
+        NULL, 0, &dev->async
     );
     if (st != TENDRIL_OK) {
         dev->op_busy = false;
@@ -1543,9 +1545,14 @@ static void dev_step(struct tendril_device *dev) {
             // EP0 keeps targeting address 0 until STEP_EP0_ADDRESS; FreeBSD
             // allows SET_ADDRESS a second.
             control_step(
-                dev, STEP_SET_ADDRESS,
+                dev,
+                STEP_SET_ADDRESS,
                 TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-                TENDRIL_REQ_SET_ADDRESS, dev->new_address, 0, 1000, "SET_ADDRESS"
+                TENDRIL_REQ_SET_ADDRESS,
+                dev->new_address,
+                0,
+                1000,
+                "SET_ADDRESS"
             );
             // END FreeBSD sys/dev/usb/usb_request.c
             break;
@@ -1637,7 +1644,8 @@ static void dev_step(struct tendril_device *dev) {
         }
         case STEP_BOS_HEAD: {
             const struct tendril_bos_descriptor *bd = (const void *)dev->buf;
-            if (!descriptor_ok(st) || actual < sizeof(struct tendril_bos_descriptor)
+            if (!descriptor_ok(st)
+             || actual < sizeof(struct tendril_bos_descriptor)
              || bd->type != TENDRIL_DT_BOS
              || tendril_le16(bd->total_length) < sizeof(struct tendril_bos_descriptor)) {
                 after_bos(dev);
@@ -1730,9 +1738,14 @@ static void dev_step(struct tendril_device *dev) {
                     tendril_status_str(st)
                 );
                 control_step(
-                    dev, STEP_UNCONFIGURE, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD
-                                         | TENDRIL_RECIP_DEVICE, TENDRIL_REQ_SET_CONFIGURATION, 0,
-                    0, CTRL_TIMEOUT_MS, "SET_CONFIGURATION"
+                    dev,
+                    STEP_UNCONFIGURE,
+                    TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
+                    TENDRIL_REQ_SET_CONFIGURATION,
+                    0,
+                    0,
+                    CTRL_TIMEOUT_MS,
+                    "SET_CONFIGURATION"
                 );
                 break;
             }
@@ -1755,9 +1768,14 @@ static void dev_step(struct tendril_device *dev) {
             dev_name(dev, name, sizeof(name));
             LOG_INFO("%s: switched to its other mode, left unconfigured", name);
             control_step(
-                dev, STEP_UNCONFIGURE,
+                dev,
+                STEP_UNCONFIGURE,
                 TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-                TENDRIL_REQ_SET_CONFIGURATION, 0, 0, CTRL_TIMEOUT_MS, "SET_CONFIGURATION"
+                TENDRIL_REQ_SET_CONFIGURATION,
+                0,
+                0,
+                CTRL_TIMEOUT_MS,
+                "SET_CONFIGURATION"
             );
             break;
         }
@@ -2259,10 +2277,9 @@ static void alt_work(struct tendril_work *work) {
             op->num_new_eps = 0;
             op->step = ALT_SET_INTERFACE;
             st = tendril_control_async(
-                dev, &op->xfer,
-                TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD
-              | TENDRIL_RECIP_INTERFACE, TENDRIL_REQ_SET_INTERFACE,
-                intf->alts[op->alt]->alternate_setting, intf->number, NULL, 0, &op->async
+                dev, &op->xfer, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_INTERFACE,
+                TENDRIL_REQ_SET_INTERFACE, intf->alts[op->alt]->alternate_setting, intf->number,
+                NULL, 0, &op->async
             );
             if (st != TENDRIL_OK) {
                 op_finish(op, st);
@@ -2406,7 +2423,8 @@ int tendril_endpoint_clear_halt(
     op->step = HALT_CLEAR_FEATURE;
     int st = tendril_control_async(
         dev, &op->xfer, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_ENDPOINT,
-        TENDRIL_REQ_CLEAR_FEATURE, TENDRIL_FEATURE_ENDPOINT_HALT, ep->address, NULL, 0, &op->async
+        TENDRIL_REQ_CLEAR_FEATURE, TENDRIL_FEATURE_ENDPOINT_HALT, ep->address,
+        NULL, 0, &op->async
     );
     if (st != TENDRIL_OK) {
         op->done = NULL;
@@ -2535,8 +2553,8 @@ int tendril_device_read_string(
     uint16_t langid = dev->langid != 0 ? dev->langid : 0x0409;
     int st = tendril_control_async(
         dev, &op->xfer, TENDRIL_DIR_IN | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-        TENDRIL_REQ_GET_DESCRIPTOR, (uint16_t)(TENDRIL_DT_STRING << 8 | index), langid, op->buf,
-        255, &op->async
+        TENDRIL_REQ_GET_DESCRIPTOR, (uint16_t)(TENDRIL_DT_STRING << 8 | index), langid,
+        op->buf, 255, &op->async
     );
     if (st != TENDRIL_OK) {
         op->done = NULL;
@@ -2601,7 +2619,8 @@ static void config_op_step(struct dev_op *op) {
             op->step = CFG_DECONFIGURE_REQUEST;
             st = tendril_control_async(
                 dev, &op->xfer, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-                TENDRIL_REQ_SET_CONFIGURATION, 0, 0, NULL, 0, &op->async
+                TENDRIL_REQ_SET_CONFIGURATION, 0, 0,
+                NULL, 0, &op->async
             );
             if (st != TENDRIL_OK) {
                 op_finish(op, st);
@@ -2676,7 +2695,8 @@ static void config_op_step(struct dev_op *op) {
             op->step = CFG_SET_CONFIGURATION;
             st = tendril_control_async(
                 dev, &op->xfer, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
-                TENDRIL_REQ_SET_CONFIGURATION, op->value, 0, NULL, 0, &op->async
+                TENDRIL_REQ_SET_CONFIGURATION, op->value, 0,
+                NULL, 0, &op->async
             );
             if (st != TENDRIL_OK) {
                 op_finish(op, st);
@@ -2864,9 +2884,11 @@ static bool pm_next_wake_request(struct dev_op *op, bool arm) {
             return false;
         }
         pm_request(
-            op, TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
+            op,
+            TENDRIL_DIR_OUT | TENDRIL_TYPE_STANDARD | TENDRIL_RECIP_DEVICE,
             arm ? TENDRIL_REQ_SET_FEATURE : TENDRIL_REQ_CLEAR_FEATURE,
-            TENDRIL_FEATURE_DEVICE_REMOTE_WAKEUP, 0
+            TENDRIL_FEATURE_DEVICE_REMOTE_WAKEUP,
+            0
         );
         return true;
     }

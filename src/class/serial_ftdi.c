@@ -265,7 +265,8 @@ static bool encode_baud(int chip, uint32_t rate, uint32_t *encoded) {
 static bool data_value(const struct tendril_serial *port, uint16_t *value) {
     const struct tendril_serial_config *config = &port->config;
 
-    if (config->data_bits < 5 || config->data_bits > 8
+    if (config->data_bits < 5
+     || config->data_bits > 8
      || config->parity > TENDRIL_SERIAL_PARITY_SPACE
      || config->stop_bits > TENDRIL_SERIAL_STOP_2) {
         return false;

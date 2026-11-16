@@ -1631,9 +1631,9 @@ static void rndis_receive(struct tendril_net *net, const uint8_t *buf, size_t le
         // DataOffset counts from its own field; DataLength's bounds are the
         // ones FreeBSD's sys/dev/usb/net/if_urndis.c (ISC license) accepts.
         if (get_le32(msg) != RNDIS_PACKET_MSG || msg_len < RNDIS_PACKET_HEADER_LEN
-         || msg_len > len - off || (data_off & 3) != 0 || data_off > msg_len - 8
-         || data_len > msg_len - 8 - data_off || data_len < ETH_HEADER_LEN
-         || data_len > RNDIS_MAX_FRAME) {
+         || msg_len > len - off || (data_off & 3) != 0
+         || data_off > msg_len - 8 || data_len > msg_len - 8 - data_off
+         || data_len < ETH_HEADER_LEN || data_len > RNDIS_MAX_FRAME) {
             net->rndis_rx_bad++;
             LOG_DEBUG(
                 "net: interface %u: malformed RNDIS packet message (%zu so far)",
