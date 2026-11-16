@@ -1,7 +1,7 @@
 # Specifications
 
-Tendril follows these documents, and its comments cite them by name, version,
-and section.
+Tendril follows these documents. Where its comments cite one, they give its
+name, version, and section.
 
 ## USB
 
