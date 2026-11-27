@@ -1362,7 +1362,7 @@ static void set_configuration(struct tendril_device *dev) {
 // first interface, a HID one, switch the label printer to its other mode, and
 // the device is left unconfigured to come back as that. False if not started.
 static bool dymo_eject(struct tendril_device *dev) {
-    static const uint8_t command[3] = { 0x1b, 0x5a, 0x01 };
+    static const uint8_t command[] = { 0x1b, 0x5a, 0x01 };
 
     if (dev->num_interfaces == 0) {
         return false;

@@ -2462,12 +2462,12 @@ static void probe_capacity(struct tendril_msc_lun *lun);
 static void probe_done(struct tendril_msc_lun *lun, bool present);
 
 static void issue_start(struct tendril_msc_lun *lun, int step) {
-    static const uint8_t cdb[6] = { SCSI_START_STOP_UNIT, 0, 0, 0, 0x01, 0 };
+    static const uint8_t cdb[] = { SCSI_START_STOP_UNIT, 0, 0, 0, 0x01, 0 };
     lun_issue(lun, step, cdb, sizeof(cdb), NULL, 0, false, LONG_TIMEOUT_MS);
 }
 
 static void probe_test(struct tendril_msc_lun *lun) {
-    static const uint8_t cdb[6] = { SCSI_TEST_UNIT_READY, 0, 0, 0, 0, 0 };
+    static const uint8_t cdb[] = { SCSI_TEST_UNIT_READY, 0, 0, 0, 0, 0 };
     uint32_t quirks = lun->msc->quirks;
     // BEGIN FreeBSD sys/dev/usb/storage/umass.c
     // FreeBSD's umass.c sends START STOP UNIT in place of TEST UNIT READY with
@@ -2514,7 +2514,7 @@ static void probe_mode_sense(struct tendril_msc_lun *lun) {
 }
 
 static void probe_inquiry(struct tendril_msc_lun *lun) {
-    static const uint8_t cdb[6] = { SCSI_INQUIRY, 0, 0, 0, 36, 0 };
+    static const uint8_t cdb[] = { SCSI_INQUIRY, 0, 0, 0, 36, 0 };
     lun_issue(lun, LUN_INQUIRY, cdb, sizeof(cdb), lun->buf, 36, true, CMD_TIMEOUT_MS);
 }
 
@@ -3292,7 +3292,7 @@ static void setup_luns(struct tendril_msc *msc) {
 }
 
 // BEGIN FreeBSD sys/dev/usb/usb_msctest.c, usb_device.c
-static const uint8_t pre_inquiry_cdb[6] = { SCSI_INQUIRY, 0, 0, 0, 36, 0 };
+static const uint8_t pre_inquiry_cdb[] = { SCSI_INQUIRY, 0, 0, 0, 36, 0 };
 
 static void pre_done(struct msc_cmd *cmd);
 
@@ -3321,7 +3321,7 @@ static void pre_issue(
 
 // Starts the next usb_msctest.c check; false once none is left.
 static bool pre_start(struct tendril_msc *msc) {
-    static const uint8_t test_cdb[6] = { SCSI_TEST_UNIT_READY, 0, 0, 0, 0, 0 };
+    static const uint8_t test_cdb[] = { SCSI_TEST_UNIT_READY, 0, 0, 0, 0, 0 };
 
     if (msc->pre_cdrom) {
         msc->pre_cdrom = false;
@@ -3370,9 +3370,7 @@ static bool skip_cdrom(struct tendril_msc *msc) {
 }
 
 static void pre_done(struct msc_cmd *cmd) {
-    static const uint8_t stop_cdb[6] = {
-        SCSI_START_STOP_UNIT, 0, 0, 0, 0x02, 0
-    };
+    static const uint8_t stop_cdb[] = { SCSI_START_STOP_UNIT, 0, 0, 0, 0x02, 0 };
     struct tendril_msc *msc = cmd->ctx;
     struct tendril_device *dev = msc->dev;
 

@@ -2444,7 +2444,7 @@ static int port_setup(struct tendril_serial *port) {
             // 1.2, 6.3.1), as umodem.c asks for.
             if ((port->quirks & SQ_ASSUME_CM_OVER_DATA) == 0 && (port->cm_caps & CM_OVER_DATA) != 0
              && (port->acm_caps & ACM_COMM_FEATURE) != 0) {
-                static const uint8_t state[2] = {
+                static const uint8_t state[] = {
                     ACM_DATA_MULTIPLEXED & 0xff, ACM_DATA_MULTIPLEXED >> 8
                 };
                 tendril_serial_op_add(
