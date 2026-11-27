@@ -1630,7 +1630,7 @@ static const struct acm_id acm_ids[] = {
 
 static const struct tendril_serial_callbacks *callbacks;
 
-static void put_le32(uint8_t *p, uint32_t v) {
+static void put_le32(uint8_t p[static 4], uint32_t v) {
     p[0] = (uint8_t)v;
     p[1] = (uint8_t)(v >> 8);
     p[2] = (uint8_t)(v >> 16);

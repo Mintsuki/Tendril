@@ -147,7 +147,7 @@ static const uint32_t listed_rates[] = {
 };
 // END FreeBSD sys/dev/usb/serial/uplcom.c
 
-static void put_le32(uint8_t *p, uint32_t v) {
+static void put_le32(uint8_t p[static 4], uint32_t v) {
     p[0] = (uint8_t)v;
     p[1] = (uint8_t)(v >> 8);
     p[2] = (uint8_t)(v >> 16);

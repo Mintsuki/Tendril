@@ -477,21 +477,21 @@ struct tendril_net {
     size_t in_call;
 };
 
-static uint16_t get_le16(const uint8_t *p) {
+static uint16_t get_le16(const uint8_t p[static 2]) {
     return (uint16_t)((uint32_t)p[0] | (uint32_t)p[1] << 8);
 }
 
-static uint32_t get_le32(const uint8_t *p) {
+static uint32_t get_le32(const uint8_t p[static 4]) {
     return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16
          | (uint32_t)p[3] << 24;
 }
 
-static void put_le16(uint8_t *p, uint16_t v) {
+static void put_le16(uint8_t p[static 2], uint16_t v) {
     p[0] = (uint8_t)v;
     p[1] = (uint8_t)(v >> 8);
 }
 
-static void put_le32(uint8_t *p, uint32_t v) {
+static void put_le32(uint8_t p[static 4], uint32_t v) {
     p[0] = (uint8_t)v;
     p[1] = (uint8_t)(v >> 8);
     p[2] = (uint8_t)(v >> 16);
@@ -2503,7 +2503,7 @@ static uint32_t rndis_min_len(uint32_t type) {
 }
 
 // A reset carries no RequestID, so its completion matches by type alone.
-static bool rndis_answers(const struct net_op *op, uint32_t type, const uint8_t *msg) {
+static bool rndis_answers(const struct net_op *op, uint32_t type, const uint8_t msg[static 12]) {
     if (type != (op->rndis_type | RNDIS_CMPLT)) {
         return false;
     }
@@ -2522,7 +2522,7 @@ static int rndis_status(uint32_t status) {
 }
 
 // REMOTE_NDIS_INDICATE_STATUS_MSG ([MS-RNDIS] v20130118, 2.2.7)
-static void rndis_indicate(struct tendril_net *net, const uint8_t *msg) {
+static void rndis_indicate(struct tendril_net *net, const uint8_t msg[static 12]) {
     uint32_t status = get_le32(msg + 8);
 
     if (status == RNDIS_STATUS_MEDIA_CONNECT) {

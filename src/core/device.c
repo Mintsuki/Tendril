@@ -856,9 +856,14 @@ static void next_string(struct tendril_device *dev) {
 #define STRING_SIZE (3 * 126 + 1)
 
 // Decodes a UTF-16LE string descriptor (USB 2.0 9.6.7) into UTF-8 in `tmp`,
-// STRING_SIZE bytes, with control characters, which could drive a terminal the
-// string is logged to, replaced by '?'. False for a malformed descriptor.
-static bool decode_string(const uint8_t *buf, size_t actual, bool swap, char *tmp) {
+// with control characters, which could drive a terminal the string is logged
+// to, replaced by '?'. False for a malformed descriptor.
+static bool decode_string(
+    const uint8_t *buf,
+    size_t actual,
+    bool swap,
+    char tmp[static STRING_SIZE]
+) {
     if (actual < 2 || buf[0] < 2 || buf[1] != TENDRIL_DT_STRING) {
         return false;
     }
