@@ -24,8 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// External hubs: USB 2.0 chapter 11 and USB 3.2 revision 1.1 chapter 10.
-
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb.h (commit
 // dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
@@ -107,6 +105,8 @@
 #ifdef __cplusplus
 #   error "This file is C, not C++."
 #endif
+
+// External hubs: USB 2.0 chapter 11 and USB 3.2 revision 1.1 chapter 10.
 
 #include <stdbool.h>
 #include <stddef.h>

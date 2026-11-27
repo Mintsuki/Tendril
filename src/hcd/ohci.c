@@ -24,9 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// OpenHCI 1.0a. Registers, descriptors, and the HCCA are little-endian and use
-// 32-bit addresses.
-
 // Parts of this file are derived from FreeBSD's sys/dev/usb/controller/ohci.c
 // and sys/dev/usb/usb.h (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
@@ -86,6 +83,9 @@
 #ifdef __cplusplus
 #   error "This file is C, not C++."
 #endif
+
+// OpenHCI 1.0a. Registers, descriptors, and the HCCA are little-endian and use
+// 32-bit addresses.
 
 #include <stdbool.h>
 #include <stddef.h>

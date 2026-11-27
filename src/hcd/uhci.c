@@ -24,9 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// UHCI 1.1. Registers sit in I/O space; descriptors are little-endian with
-// 32-bit addresses.
-
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb.h and
 // sys/dev/usb/controller/uhci.c (commit
 // dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
@@ -88,6 +85,9 @@
 #ifdef __cplusplus
 #   error "This file is C, not C++."
 #endif
+
+// UHCI 1.1. Registers sit in I/O space; descriptors are little-endian with
+// 32-bit addresses.
 
 #include <stdbool.h>
 #include <stddef.h>

@@ -24,11 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Prolific PL2303 serial adapters. Prolific publishes no protocol
-// documentation: the chip types, the vendor requests, the rate divisor, and
-// the status byte come from the clean-room specification. Line coding, the
-// control lines, and break follow CDC PSTN 1.2.
-
 // Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uplcom.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
@@ -83,6 +78,11 @@
 #ifdef __cplusplus
 #   error "This file is C, not C++."
 #endif
+
+// Prolific PL2303 serial adapters. Prolific publishes no protocol
+// documentation: the chip types, the vendor requests, the rate divisor, and
+// the status byte come from the clean-room specification. Line coding, the
+// control lines, and break follow CDC PSTN 1.2.
 
 #include <stdbool.h>
 #include <stddef.h>

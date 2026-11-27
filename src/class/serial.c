@@ -24,13 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Serial ports. CDC ACM follows the CDC PSTN subclass specification revision
-// 1.2 (February 9, 2007). CP210x follows Silicon Labs application note AN571
-// revision 0.4 and FreeBSD's sys/dev/usb/serial/uslcom.c (ISC license). CH34x,
-// whose maker publishes no protocol, follows FreeBSD's
-// sys/dev/usb/serial/uchcom.c (BSD-2-Clause). FTDI and PL2303 parts are
-// handled in serial_ftdi.c and serial_pl2303.c.
-
 // Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uslcom.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
@@ -313,6 +306,13 @@
 #ifdef __cplusplus
 #   error "This file is C, not C++."
 #endif
+
+// Serial ports. CDC ACM follows the CDC PSTN subclass specification revision
+// 1.2 (February 9, 2007). CP210x follows Silicon Labs application note AN571
+// revision 0.4 and FreeBSD's sys/dev/usb/serial/uslcom.c (ISC license). CH34x,
+// whose maker publishes no protocol, follows FreeBSD's
+// sys/dev/usb/serial/uchcom.c (BSD-2-Clause). FTDI and PL2303 parts are
+// handled in serial_ftdi.c and serial_pl2303.c.
 
 #include <stdbool.h>
 #include <stddef.h>

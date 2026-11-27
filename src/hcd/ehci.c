@@ -24,8 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Enhanced Host Controller Interface, revision 1.0.
-
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb.h (commit
 // dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
@@ -163,6 +161,8 @@
 #ifdef __cplusplus
 #   error "This file is C, not C++."
 #endif
+
+// Enhanced Host Controller Interface, revision 1.0.
 
 #include <stdbool.h>
 #include <stddef.h>

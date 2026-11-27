@@ -24,12 +24,12 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// The vendor-specific request some mass storage devices need before use. Its
-// effect is unknown, and its reply is ignored (clean-room specification).
-
 #ifdef __cplusplus
 #   error "This file is C, not C++."
 #endif
+
+// The vendor-specific request some mass storage devices need before use. Its
+// effect is unknown, and its reply is ignored (clean-room specification).
 
 #include <stddef.h>
 #include <stdint.h>

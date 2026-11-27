@@ -24,10 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Ethernet adapters: the CDC Ethernet Control Model (CDC ECM 1.2) and Network
-// Control Model (CDC NCM 1.0 Errata 1), with the notifications of CDC 1.2, and
-// RNDIS ([MS-RNDIS] v20130118).
-
 // Parts of this file are derived from FreeBSD's sys/dev/usb/net/if_urndis.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
@@ -121,6 +117,10 @@
 #ifdef __cplusplus
 #   error "This file is C, not C++."
 #endif
+
+// Ethernet adapters: the CDC Ethernet Control Model (CDC ECM 1.2) and Network
+// Control Model (CDC NCM 1.0 Errata 1), with the notifications of CDC 1.2, and
+// RNDIS ([MS-RNDIS] v20130118).
 
 #include <stdbool.h>
 #include <stddef.h>

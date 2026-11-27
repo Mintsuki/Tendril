@@ -24,11 +24,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Chipset fixes for PCI EHCI controllers.
-
 #ifdef __cplusplus
 #   error "This file is C, not C++."
 #endif
+
+// Chipset fixes for PCI EHCI controllers.
 
 #include <stdbool.h>
 #include <stdint.h>

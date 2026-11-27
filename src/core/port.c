@@ -24,10 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Port state machine, shared by root and external hubs. It only runs from work
-// items, which one tendril_hc_poll() dispatches at a time, so it needs the
-// lock only around the work and timer lists.
-
 // Parts of this file are derived from FreeBSD's sys/dev/usb/usb.h (commit
 // dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
@@ -133,6 +129,10 @@
 #ifdef __cplusplus
 #   error "This file is C, not C++."
 #endif
+
+// Port state machine, shared by root and external hubs. It only runs from work
+// items, which one tendril_hc_poll() dispatches at a time, so it needs the
+// lock only around the work and timer lists.
 
 #include <stdbool.h>
 #include <stddef.h>

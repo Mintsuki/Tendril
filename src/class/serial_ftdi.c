@@ -24,10 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// FTDI serial adapters: chip identification, the vendor control requests, and
-// the status bytes heading received data. Follows FTDI AN232B-04 Version 1.1
-// and FTDI AN_120 Version 1.2.
-
 // Parts of this file are derived from FreeBSD's sys/dev/usb/serial/uftdi.c
 // (commit dcc5adb27e3b00f003c2256a9e9aa2fcc20c4d32):
 //
@@ -60,6 +56,10 @@
 #ifdef __cplusplus
 #   error "This file is C, not C++."
 #endif
+
+// FTDI serial adapters: chip identification, the vendor control requests, and
+// the status bytes heading received data. Follows FTDI AN232B-04 Version 1.1
+// and FTDI AN_120 Version 1.2.
 
 #include <stdbool.h>
 #include <stddef.h>
