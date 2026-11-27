@@ -1628,7 +1628,7 @@ static const struct acm_id acm_ids[] = {
 };
 // END FreeBSD sys/dev/usb/serial/umodem.c, sys/dev/usb/usbdevs
 
-static const struct tendril_serial_callbacks *callbacks;
+static const struct tendril_serial_callbacks *serial_callbacks;
 
 static void put_le32(uint8_t p[static 4], uint32_t v) {
     p[0] = (uint8_t)v;
@@ -1643,14 +1643,14 @@ void tendril_serial_status_update(struct tendril_serial *port, uint32_t status) 
         return;
     }
     port->status = status & LINE_STATES;
-    if (port->attached && callbacks->status != NULL) {
-        callbacks->status(port, status);
+    if (port->attached && serial_callbacks->status != NULL) {
+        serial_callbacks->status(port, status);
     }
 }
 
 void tendril_serial_deliver(struct tendril_serial *port, const uint8_t *data, size_t len) {
-    if (callbacks->receive != NULL) {
-        callbacks->receive(port, data, len);
+    if (serial_callbacks->receive != NULL) {
+        serial_callbacks->receive(port, data, len);
     }
 }
 
@@ -2391,8 +2391,8 @@ static void port_ready(void *ctx, int st) {
         }
     }
     LOG_INFO("serial: interface %u ready (%s)", port->intf->number, kind);
-    if (callbacks->attach != NULL) {
-        callbacks->attach(port);
+    if (serial_callbacks->attach != NULL) {
+        serial_callbacks->attach(port);
     }
     for (size_t i = 0; i < RX_BUFS && !port->stopped; i++) {
         rx_submit(port, i);
@@ -2825,8 +2825,8 @@ static void serial_disconnect(struct tendril_interface *intf) {
         write_finish(port, w, TENDRIL_ERR_NO_DEVICE);
     }
     op_kick(port);
-    if (port->attached && callbacks->detach != NULL) {
-        callbacks->detach(port);
+    if (port->attached && serial_callbacks->detach != NULL) {
+        serial_callbacks->detach(port);
     }
     tendril_interface_set_data(intf, NULL);
     port_free(port);
@@ -2841,8 +2841,8 @@ static struct tendril_driver serial_driver = {
     .resume = serial_resume
 };
 
-void tendril_serial_register(const struct tendril_serial_callbacks *cb) {
-    callbacks = cb;
+void tendril_serial_register(const struct tendril_serial_callbacks *callbacks) {
+    serial_callbacks = callbacks;
     tendril_driver_register(&serial_driver);
 }
 

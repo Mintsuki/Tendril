@@ -270,7 +270,7 @@ uint32_t tendril_pci_hc_quirks(int type, uint16_t vendor, uint16_t device);
 
 // Takes the controller over from firmware, resets and starts it. Enumeration
 // then proceeds as tendril_hc_poll() is called.
-int tendril_hc_add(const struct tendril_hc_config *config, struct tendril_hc **hc);
+int tendril_hc_add(const struct tendril_hc_config *config, struct tendril_hc **out);
 
 // Halts the controller, and resets it unless it is a UHCI controller, then
 // detaches every device, whose transfers fail with TENDRIL_ERR_NO_DEVICE, and

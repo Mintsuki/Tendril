@@ -121,7 +121,7 @@ extern int tendril_log_threshold;
 
 PRINTF_FORMAT(2, 3) void tendril_log(int level, const char *fmt, ...);
 void tendril_vlog(int level, const char *fmt, va_list args);
-int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
+int tendril_vsnprintf(char *buf, size_t size, const char *fmt, va_list args_in);
 PRINTF_FORMAT(3, 4) int tendril_snprintf(char *buf, size_t size, const char *fmt, ...);
 
 #define LOG_ERROR(...) tendril_log(TENDRIL_LOG_ERROR, __VA_ARGS__)

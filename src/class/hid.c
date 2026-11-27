@@ -374,7 +374,7 @@ struct tendril_hid {
     uint8_t leds;
 };
 
-static const struct tendril_hid_callbacks *callbacks;
+static const struct tendril_hid_callbacks *hid_callbacks;
 static uint32_t hid_flags;
 
 static bool bit_get(const uint8_t *map, size_t k) {
@@ -493,16 +493,16 @@ static void process_keys(struct tendril_hid *hid, uint8_t id, const uint8_t *dat
     for (size_t k = 0; k < 256; k++) {
         if (bit_get(covered, k) && bit_get(hid->keys, k) && !bit_get(now, k)) {
             hid->keys[k / 8] &= (uint8_t)~((uint32_t)1 << (k % 8));
-            if (callbacks->key != NULL) {
-                callbacks->key(hid, (uint16_t)k, false, mods);
+            if (hid_callbacks->key != NULL) {
+                hid_callbacks->key(hid, (uint16_t)k, false, mods);
             }
         }
     }
     for (size_t k = 0; k < 256; k++) {
         if (bit_get(covered, k) && !bit_get(hid->keys, k) && bit_get(now, k)) {
             bit_set(hid->keys, k);
-            if (callbacks->key != NULL) {
-                callbacks->key(hid, (uint16_t)k, true, mods);
+            if (hid_callbacks->key != NULL) {
+                hid_callbacks->key(hid, (uint16_t)k, true, mods);
             }
         }
     }
@@ -591,8 +591,8 @@ static void process_pointer(
             }
         }
     }
-    if (have && callbacks->pointer != NULL) {
-        callbacks->pointer(hid, &ev);
+    if (have && hid_callbacks->pointer != NULL) {
+        hid_callbacks->pointer(hid, &ev);
     }
 }
 
@@ -631,8 +631,8 @@ static void in_done(struct tendril_transfer *xfer) {
                 data++;
                 size--;
             }
-            if (callbacks->report != NULL) {
-                callbacks->report(hid, id, data, size);
+            if (hid_callbacks->report != NULL) {
+                hid_callbacks->report(hid, id, data, size);
             }
             if (hid->stopped) {
                 return;
@@ -773,8 +773,8 @@ static void hid_ready(struct tendril_hid *hid) {
         (hid->kinds & TENDRIL_HID_CONSUMER) != 0 ? " consumer" : "",
         hid->boot ? " (boot protocol)" : ""
     );
-    if (callbacks->attach != NULL) {
-        callbacks->attach(hid);
+    if (hid_callbacks->attach != NULL) {
+        hid_callbacks->attach(hid);
     }
     if (!hid->stopped) {
         in_submit(hid);
@@ -1050,8 +1050,8 @@ static void hid_disconnect(struct tendril_interface *intf) {
     hc_lock(hc);
     tendril_timer_cancel(hc, &hid->retry);
     hc_unlock(hc);
-    if (attached && callbacks->detach != NULL) {
-        callbacks->detach(hid);
+    if (attached && hid_callbacks->detach != NULL) {
+        hid_callbacks->detach(hid);
     }
     tendril_hid_free(hid->rd);
     tendril_free(hid->desc_buf, hid->desc_len);
@@ -1107,8 +1107,8 @@ static struct tendril_driver hid_driver = {
     .resume = hid_resume
 };
 
-void tendril_hid_register(const struct tendril_hid_callbacks *cb, uint32_t flags) {
-    callbacks = cb;
+void tendril_hid_register(const struct tendril_hid_callbacks *callbacks, uint32_t flags) {
+    hid_callbacks = callbacks;
     hid_flags = flags;
     tendril_driver_register(&hid_driver);
 }

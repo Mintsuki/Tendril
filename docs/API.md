@@ -428,7 +428,7 @@ type.
 | `TENDRIL_HC_QUIRK_XHCI_IMOD_LP` | Moderate xHCI interrupts to about 4000 a second instead of 8000 |
 | `TENDRIL_HC_QUIRK_EHCI_LOST_INTR` | The EHCI controller can lose interrupts: poll again 1/128 s after each one |
 
-#### `int tendril_hc_add(const struct tendril_hc_config *config, struct tendril_hc **hc)`
+#### `int tendril_hc_add(const struct tendril_hc_config *config, struct tendril_hc **out)`
 
 Takes a controller over from firmware, resets it, and starts it.
 
@@ -443,7 +443,7 @@ Takes a controller over from firmware, resets it, and starts it.
   they stay off and the embedder only polls.
 - `config->quirks`: `TENDRIL_HC_QUIRK_*` to apply on top of the built-in
   tables.
-- `hc`: receives the controller, only on success.
+- `out`: receives the controller, only on success.
 - **Returns** `TENDRIL_OK`; `TENDRIL_ERR_UNSUPPORTED` for an unknown type, one
   compiled out with `TENDRIL_NO_UHCI`, `TENDRIL_NO_OHCI`, `TENDRIL_NO_EHCI`, or
   `TENDRIL_NO_XHCI`, or an xHCI controller the library cannot drive;

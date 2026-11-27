@@ -1448,7 +1448,7 @@ struct tendril_msc {
     size_t in_call;
 };
 
-static const struct tendril_msc_callbacks *callbacks;
+static const struct tendril_msc_callbacks *msc_callbacks;
 
 static void done_deliver(struct tendril_msc *msc);
 static void done_work_fn(struct tendril_work *work);
@@ -2593,10 +2593,10 @@ static void lun_report(struct tendril_msc_lun *lun, bool changed) {
         done_later(lun->msc);
         return;
     }
-    if (!changed && callbacks->attach != NULL) {
-        callbacks->attach(lun);
-    } else if (changed && callbacks->medium_changed != NULL) {
-        callbacks->medium_changed(lun);
+    if (!changed && msc_callbacks->attach != NULL) {
+        msc_callbacks->attach(lun);
+    } else if (changed && msc_callbacks->medium_changed != NULL) {
+        msc_callbacks->medium_changed(lun);
     }
 }
 
@@ -3737,8 +3737,8 @@ static void msc_disconnect(struct tendril_interface *intf) {
         hc_unlock(msc->hc);
         io_fail_all(lun, TENDRIL_ERR_NO_DEVICE);
         check_finish(lun, TENDRIL_ERR_NO_DEVICE);
-        if (lun->attached && callbacks->detach != NULL) {
-            callbacks->detach(lun);
+        if (lun->attached && msc_callbacks->detach != NULL) {
+            msc_callbacks->detach(lun);
         }
         tendril_free(lun, sizeof(struct tendril_msc_lun));
         msc->luns[i] = NULL;
@@ -3820,8 +3820,8 @@ static struct tendril_driver msc_driver = {
     .resume = msc_resume
 };
 
-void tendril_msc_register(const struct tendril_msc_callbacks *cb) {
-    callbacks = cb;
+void tendril_msc_register(const struct tendril_msc_callbacks *callbacks) {
+    msc_callbacks = callbacks;
     tendril_driver_register(&msc_driver);
 }
 
@@ -4012,8 +4012,8 @@ static void done_deliver(struct tendril_msc *msc) {
         struct tendril_msc_lun *lun = msc->luns[i];
         if (lun != NULL && lun->attach_waiting) {
             lun->attach_waiting = false;
-            if (callbacks->attach != NULL) {
-                callbacks->attach(lun);
+            if (msc_callbacks->attach != NULL) {
+                msc_callbacks->attach(lun);
             }
         }
     }
@@ -4036,8 +4036,8 @@ static void done_deliver(struct tendril_msc *msc) {
         }
         if (lun->changed_waiting) {
             lun->changed_waiting = false;
-            if (callbacks->medium_changed != NULL) {
-                callbacks->medium_changed(lun);
+            if (msc_callbacks->medium_changed != NULL) {
+                msc_callbacks->medium_changed(lun);
             }
         }
         if (lun->check_waiting) {
